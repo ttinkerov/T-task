@@ -59,7 +59,9 @@
     font-size: 0.75rem;
     line-height: 1;
     opacity: 0.5;
-    transition: opacity $transition-fast, color $transition-fast;
+    transition:
+      opacity $transition-fast,
+      color $transition-fast;
 
     &:hover {
       opacity: 1;
@@ -81,6 +83,51 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-align: left;
+    border: none;
+    background: transparent;
+    padding: 0;
+    cursor: text;
+
+    &:hover {
+      color: rgba(255, 255, 255, 0.85);
+    }
+  }
+
+  &__title-input {
+    flex: 1;
+    min-width: 0;
+    border-radius: $radius-sm;
+    border: 1px solid $color-brand-blue;
+    background: $color-bg-card;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: $color-white;
+    outline: none;
+  }
+
+  &__delete {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: $color-text-dim;
+    font-size: 0.875rem;
+    line-height: 1;
+    padding: 0;
+    opacity: 0;
+    cursor: pointer;
+    transition:
+      opacity $transition-fast,
+      color $transition-fast;
+
+    .kanban-column:hover & {
+      opacity: 1;
+    }
+
+    &:hover {
+      color: #ff6b6b;
+    }
   }
 
   &__count {
@@ -130,7 +177,9 @@
     font-size: 0.8125rem;
     color: $color-white;
     outline: none;
-    transition: border-color $transition-fast, background $transition-fast;
+    transition:
+      border-color $transition-fast,
+      background $transition-fast;
 
     &::placeholder {
       color: $color-text-dim;
@@ -152,7 +201,9 @@
     line-height: 1;
     color: $color-text-muted;
     cursor: pointer;
-    transition: background $transition-fast, color $transition-fast;
+    transition:
+      background $transition-fast,
+      color $transition-fast;
 
     &:hover:not(:disabled) {
       background: $color-brand-blue-muted;
@@ -232,7 +283,9 @@
   background: $color-bg-card;
   padding: 0.5625rem 0.625rem;
   cursor: pointer;
-  transition: border-color $transition-fast, background $transition-fast;
+  transition:
+    border-color $transition-fast,
+    background $transition-fast;
 
   &:hover {
     border-color: rgba(255, 255, 255, 0.16);
@@ -300,7 +353,9 @@
     padding: 0;
     opacity: 0;
     cursor: pointer;
-    transition: opacity $transition-fast, color $transition-fast;
+    transition:
+      opacity $transition-fast,
+      color $transition-fast;
 
     .kanban-task-card:hover & {
       opacity: 1;

@@ -20,32 +20,52 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
+import { useMeQuery } from '@/features/auth/hooks';
 import {
   useBoardQuery,
   useCreateColumnMutation,
   useCreateTaskMutation,
+  useDeleteColumnMutation,
   useMoveColumnMutation,
   useMoveTaskMutation,
+  useUpdateColumnMutation,
 } from '../hooks';
-import type { BoardColumn, BoardTask, BoardView } from '../types';
-import { PRIORITY_LABELS } from '../types';
+import {
+  EMPTY_BOARD_FILTERS,
+  PRIORITY_LABELS,
+  type BoardColumn,
+  type BoardFilters,
+  type BoardTask,
+  type BoardView,
+} from '../types';
+import { BoardFiltersBar } from './board-filters-bar';
 import { TaskDetailDrawer } from './task-detail-drawer';
 
 type DragType = 'column' | 'task';
 
 export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
+  const { data: session } = useMeQuery();
   const { data: board, isLoading } = useBoardQuery(workspaceId);
   const moveTaskMutation = useMoveTaskMutation(workspaceId);
   const moveColumnMutation = useMoveColumnMutation(workspaceId);
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
   const [activeColumn, setActiveColumn] = useState<BoardColumn | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [filters, setFilters] = useState<BoardFilters>(EMPTY_BOARD_FILTERS);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  const filteredColumns = useMemo(() => {
+    if (!board) return [];
+    return board.columns.map((column) => ({
+      ...column,
+      tasks: column.tasks.filter((task) => matchesFilters(task, filters, session?.user.id)),
+    }));
+  }, [board, filters, session?.user.id]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const type = event.active.data.current?.type as DragType | undefined;
@@ -112,6 +132,8 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
 
   return (
     <>
+      <BoardFiltersBar workspaceId={workspaceId} filters={filters} onChange={setFilters} />
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -120,11 +142,12 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
       >
         <div className="kanban-board">
           <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
-            {board.columns.map((column) => (
+            {filteredColumns.map((column) => (
               <SortableKanbanColumn
                 key={column.id}
                 column={column}
                 workspaceId={workspaceId}
+                canDelete={board.columns.length > 1}
                 onOpenTask={setSelectedTaskId}
               />
             ))}
@@ -159,6 +182,24 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
       ) : null}
     </>
   );
+}
+
+function matchesFilters(task: BoardTask, filters: BoardFilters, currentUserId?: string) {
+  if (filters.search) {
+    const q = filters.search.toLowerCase();
+    const haystack = `${task.title} ${task.description ?? ''}`.toLowerCase();
+    if (!haystack.includes(q)) return false;
+  }
+
+  if (filters.priority && task.priority !== filters.priority) return false;
+
+  if (filters.assigneeId && task.assigneeId !== filters.assigneeId) return false;
+
+  if (filters.myTasksOnly) {
+    if (!currentUserId || task.assigneeId !== currentUserId) return false;
+  }
+
+  return true;
 }
 
 function AddColumnPanel({ workspaceId }: { workspaceId: string }) {
@@ -196,10 +237,12 @@ function AddColumnPanel({ workspaceId }: { workspaceId: string }) {
 function SortableKanbanColumn({
   column,
   workspaceId,
+  canDelete,
   onOpenTask,
 }: {
   column: BoardColumn;
   workspaceId: string;
+  canDelete: boolean;
   onOpenTask: (taskId: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -218,6 +261,7 @@ function SortableKanbanColumn({
       <KanbanColumn
         column={column}
         workspaceId={workspaceId}
+        canDelete={canDelete}
         dragHandleProps={{ ...attributes, ...listeners }}
         onOpenTask={onOpenTask}
       />
@@ -228,23 +272,49 @@ function SortableKanbanColumn({
 function KanbanColumn({
   column,
   workspaceId,
+  canDelete,
   dragHandleProps,
   onOpenTask,
 }: {
   column: BoardColumn;
   workspaceId: string;
+  canDelete: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLElement>;
   onOpenTask: (taskId: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const createMutation = useCreateTaskMutation(workspaceId);
+  const updateColumnMutation = useUpdateColumnMutation(workspaceId);
+  const deleteColumnMutation = useDeleteColumnMutation(workspaceId);
   const [title, setTitle] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [columnName, setColumnName] = useState(column.name);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!title.trim()) return;
     await createMutation.mutateAsync({ title: title.trim(), columnId: column.id });
     setTitle('');
+  };
+
+  const handleRename = async () => {
+    const next = columnName.trim();
+    if (!next || next === column.name) {
+      setColumnName(column.name);
+      setEditingName(false);
+      return;
+    }
+    await updateColumnMutation.mutateAsync({ columnId: column.id, name: next });
+    setEditingName(false);
+  };
+
+  const handleDelete = async () => {
+    const message =
+      column.tasks.length > 0
+        ? `Удалить колонку «${column.name}» вместе с ${column.tasks.length} задачами?`
+        : `Удалить колонку «${column.name}»?`;
+    if (!window.confirm(message)) return;
+    await deleteColumnMutation.mutateAsync(column.id);
   };
 
   return (
@@ -258,8 +328,54 @@ function KanbanColumn({
         >
           ⠿
         </button>
-        <h3 className="kanban-column__title">{column.name}</h3>
+
+        {editingName ? (
+          <input
+            value={columnName}
+            onChange={(event) => setColumnName(event.target.value)}
+            onBlur={handleRename}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                void handleRename();
+              }
+              if (event.key === 'Escape') {
+                setColumnName(column.name);
+                setEditingName(false);
+              }
+            }}
+            className="kanban-column__title-input"
+            autoFocus
+            maxLength={80}
+          />
+        ) : (
+          <button
+            type="button"
+            className="kanban-column__title"
+            onClick={() => {
+              setColumnName(column.name);
+              setEditingName(true);
+            }}
+            title="Переименовать"
+          >
+            {column.name}
+          </button>
+        )}
+
         <span className="kanban-column__count">{column.tasks.length}</span>
+
+        {canDelete ? (
+          <button
+            type="button"
+            className="kanban-column__delete"
+            onClick={handleDelete}
+            disabled={deleteColumnMutation.isPending}
+            aria-label="Удалить колонку"
+            title="Удалить колонку"
+          >
+            ×
+          </button>
+        ) : null}
       </div>
 
       <SortableContext
@@ -338,8 +454,11 @@ function KanbanTaskCard({ task, onOpen }: { task: BoardTask; onOpen: () => void 
         <div className="min-w-0 flex-1">
           <p className="kanban-task-card__title">{task.title}</p>
           {task.description ? <p className="kanban-task-card__desc">{task.description}</p> : null}
-          {(task.priority || task.complexity || dueLabel) && (
+          {(task.priority || task.complexity || dueLabel || task.assignee) && (
             <div className="kanban-task-meta">
+              {task.assignee ? (
+                <span className="kanban-task-chip">{task.assignee.name.split(' ')[0]}</span>
+              ) : null}
               {task.priority ? (
                 <span className={`kanban-task-chip kanban-task-chip--priority-${task.priority}`}>
                   {PRIORITY_LABELS[task.priority]}

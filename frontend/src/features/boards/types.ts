@@ -5,6 +5,13 @@ export type WorkspaceUseCase =
 
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
+export interface TaskAssignee {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+}
+
 export interface BoardTask {
   id: string;
   title: string;
@@ -12,6 +19,8 @@ export interface BoardTask {
   priority: TaskPriority | null;
   complexity: number | null;
   dueDate: string | null;
+  assigneeId: string | null;
+  assignee: TaskAssignee | null;
   position: number;
   columnId: string;
   createdAt: string;
@@ -37,6 +46,22 @@ export interface UpdateTaskPayload {
   priority?: TaskPriority | null;
   complexity?: number | null;
   dueDate?: string | null;
+  assigneeId?: string | null;
+}
+
+export interface TaskComment {
+  id: string;
+  body: string;
+  authorId: string;
+  author: TaskAssignee;
+  createdAt: string;
+}
+
+export interface BoardFilters {
+  search: string;
+  priority: TaskPriority | '';
+  assigneeId: string | '';
+  myTasksOnly: boolean;
 }
 
 export const TEAM_SIZE_OPTIONS: { value: TeamSize; label: string }[] = [
@@ -78,4 +103,11 @@ export const PRIORITY_LABELS: Record<TaskPriority, string> = {
   MEDIUM: 'Средний',
   HIGH: 'Высокий',
   URGENT: 'Срочный',
+};
+
+export const EMPTY_BOARD_FILTERS: BoardFilters = {
+  search: '',
+  priority: '',
+  assigneeId: '',
+  myTasksOnly: false,
 };

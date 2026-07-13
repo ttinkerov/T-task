@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateColumnDto } from './dto/create-column.dto';
 import { MoveColumnDto } from './dto/move-column.dto';
+import { UpdateColumnDto } from './dto/update-column.dto';
 
 @Injectable()
 export class BoardsService {
@@ -23,6 +24,11 @@ export class BoardsService {
           include: {
             tasks: {
               orderBy: { position: 'asc' },
+              include: {
+                assignee: {
+                  select: { id: true, name: true, email: true, avatarUrl: true },
+                },
+              },
             },
           },
         },
@@ -41,17 +47,7 @@ export class BoardsService {
         id: column.id,
         name: column.name,
         position: column.position,
-        tasks: column.tasks.map((task) => ({
-          id: task.id,
-          title: task.title,
-          description: task.description,
-          priority: task.priority,
-          complexity: task.complexity,
-          dueDate: task.dueDate?.toISOString() ?? null,
-          position: task.position,
-          columnId: task.columnId,
-          createdAt: task.createdAt.toISOString(),
-        })),
+        tasks: column.tasks.map((task) => this.serializeTask(task)),
       })),
     };
   }
@@ -94,6 +90,71 @@ export class BoardsService {
     };
   }
 
+  async updateColumn(workspaceId: string, columnId: string, userId: string, dto: UpdateColumnDto) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+    const board = await this.getBoardForWorkspace(workspaceId);
+
+    const column = await this.prisma.boardColumn.findFirst({
+      where: { id: columnId, boardId: board.id },
+    });
+
+    if (!column) {
+      throw new NotFoundException('Column not found');
+    }
+
+    const updated = await this.prisma.boardColumn.update({
+      where: { id: columnId },
+      data: { name: dto.name.trim() },
+    });
+
+    return {
+      id: updated.id,
+      name: updated.name,
+      position: updated.position,
+    };
+  }
+
+  async deleteColumn(workspaceId: string, columnId: string, userId: string) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+    const board = await this.getBoardForWorkspace(workspaceId);
+
+    const column = await this.prisma.boardColumn.findFirst({
+      where: { id: columnId, boardId: board.id },
+    });
+
+    if (!column) {
+      throw new NotFoundException('Column not found');
+    }
+
+    const columnCount = await this.prisma.boardColumn.count({
+      where: { boardId: board.id },
+    });
+
+    if (columnCount <= 1) {
+      throw new BadRequestException('Cannot delete the last column');
+    }
+
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await tx.boardColumn.delete({ where: { id: columnId } });
+
+      const remaining = await tx.boardColumn.findMany({
+        where: { boardId: board.id },
+        orderBy: { position: 'asc' },
+      });
+
+      await Promise.all(
+        remaining.map((item, index) =>
+          tx.boardColumn.update({
+            where: { id: item.id },
+            data: { position: index },
+          }),
+        ),
+      );
+    });
+
+    return { success: true };
+  }
+
   async moveColumn(workspaceId: string, columnId: string, userId: string, dto: MoveColumnDto) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
     const board = await this.getBoardForWorkspace(workspaceId);
@@ -116,6 +177,46 @@ export class BoardsService {
       id: updated.id,
       name: updated.name,
       position: updated.position,
+    };
+  }
+
+  serializeTask(task: {
+    id: string;
+    title: string;
+    description: string | null;
+    priority: import('@prisma/client').TaskPriority | null;
+    complexity: number | null;
+    dueDate: Date | null;
+    assigneeId?: string | null;
+    position: number;
+    columnId: string;
+    createdAt: Date;
+    assignee?: {
+      id: string;
+      name: string;
+      email: string;
+      avatarUrl: string | null;
+    } | null;
+  }) {
+    return {
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      priority: task.priority,
+      complexity: task.complexity,
+      dueDate: task.dueDate?.toISOString() ?? null,
+      assigneeId: task.assigneeId ?? null,
+      assignee: task.assignee
+        ? {
+            id: task.assignee.id,
+            name: task.assignee.name,
+            email: task.assignee.email,
+            avatarUrl: task.assignee.avatarUrl,
+          }
+        : null,
+      position: task.position,
+      columnId: task.columnId,
+      createdAt: task.createdAt.toISOString(),
     };
   }
 

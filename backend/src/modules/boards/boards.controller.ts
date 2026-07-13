@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { WorkspaceRole } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
@@ -7,6 +7,7 @@ import { successResponse } from '../../common/interfaces/api-response.interface'
 import { BoardsService } from './boards.service';
 import { CreateColumnDto } from './dto/create-column.dto';
 import { MoveColumnDto } from './dto/move-column.dto';
+import { UpdateColumnDto } from './dto/update-column.dto';
 
 @Controller('workspaces/:workspaceId/board')
 export class BoardsController {
@@ -33,6 +34,18 @@ export class BoardsController {
     return successResponse(column);
   }
 
+  @Patch('columns/:columnId')
+  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  async updateColumn(
+    @Param('workspaceId') workspaceId: string,
+    @Param('columnId') columnId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateColumnDto,
+  ) {
+    const column = await this.boardsService.updateColumn(workspaceId, columnId, user.id, dto);
+    return successResponse(column);
+  }
+
   @Patch('columns/:columnId/move')
   @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
   async moveColumn(
@@ -43,5 +56,16 @@ export class BoardsController {
   ) {
     const column = await this.boardsService.moveColumn(workspaceId, columnId, user.id, dto);
     return successResponse(column);
+  }
+
+  @Delete('columns/:columnId')
+  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  async deleteColumn(
+    @Param('workspaceId') workspaceId: string,
+    @Param('columnId') columnId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.boardsService.deleteColumn(workspaceId, columnId, user.id);
+    return successResponse(result);
   }
 }

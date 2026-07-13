@@ -50,6 +50,8 @@ model User {
   sessions         RefreshSession[]
   memberships      WorkspaceMember[]
   sentInvitations  Invitation[]     @relation("InvitationInviter")
+  assignedTasks    Task[]           @relation("TaskAssignee")
+  comments         Comment[]
 
   @@map("users")
 }
@@ -163,12 +165,32 @@ model Task {
   priority    TaskPriority?
   complexity  Int?
   dueDate     DateTime?     @map("due_date")
+  assigneeId  String?       @map("assignee_id")
   position    Int
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
-  column BoardColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  column   BoardColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  assignee User?       @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  comments Comment[]
 
   @@index([columnId])
+  @@index([assigneeId])
   @@map("tasks")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  taskId    String   @map("task_id")
+  authorId  String   @map("author_id")
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([authorId])
+  @@map("comments")
 }

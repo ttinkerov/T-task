@@ -90,6 +90,163 @@
   }
 }
 
+.task-drawer__comments {
+  border-top: 1px solid $color-border-subtle;
+  padding: 1rem 1.25rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 40%;
+  overflow-y: auto;
+}
+
+.task-drawer__comments-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: $color-text-muted;
+}
+
+.task-drawer__comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.task-drawer__comment {
+  border-radius: $radius-sm;
+  border: 1px solid $color-border-subtle;
+  background: $color-bg-card;
+  padding: 0.625rem 0.75rem;
+}
+
+.task-drawer__comment-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.task-drawer__comment-author {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.task-drawer__comment-date {
+  font-size: 0.6875rem;
+  color: $color-text-dim;
+}
+
+.task-drawer__comment-delete {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: $color-text-dim;
+  cursor: pointer;
+
+  &:hover {
+    color: #ff6b6b;
+  }
+}
+
+.task-drawer__comment-body {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: $color-text-muted;
+  white-space: pre-wrap;
+}
+
+.task-drawer__comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.board-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
+}
+
+.board-filters__search {
+  min-width: 180px;
+  flex: 1;
+  max-width: 280px;
+  border-radius: $radius-pill;
+  border: 1px solid $color-border-subtle;
+  background: $color-bg-elevated;
+  padding: 0.4375rem 0.875rem;
+  font-size: 0.8125rem;
+  color: $color-white;
+  outline: none;
+
+  &:focus {
+    border-color: $color-brand-blue;
+  }
+
+  &::placeholder {
+    color: $color-text-dim;
+  }
+}
+
+.board-filters__select {
+  border-radius: $radius-pill;
+  border: 1px solid $color-border-subtle;
+  background: $color-bg-elevated;
+  padding: 0.4375rem 1.75rem 0.4375rem 0.75rem;
+  font-size: 0.8125rem;
+  color: $color-white;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a1a1a6' d='M3 4.5L6 7.5L9 4.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.625rem center;
+  cursor: pointer;
+
+  &:focus {
+    border-color: $color-brand-blue;
+  }
+}
+
+.board-filters__chip {
+  border-radius: $radius-pill;
+  border: 1px solid $color-border-subtle;
+  background: transparent;
+  padding: 0.4375rem 0.75rem;
+  font-size: 0.8125rem;
+  color: $color-text-muted;
+  cursor: pointer;
+  transition:
+    background $transition-fast,
+    border-color $transition-fast,
+    color $transition-fast;
+
+  &:hover {
+    color: $color-white;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  &--active {
+    color: $color-brand-blue;
+    border-color: rgba(0, 119, 255, 0.35);
+    background: rgba(0, 119, 255, 0.12);
+  }
+}
+
+.board-filters__reset {
+  border: none;
+  background: transparent;
+  font-size: 0.75rem;
+  color: $color-text-dim;
+  cursor: pointer;
+
+  &:hover {
+    color: $color-white;
+  }
+}
+
 .settings-page {
   display: flex;
   flex-direction: column;

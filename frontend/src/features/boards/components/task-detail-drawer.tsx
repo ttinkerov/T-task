@@ -1,7 +1,15 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import { useDeleteTaskMutation, useUpdateTaskMutation } from '../hooks';
+import { useMeQuery } from '@/features/auth/hooks';
+import { useMembersQuery } from '@/features/workspaces/hooks';
+import {
+  useCommentsQuery,
+  useCreateCommentMutation,
+  useDeleteCommentMutation,
+  useDeleteTaskMutation,
+  useUpdateTaskMutation,
+} from '../hooks';
 import { COMPLEXITY_OPTIONS, PRIORITY_OPTIONS, type BoardTask, type TaskPriority } from '../types';
 
 interface TaskDetailDrawerProps {
@@ -17,14 +25,24 @@ export function TaskDetailDrawer({
   columnName,
   onClose,
 }: TaskDetailDrawerProps) {
+  const { data: session } = useMeQuery();
+  const { data: members = [] } = useMembersQuery(workspaceId);
   const updateMutation = useUpdateTaskMutation(workspaceId);
   const deleteMutation = useDeleteTaskMutation(workspaceId);
+  const { data: comments = [], isLoading: commentsLoading } = useCommentsQuery(
+    workspaceId,
+    task.id,
+  );
+  const createCommentMutation = useCreateCommentMutation(workspaceId, task.id);
+  const deleteCommentMutation = useDeleteCommentMutation(workspaceId, task.id);
 
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? '');
   const [priority, setPriority] = useState<TaskPriority | ''>(task.priority ?? '');
   const [complexity, setComplexity] = useState<number | ''>(task.complexity ?? '');
   const [dueDate, setDueDate] = useState(toDateInputValue(task.dueDate));
+  const [assigneeId, setAssigneeId] = useState(task.assigneeId ?? '');
+  const [commentBody, setCommentBody] = useState('');
 
   useEffect(() => {
     setTitle(task.title);
@@ -32,6 +50,7 @@ export function TaskDetailDrawer({
     setPriority(task.priority ?? '');
     setComplexity(task.complexity ?? '');
     setDueDate(toDateInputValue(task.dueDate));
+    setAssigneeId(task.assigneeId ?? '');
   }, [task]);
 
   useEffect(() => {
@@ -54,6 +73,7 @@ export function TaskDetailDrawer({
         priority: priority || null,
         complexity: complexity === '' ? null : Number(complexity),
         dueDate: dueDate ? new Date(`${dueDate}T12:00:00`).toISOString() : null,
+        assigneeId: assigneeId || null,
       },
     });
     onClose();
@@ -62,6 +82,13 @@ export function TaskDetailDrawer({
   const handleDelete = async () => {
     await deleteMutation.mutateAsync(task.id);
     onClose();
+  };
+
+  const handleAddComment = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!commentBody.trim()) return;
+    await createCommentMutation.mutateAsync(commentBody.trim());
+    setCommentBody('');
   };
 
   return (
@@ -107,10 +134,26 @@ export function TaskDetailDrawer({
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               className="glass-input task-drawer__textarea"
-              rows={5}
+              rows={4}
               maxLength={2000}
               placeholder="Подробности задачи..."
             />
+          </label>
+
+          <label className="task-drawer__field">
+            <span>Исполнитель</span>
+            <select
+              value={assigneeId}
+              onChange={(event) => setAssigneeId(event.target.value)}
+              className="glass-input"
+            >
+              <option value="">Не назначен</option>
+              {members.map((member) => (
+                <option key={member.userId} value={member.userId}>
+                  {member.user.name}
+                </option>
+              ))}
+            </select>
           </label>
 
           <div className="task-drawer__grid">
@@ -179,6 +222,65 @@ export function TaskDetailDrawer({
             </button>
           </div>
         </form>
+
+        <div className="task-drawer__comments">
+          <h3 className="task-drawer__comments-title">Комментарии</h3>
+
+          {commentsLoading ? (
+            <p className="text-sm text-muted-foreground">Загрузка...</p>
+          ) : comments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Пока нет комментариев</p>
+          ) : (
+            <ul className="task-drawer__comments-list">
+              {comments.map((comment) => (
+                <li key={comment.id} className="task-drawer__comment">
+                  <div className="task-drawer__comment-head">
+                    <span className="task-drawer__comment-author">{comment.author.name}</span>
+                    <span className="task-drawer__comment-date">
+                      {new Date(comment.createdAt).toLocaleString('ru-RU', {
+                        day: 'numeric',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    {(comment.authorId === session?.user.id ||
+                      members.find((m) => m.userId === session?.user.id)?.role === 'OWNER' ||
+                      members.find((m) => m.userId === session?.user.id)?.role === 'ADMIN') && (
+                      <button
+                        type="button"
+                        className="task-drawer__comment-delete"
+                        onClick={() => deleteCommentMutation.mutate(comment.id)}
+                        aria-label="Удалить комментарий"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  <p className="task-drawer__comment-body">{comment.body}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <form onSubmit={handleAddComment} className="task-drawer__comment-form">
+            <textarea
+              value={commentBody}
+              onChange={(event) => setCommentBody(event.target.value)}
+              className="glass-input task-drawer__textarea"
+              rows={2}
+              maxLength={2000}
+              placeholder="Написать комментарий..."
+            />
+            <button
+              type="submit"
+              disabled={!commentBody.trim() || createCommentMutation.isPending}
+              className="btn-ghost"
+            >
+              Отправить
+            </button>
+          </form>
+        </div>
       </aside>
     </div>
   );

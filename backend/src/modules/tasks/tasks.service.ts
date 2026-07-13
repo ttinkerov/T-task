@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, TaskPriority } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { BoardsService } from '../boards/boards.service';
@@ -6,6 +6,12 @@ import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+
+const taskWithAssignee = {
+  assignee: {
+    select: { id: true, name: true, email: true, avatarUrl: true },
+  },
+} as const;
 
 @Injectable()
 export class TasksService {
@@ -44,6 +50,7 @@ export class TasksService {
         description: dto.description?.trim() || null,
         position,
       },
+      include: taskWithAssignee,
     });
 
     return this.toTask(task);
@@ -51,6 +58,18 @@ export class TasksService {
 
   async update(workspaceId: string, taskId: string, userId: string, dto: UpdateTaskDto) {
     const task = await this.assertTaskInWorkspace(workspaceId, taskId, userId);
+
+    if (dto.assigneeId) {
+      const membership = await this.prisma.workspaceMember.findUnique({
+        where: {
+          workspaceId_userId: { workspaceId, userId: dto.assigneeId },
+        },
+      });
+
+      if (!membership) {
+        throw new BadRequestException('Assignee must be a workspace member');
+      }
+    }
 
     const updated = await this.prisma.task.update({
       where: { id: task.id },
@@ -62,7 +81,9 @@ export class TasksService {
         ...(dto.dueDate !== undefined
           ? { dueDate: dto.dueDate ? new Date(dto.dueDate) : null }
           : {}),
+        ...(dto.assigneeId !== undefined ? { assigneeId: dto.assigneeId } : {}),
       },
+      include: taskWithAssignee,
     });
 
     return this.toTask(updated);
@@ -99,7 +120,10 @@ export class TasksService {
       });
     });
 
-    const updated = await this.prisma.task.findUniqueOrThrow({ where: { id: taskId } });
+    const updated = await this.prisma.task.findUniqueOrThrow({
+      where: { id: taskId },
+      include: taskWithAssignee,
+    });
     return this.toTask(updated);
   }
 
@@ -197,20 +221,17 @@ export class TasksService {
     priority: TaskPriority | null;
     complexity: number | null;
     dueDate: Date | null;
+    assigneeId: string | null;
     position: number;
     columnId: string;
     createdAt: Date;
+    assignee?: {
+      id: string;
+      name: string;
+      email: string;
+      avatarUrl: string | null;
+    } | null;
   }) {
-    return {
-      id: task.id,
-      title: task.title,
-      description: task.description,
-      priority: task.priority,
-      complexity: task.complexity,
-      dueDate: task.dueDate?.toISOString() ?? null,
-      position: task.position,
-      columnId: task.columnId,
-      createdAt: task.createdAt.toISOString(),
-    };
+    return this.boardsService.serializeTask(task);
   }
 }

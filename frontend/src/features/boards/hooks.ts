@@ -1,11 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createColumn,
+  createComment,
   createTask,
+  deleteColumn,
+  deleteComment,
   deleteTask,
   fetchBoard,
+  fetchComments,
   moveColumn,
   moveTask,
+  updateColumn,
   updateTask,
 } from './api';
 import type { BoardView, UpdateTaskPayload } from './types';
@@ -13,6 +18,8 @@ import type { BoardView, UpdateTaskPayload } from './types';
 export const boardKeys = {
   all: ['boards'] as const,
   detail: (workspaceId: string) => [...boardKeys.all, workspaceId, 'board'] as const,
+  comments: (workspaceId: string, taskId: string) =>
+    [...boardKeys.all, workspaceId, 'comments', taskId] as const,
 };
 
 export function useBoardQuery(workspaceId: string | null) {
@@ -32,6 +39,32 @@ export function useCreateColumnMutation(workspaceId: string) {
   return useMutation({
     mutationFn: async (name: string) => {
       await createColumn(workspaceId, name);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+    },
+  });
+}
+
+export function useUpdateColumnMutation(workspaceId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ columnId, name }: { columnId: string; name: string }) => {
+      await updateColumn(workspaceId, columnId, name);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+    },
+  });
+}
+
+export function useDeleteColumnMutation(workspaceId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (columnId: string) => {
+      await deleteColumn(workspaceId, columnId);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
@@ -140,6 +173,47 @@ export function useDeleteTaskMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+    },
+  });
+}
+
+export function useCommentsQuery(workspaceId: string, taskId: string) {
+  return useQuery({
+    queryKey: boardKeys.comments(workspaceId, taskId),
+    queryFn: async () => {
+      const response = await fetchComments(workspaceId, taskId);
+      return response.data ?? [];
+    },
+    enabled: Boolean(workspaceId && taskId),
+  });
+}
+
+export function useCreateCommentMutation(workspaceId: string, taskId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (body: string) => {
+      await createComment(workspaceId, taskId, body);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: boardKeys.comments(workspaceId, taskId),
+      });
+    },
+  });
+}
+
+export function useDeleteCommentMutation(workspaceId: string, taskId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (commentId: string) => {
+      await deleteComment(workspaceId, taskId, commentId);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: boardKeys.comments(workspaceId, taskId),
+      });
     },
   });
 }

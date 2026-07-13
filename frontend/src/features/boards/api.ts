@@ -1,5 +1,5 @@
 import { apiFetch } from '@/shared/api/client';
-import type { BoardView, UpdateTaskPayload } from './types';
+import type { BoardView, TaskComment, UpdateTaskPayload } from './types';
 
 function withWorkspace(workspaceId: string) {
   return { 'x-workspace-id': workspaceId };
@@ -16,6 +16,21 @@ export async function createColumn(workspaceId: string, name: string) {
     method: 'POST',
     headers: withWorkspace(workspaceId),
     body: JSON.stringify({ name }),
+  });
+}
+
+export async function updateColumn(workspaceId: string, columnId: string, name: string) {
+  return apiFetch(`/api/v1/workspaces/${workspaceId}/board/columns/${columnId}`, {
+    method: 'PATCH',
+    headers: withWorkspace(workspaceId),
+    body: JSON.stringify({ name }),
+  });
+}
+
+export async function deleteColumn(workspaceId: string, columnId: string) {
+  return apiFetch(`/api/v1/workspaces/${workspaceId}/board/columns/${columnId}`, {
+    method: 'DELETE',
+    headers: withWorkspace(workspaceId),
   });
 }
 
@@ -60,6 +75,27 @@ export async function moveTask(
 
 export async function deleteTask(workspaceId: string, taskId: string) {
   return apiFetch(`/api/v1/workspaces/${workspaceId}/tasks/${taskId}`, {
+    method: 'DELETE',
+    headers: withWorkspace(workspaceId),
+  });
+}
+
+export async function fetchComments(workspaceId: string, taskId: string) {
+  return apiFetch<TaskComment[]>(`/api/v1/workspaces/${workspaceId}/tasks/${taskId}/comments`, {
+    headers: withWorkspace(workspaceId),
+  });
+}
+
+export async function createComment(workspaceId: string, taskId: string, body: string) {
+  return apiFetch<TaskComment>(`/api/v1/workspaces/${workspaceId}/tasks/${taskId}/comments`, {
+    method: 'POST',
+    headers: withWorkspace(workspaceId),
+    body: JSON.stringify({ body }),
+  });
+}
+
+export async function deleteComment(workspaceId: string, taskId: string, commentId: string) {
+  return apiFetch(`/api/v1/workspaces/${workspaceId}/tasks/${taskId}/comments/${commentId}`, {
     method: 'DELETE',
     headers: withWorkspace(workspaceId),
   });

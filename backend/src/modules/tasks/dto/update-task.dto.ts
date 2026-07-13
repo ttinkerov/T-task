@@ -41,4 +41,9 @@ export class UpdateTaskDto {
   @ValidateIf((_, value) => value !== null)
   @IsDateString()
   dueDate?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  assigneeId?: string | null;
 }
