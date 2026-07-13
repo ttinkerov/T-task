@@ -1,4 +1,16 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { TaskPriority } from '@prisma/client';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+  ValidateIf,
+} from 'class-validator';
 
 export class UpdateTaskDto {
   @IsOptional()
@@ -8,7 +20,25 @@ export class UpdateTaskDto {
   title?: string;
 
   @IsOptional()
+  @ValidateIf((_, value) => value !== null)
   @IsString()
   @MaxLength(2000)
-  description?: string;
+  description?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsEnum(TaskPriority)
+  priority?: TaskPriority | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsInt()
+  @Min(1)
+  @Max(13)
+  complexity?: number | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsDateString()
+  dueDate?: string | null;
 }

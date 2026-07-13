@@ -30,6 +30,13 @@ enum WorkspaceUseCase {
   OTHER
 }
 
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
@@ -149,13 +156,16 @@ model BoardColumn {
 }
 
 model Task {
-  id          String   @id @default(cuid())
-  columnId    String   @map("column_id")
+  id          String        @id @default(cuid())
+  columnId    String        @map("column_id")
   title       String
   description String?
+  priority    TaskPriority?
+  complexity  Int?
+  dueDate     DateTime?     @map("due_date")
   position    Int
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
 
   column BoardColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
 

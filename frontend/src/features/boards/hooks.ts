@@ -1,6 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createColumn, createTask, deleteTask, fetchBoard, moveTask } from './api';
-import type { BoardView } from './types';
+import {
+  createColumn,
+  createTask,
+  deleteTask,
+  fetchBoard,
+  moveColumn,
+  moveTask,
+  updateTask,
+} from './api';
+import type { BoardView, UpdateTaskPayload } from './types';
 
 export const boardKeys = {
   all: ['boards'] as const,
@@ -26,6 +34,35 @@ export function useCreateColumnMutation(workspaceId: string) {
       await createColumn(workspaceId, name);
     },
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+    },
+  });
+}
+
+export function useMoveColumnMutation(workspaceId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ columnId, position }: { columnId: string; position: number }) => {
+      await moveColumn(workspaceId, columnId, position);
+    },
+    onMutate: async ({ columnId, position }) => {
+      const key = boardKeys.detail(workspaceId);
+      await queryClient.cancelQueries({ queryKey: key });
+
+      const previous = queryClient.getQueryData<BoardView>(key);
+      if (previous) {
+        queryClient.setQueryData(key, optimisticMoveColumn(previous, columnId, position));
+      }
+
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(boardKeys.detail(workspaceId), context.previous);
+      }
+    },
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
     },
   });
@@ -81,6 +118,19 @@ export function useMoveTaskMutation(workspaceId: string) {
   });
 }
 
+export function useUpdateTaskMutation(workspaceId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ taskId, data }: { taskId: string; data: UpdateTaskPayload }) => {
+      await updateTask(workspaceId, taskId, data);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+    },
+  });
+}
+
 export function useDeleteTaskMutation(workspaceId: string) {
   const queryClient = useQueryClient();
 
@@ -92,6 +142,24 @@ export function useDeleteTaskMutation(workspaceId: string) {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
     },
   });
+}
+
+function optimisticMoveColumn(
+  board: BoardView,
+  columnId: string,
+  targetPosition: number,
+): BoardView {
+  const columns = [...board.columns];
+  const fromIndex = columns.findIndex((column) => column.id === columnId);
+  if (fromIndex < 0) return board;
+
+  const [moving] = columns.splice(fromIndex, 1);
+  columns.splice(targetPosition, 0, moving);
+
+  return {
+    ...board,
+    columns: columns.map((column, index) => ({ ...column, position: index })),
+  };
 }
 
 function optimisticMoveTask(

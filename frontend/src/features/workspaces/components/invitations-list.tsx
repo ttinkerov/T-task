@@ -11,23 +11,20 @@ export function InvitationsList({ workspaceId }: InvitationsListProps) {
   const revokeMutation = useRevokeInvitationMutation(workspaceId);
 
   if (isLoading) {
-    return <p className="text-sm text-slate-500">Загрузка приглашений...</p>;
+    return <p className="text-sm text-muted-foreground">Загрузка приглашений...</p>;
   }
 
   if (!invitations.length) {
-    return <p className="text-sm text-slate-500">Активных приглашений нет.</p>;
+    return <p className="text-sm text-muted-foreground">Активных приглашений нет.</p>;
   }
 
   return (
-    <ul className="space-y-2">
+    <ul className="settings-invite-list">
       {invitations.map((invitation) => (
-        <li
-          key={invitation.id}
-          className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700"
-        >
+        <li key={invitation.id} className="settings-invite-item">
           <div>
             <p className="text-sm font-medium">{invitation.email}</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               {invitation.role} · до {new Date(invitation.expiresAt).toLocaleDateString('ru-RU')}
             </p>
           </div>
@@ -35,7 +32,7 @@ export function InvitationsList({ workspaceId }: InvitationsListProps) {
             type="button"
             onClick={() => revokeMutation.mutate(invitation.id)}
             disabled={revokeMutation.isPending}
-            className="text-sm text-red-600 hover:underline"
+            className="text-sm text-red-400 hover:text-red-300"
           >
             Отозвать
           </button>

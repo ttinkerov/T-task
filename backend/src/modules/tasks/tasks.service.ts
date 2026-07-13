@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, TaskPriority } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { BoardsService } from '../boards/boards.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
@@ -56,7 +56,12 @@ export class TasksService {
       where: { id: task.id },
       data: {
         ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
-        ...(dto.description !== undefined ? { description: dto.description.trim() || null } : {}),
+        ...(dto.description !== undefined ? { description: dto.description?.trim() || null } : {}),
+        ...(dto.priority !== undefined ? { priority: dto.priority } : {}),
+        ...(dto.complexity !== undefined ? { complexity: dto.complexity } : {}),
+        ...(dto.dueDate !== undefined
+          ? { dueDate: dto.dueDate ? new Date(dto.dueDate) : null }
+          : {}),
       },
     });
 
@@ -189,6 +194,9 @@ export class TasksService {
     id: string;
     title: string;
     description: string | null;
+    priority: TaskPriority | null;
+    complexity: number | null;
+    dueDate: Date | null;
     position: number;
     columnId: string;
     createdAt: Date;
@@ -197,6 +205,9 @@ export class TasksService {
       id: task.id,
       title: task.title,
       description: task.description,
+      priority: task.priority,
+      complexity: task.complexity,
+      dueDate: task.dueDate?.toISOString() ?? null,
       position: task.position,
       columnId: task.columnId,
       createdAt: task.createdAt.toISOString(),

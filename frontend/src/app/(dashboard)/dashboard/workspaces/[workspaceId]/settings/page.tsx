@@ -18,25 +18,19 @@ export default function WorkspaceSettingsPage() {
 
   return (
     <DashboardShell>
-      <section className="space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <Link href="/dashboard" className="text-sm text-slate-500 underline">
-              ← Назад
-            </Link>
-            <h1 className="mt-2 text-2xl font-semibold">
-              {workspace?.name ?? 'Настройки команды'}
-            </h1>
-            <p className="text-sm text-slate-600 dark:text-slate-300">
-              Участники, роли и приглашения
-            </p>
-          </div>
+      <section className="settings-page">
+        <div className="settings-page__header">
+          <Link href="/dashboard/board" className="settings-page__back">
+            ← К доске
+          </Link>
+          <h1 className="settings-page__title">{workspace?.name ?? 'Настройки команды'}</h1>
+          <p className="settings-page__subtitle">Участники, роли и приглашения</p>
         </div>
 
         {session && workspace ? (
           <>
-            <div className="space-y-3">
-              <h2 className="text-sm font-medium text-slate-500">Участники</h2>
+            <div className="settings-card">
+              <h2 className="settings-card__title">Участники</h2>
               <MembersTable
                 workspaceId={workspaceId}
                 currentUserId={session.user.id}
@@ -46,16 +40,19 @@ export default function WorkspaceSettingsPage() {
 
             {canManage ? (
               <>
-                <InviteMemberForm workspaceId={workspaceId} />
-                <div className="space-y-3">
-                  <h2 className="text-sm font-medium text-slate-500">Активные приглашения</h2>
+                <div className="settings-card">
+                  <h2 className="settings-card__title">Пригласить участника</h2>
+                  <InviteMemberForm workspaceId={workspaceId} />
+                </div>
+                <div className="settings-card">
+                  <h2 className="settings-card__title">Активные приглашения</h2>
                   <InvitationsList workspaceId={workspaceId} />
                 </div>
               </>
             ) : null}
           </>
         ) : (
-          <p className="text-sm text-slate-500">Команда не найдена или нет доступа.</p>
+          <p className="text-sm text-muted-foreground">Команда не найдена или нет доступа.</p>
         )}
       </section>
     </DashboardShell>

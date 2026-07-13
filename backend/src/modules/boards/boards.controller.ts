@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { WorkspaceRole } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
@@ -6,6 +6,7 @@ import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-us
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { BoardsService } from './boards.service';
 import { CreateColumnDto } from './dto/create-column.dto';
+import { MoveColumnDto } from './dto/move-column.dto';
 
 @Controller('workspaces/:workspaceId/board')
 export class BoardsController {
@@ -29,6 +30,18 @@ export class BoardsController {
     @Body() dto: CreateColumnDto,
   ) {
     const column = await this.boardsService.createColumn(workspaceId, user.id, dto);
+    return successResponse(column);
+  }
+
+  @Patch('columns/:columnId/move')
+  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  async moveColumn(
+    @Param('workspaceId') workspaceId: string,
+    @Param('columnId') columnId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: MoveColumnDto,
+  ) {
+    const column = await this.boardsService.moveColumn(workspaceId, columnId, user.id, dto);
     return successResponse(column);
   }
 }

@@ -17,27 +17,27 @@ export function MembersTable({ workspaceId, currentUserId, canManage }: MembersT
   const removeMutation = useRemoveMemberMutation(workspaceId);
 
   if (isLoading) {
-    return <p className="text-sm text-slate-500">Загрузка участников...</p>;
+    return <p className="text-sm text-muted-foreground">Загрузка участников...</p>;
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
-      <table className="min-w-full text-sm">
-        <thead className="bg-slate-50 text-left text-slate-500 dark:bg-slate-900">
+    <div className="overflow-x-auto">
+      <table className="settings-table">
+        <thead>
           <tr>
-            <th className="px-4 py-2 font-medium">Участник</th>
-            <th className="px-4 py-2 font-medium">Роль</th>
-            {canManage ? <th className="px-4 py-2 font-medium">Действия</th> : null}
+            <th>Участник</th>
+            <th>Роль</th>
+            {canManage ? <th>Действия</th> : null}
           </tr>
         </thead>
         <tbody>
           {members.map((member) => (
-            <tr key={member.id} className="border-t border-slate-200 dark:border-slate-800">
-              <td className="px-4 py-3">
+            <tr key={member.id}>
+              <td>
                 <p className="font-medium">{member.user.name}</p>
-                <p className="text-xs text-slate-500">{member.user.email}</p>
+                <p className="text-xs text-muted-foreground">{member.user.email}</p>
               </td>
-              <td className="px-4 py-3">
+              <td>
                 {canManage && member.userId !== currentUserId ? (
                   <select
                     value={member.role}
@@ -47,7 +47,7 @@ export function MembersTable({ workspaceId, currentUserId, canManage }: MembersT
                         role: event.target.value as WorkspaceRole,
                       })
                     }
-                    className="rounded border border-slate-300 bg-white px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-900"
+                    className="glass-input py-1.5"
                   >
                     {ASSIGNABLE_ROLES.map((role) => (
                       <option key={role} value={role}>
@@ -56,23 +56,21 @@ export function MembersTable({ workspaceId, currentUserId, canManage }: MembersT
                     ))}
                   </select>
                 ) : (
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800">
-                    {member.role}
-                  </span>
+                  <span className="settings-badge">{member.role}</span>
                 )}
               </td>
               {canManage ? (
-                <td className="px-4 py-3">
+                <td>
                   {member.userId !== currentUserId ? (
                     <button
                       type="button"
                       onClick={() => removeMutation.mutate(member.id)}
-                      className="text-sm text-red-600 hover:underline"
+                      className="text-sm text-red-400 hover:text-red-300"
                     >
                       Удалить
                     </button>
                   ) : (
-                    <span className="text-xs text-slate-400">Вы</span>
+                    <span className="text-xs text-muted-foreground">Вы</span>
                   )}
                 </td>
               ) : null}

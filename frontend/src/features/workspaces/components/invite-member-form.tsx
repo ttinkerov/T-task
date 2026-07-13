@@ -28,47 +28,36 @@ export function InviteMemberForm({ workspaceId }: InviteMemberFormProps) {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-slate-800"
-    >
-      <h3 className="text-sm font-medium">Пригласить участника</h3>
-
-      <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="settings-invite-grid">
         <input
           type="email"
           required
           placeholder="email@company.com"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+          className="glass-input"
         />
         <select
           value={role}
           onChange={(event) => setRole(event.target.value as WorkspaceRole)}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
+          className="glass-input"
         >
           <option value="VIEWER">Viewer</option>
           <option value="MEMBER">Member</option>
           <option value="ADMIN">Admin</option>
         </select>
-        <button
-          type="submit"
-          disabled={inviteMutation.isPending}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-slate-100 dark:text-slate-900"
-        >
-          Пригласить
+        <button type="submit" disabled={inviteMutation.isPending} className="btn-primary">
+          {inviteMutation.isPending ? 'Отправка...' : 'Пригласить'}
         </button>
       </div>
 
       {inviteMutation.error ? (
-        <p className="text-sm text-red-600">{inviteMutation.error.message}</p>
+        <p className="text-sm text-red-400">{inviteMutation.error.message}</p>
       ) : null}
 
       {inviteLink ? (
-        <p className="break-all text-sm text-slate-600 dark:text-slate-300">
-          Ссылка приглашения: {inviteLink}
-        </p>
+        <p className="break-all text-sm text-muted-foreground">Ссылка приглашения: {inviteLink}</p>
       ) : null}
     </form>
   );
