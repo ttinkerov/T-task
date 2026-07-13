@@ -9,7 +9,7 @@ export function CreateWorkspaceForm() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await createMutation.mutateAsync(name);
+    await createMutation.mutateAsync({ name });
     setName('');
   };
 

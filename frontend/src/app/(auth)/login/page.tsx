@@ -9,10 +9,7 @@ export default function LoginPage() {
       subtitle="Войдите в аккаунт, чтобы продолжить работу с проектами."
       footer={
         <>
-          Нет аккаунта?{' '}
-          <Link href="/register" className="font-medium" style={{ color: '#fafafa' }}>
-            Зарегистрироваться
-          </Link>
+          Нет аккаунта? <Link href="/register">Зарегистрироваться</Link>
         </>
       }
     >

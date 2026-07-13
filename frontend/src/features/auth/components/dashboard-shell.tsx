@@ -1,18 +1,31 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useLogoutMutation, useMeQuery } from '@/features/auth/hooks';
 import { WorkspaceSwitcher } from '@/features/workspaces/components/workspace-switcher';
 
-export function DashboardShell({ children }: { children: React.ReactNode }) {
+export function DashboardShell({
+  children,
+  boardMode = false,
+}: {
+  children: React.ReactNode;
+  boardMode?: boolean;
+}) {
   const router = useRouter();
+  const pathname = usePathname();
   const { data: session, isLoading, isError } = useMeQuery();
   const logoutMutation = useLogoutMutation();
 
   useEffect(() => {
     if (!isLoading && (isError || !session)) {
       router.replace('/login');
+      return;
+    }
+
+    if (session && session.workspaces.length === 0) {
+      router.replace('/onboarding');
     }
   }, [isError, isLoading, router, session]);
 
@@ -24,7 +37,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-4xl items-center justify-center bg-background px-6">
+      <main className="mx-auto flex min-h-screen items-center justify-center px-6">
         <p className="text-sm text-muted-foreground">Загрузка сессии...</p>
       </main>
     );
@@ -32,34 +45,53 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   if (isError || !session) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-4xl items-center justify-center bg-background px-6">
+      <main className="mx-auto flex min-h-screen items-center justify-center px-6">
         <p className="text-sm text-muted-foreground">Перенаправление на вход...</p>
       </main>
     );
   }
 
+  const navLinkClass = (href: string) =>
+    `dashboard-header__nav-link${pathname === href || pathname.startsWith(`${href}/`) ? ' dashboard-header__nav-link--active' : ''}`;
+
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-4 px-6 py-4">
-          <div className="space-y-2">
-            <p className="text-sm font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+    <div className="min-h-screen" style={{ background: '#000000', color: '#fff' }}>
+      <header className="dashboard-header">
+        <div className="dashboard-header__inner">
+          <div className="dashboard-header__left">
+            <Link href="/dashboard" className="dashboard-header__logo tt-logo">
               T-task
-            </p>
-            <p className="font-medium">{session.user.name}</p>
-            <WorkspaceSwitcher />
+            </Link>
+            <nav className="dashboard-header__nav">
+              <Link href="/dashboard" className={navLinkClass('/dashboard')}>
+                Главная
+              </Link>
+              <Link href="/dashboard/board" className={navLinkClass('/dashboard/board')}>
+                Доска
+              </Link>
+            </nav>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            disabled={logoutMutation.isPending}
-            className="btn-ghost"
-          >
-            Выйти
-          </button>
+
+          <div className="dashboard-header__right">
+            <span className="dashboard-header__user">{session.user.name}</span>
+            <WorkspaceSwitcher />
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={logoutMutation.isPending}
+              className="dashboard-header__icon-btn"
+              title="Выйти"
+              aria-label="Выйти"
+            >
+              ↗
+            </button>
+          </div>
         </div>
       </header>
-      <main className="mx-auto max-w-4xl px-6 py-8">{children}</main>
+
+      <main className={`dashboard-main${boardMode ? ' dashboard-main--board' : ''}`}>
+        {children}
+      </main>
     </div>
   );
 }

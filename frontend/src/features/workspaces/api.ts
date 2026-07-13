@@ -16,10 +16,14 @@ export async function fetchWorkspaces() {
   return apiFetch<WorkspaceSummary[]>('/api/v1/workspaces');
 }
 
-export async function createWorkspace(name: string) {
+export async function createWorkspace(data: {
+  name: string;
+  teamSize?: string;
+  useCases?: string[];
+}) {
   return apiFetch<WorkspaceSummary>('/api/v1/workspaces', {
     method: 'POST',
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(data),
   });
 }
 

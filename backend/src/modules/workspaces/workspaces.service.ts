@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { WorkspaceRole, Prisma } from '@prisma/client';
+import { WorkspaceRole, Prisma, TeamSize, WorkspaceUseCase } from '@prisma/client';
 import { generateRefreshToken, hashToken } from '../../common/auth/utils/token.util';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
@@ -13,6 +13,7 @@ import { InviteMemberDto } from './dto/invite-member.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { assertCanAssignRole, createUniqueWorkspaceSlug } from './utils/workspace.util';
+import { createDefaultBoard } from '../boards/utils/create-default-board.util';
 
 const INVITATION_TTL_DAYS = 7;
 
@@ -46,6 +47,8 @@ export class WorkspacesService {
           name: dto.name.trim(),
           slug,
           ownerId: userId,
+          ...(dto.teamSize ? { teamSize: dto.teamSize } : {}),
+          ...(dto.useCases ? { useCases: dto.useCases } : {}),
         },
       });
 
@@ -57,6 +60,8 @@ export class WorkspacesService {
         },
       });
 
+      await createDefaultBoard(tx, created.id);
+
       return created;
     });
 
@@ -65,29 +70,9 @@ export class WorkspacesService {
       name: workspace.name,
       slug: workspace.slug,
       role: WorkspaceRole.OWNER,
+      teamSize: workspace.teamSize,
+      useCases: workspace.useCases,
     };
-  }
-
-  async createForNewUser(tx: Prisma.TransactionClient, userId: string, workspaceName: string) {
-    const slug = await createUniqueWorkspaceSlug(tx, workspaceName);
-
-    const workspace = await tx.workspace.create({
-      data: {
-        name: workspaceName.trim(),
-        slug,
-        ownerId: userId,
-      },
-    });
-
-    await tx.workspaceMember.create({
-      data: {
-        workspaceId: workspace.id,
-        userId,
-        role: WorkspaceRole.OWNER,
-      },
-    });
-
-    return workspace;
   }
 
   async update(workspaceId: string, userId: string, dto: UpdateWorkspaceDto) {
@@ -501,13 +486,21 @@ export class WorkspacesService {
 
   private toWorkspaceSummary(membership: {
     role: WorkspaceRole;
-    workspace: { id: string; name: string; slug: string };
+    workspace: {
+      id: string;
+      name: string;
+      slug: string;
+      teamSize: TeamSize | null;
+      useCases: WorkspaceUseCase[];
+    };
   }) {
     return {
       id: membership.workspace.id,
       name: membership.workspace.name,
       slug: membership.workspace.slug,
       role: membership.role,
+      teamSize: membership.workspace.teamSize,
+      useCases: membership.workspace.useCases,
     };
   }
 }

@@ -13,15 +13,21 @@ export function LoginForm() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    await loginMutation.mutateAsync({ email, password });
-    router.push('/dashboard');
+    const session = await loginMutation.mutateAsync({ email, password });
+    const destination =
+      session && session.workspaces.length === 0 ? '/onboarding' : '/dashboard/board';
+    router.push(destination);
     router.refresh();
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
-        <label htmlFor="email" className="text-sm font-medium text-slate-300">
+        <label
+          htmlFor="email"
+          className="text-sm font-medium"
+          style={{ color: 'rgba(255,255,255,0.7)' }}
+        >
           Email
         </label>
         <input
@@ -35,7 +41,11 @@ export function LoginForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="password" className="text-sm font-medium text-slate-300">
+        <label
+          htmlFor="password"
+          className="text-sm font-medium"
+          style={{ color: 'rgba(255,255,255,0.7)' }}
+        >
           Пароль
         </label>
         <input

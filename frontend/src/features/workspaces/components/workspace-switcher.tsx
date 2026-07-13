@@ -22,22 +22,19 @@ export function WorkspaceSwitcher() {
     }
   }, [currentWorkspaceId, setCurrentWorkspaceId, workspaces]);
 
-  if (isLoading) {
-    return <p className="text-sm text-slate-500">Загрузка команд...</p>;
-  }
-
-  if (!workspaces.length) {
+  if (isLoading || !workspaces.length) {
     return null;
   }
 
   const current = workspaces.find((workspace) => workspace.id === currentWorkspaceId);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="workspace-switcher">
       <select
         value={currentWorkspaceId ?? ''}
         onChange={(event) => setCurrentWorkspaceId(event.target.value)}
-        className="glass-input py-1.5 text-sm"
+        className="workspace-switcher__select"
+        aria-label="Выбор команды"
       >
         {workspaces.map((workspace) => (
           <option key={workspace.id} value={workspace.id}>
@@ -49,9 +46,11 @@ export function WorkspaceSwitcher() {
       {current ? (
         <Link
           href={`/dashboard/workspaces/${current.id}/settings`}
-          className="text-sm text-muted-foreground hover:text-foreground"
+          className="dashboard-header__icon-btn"
+          title="Настройки команды"
+          aria-label="Настройки команды"
         >
-          Настройки
+          ⚙
         </Link>
       ) : null}
     </div>

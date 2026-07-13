@@ -9,10 +9,7 @@ export default function RegisterPage() {
       subtitle="Создайте аккаунт и первую команду для работы в T-task."
       footer={
         <>
-          Уже есть аккаунт?{' '}
-          <Link href="/login" className="font-medium" style={{ color: '#fafafa' }}>
-            Войти
-          </Link>
+          Уже есть аккаунт? <Link href="/login">Войти</Link>
         </>
       }
     >

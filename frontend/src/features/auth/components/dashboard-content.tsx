@@ -20,12 +20,24 @@ export function DashboardContent() {
   return (
     <section className="space-y-8">
       <div>
-        <h1 className="text-2xl font-normal" style={{ fontFamily: "'Instrument Serif', serif" }}>
+        <h1 className="tt-logo" style={{ fontSize: '1.5rem' }}>
           Добро пожаловать, {session.user.name}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Управляйте командами, участниками и приглашениями.
+        <p className="mt-1 text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
+          Управляйте командой и задачами на доске.
         </p>
+      </div>
+
+      <div className="glass-panel rounded-2xl p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-medium text-muted-foreground">Доска</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Kanban-доска активной команды</p>
+          </div>
+          <Link href="/dashboard/board" className="btn-primary text-sm">
+            Открыть доску
+          </Link>
+        </div>
       </div>
 
       <div className="glass-panel space-y-3 rounded-2xl p-5">

@@ -23,13 +23,15 @@ export class ApiError extends Error {
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<ApiResponse<T>> {
   const baseUrl = getApiBaseUrl();
+  const { headers: initHeaders, ...restInit } = init ?? {};
+
   const response = await fetch(`${baseUrl}${path}`, {
     credentials: 'include',
+    ...restInit,
     headers: {
       'Content-Type': 'application/json',
-      ...(init?.headers ?? {}),
+      ...(initHeaders ?? {}),
     },
-    ...init,
   });
 
   const body = (await response.json()) as ApiResponse<T>;

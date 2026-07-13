@@ -45,7 +45,7 @@ export function useRegisterMutation() {
       if (data) {
         queryClient.setQueryData(authKeys.me(), {
           user: data.user,
-          workspaces: [data.workspace],
+          workspaces: [],
         });
       }
     },

@@ -1,51 +1,64 @@
-// Design tokens
-$color-white: #fafafa;
-$color-gray-300: #d1d5db;
-$color-gray-400: #9ca3af;
-$color-gray-500: #6b7280;
-$color-emerald-300: #6ee7b7;
-$color-emerald-400: #34d399;
-$color-bg-dark: #0a0a0c;
+// T-Bank + VK + 2GIS + Apple — solid palette, no gradients
+$color-white: #ffffff;
+$color-bg: #000000;
+$color-bg-elevated: #1c1c1e;
+$color-bg-card: #2c2c2e;
+$color-text: #ffffff;
+$color-text-muted: #a1a1a6;
+$color-text-dim: #636366;
+$color-border: rgba(255, 255, 255, 0.12);
+$color-border-subtle: rgba(255, 255, 255, 0.08);
 
-$font-display-fallback: 'Instrument Serif', Georgia, serif;
+// VK blue — primary CTA
+$color-brand-primary: #0077ff;
+$color-brand-primary-hover: #0066dd;
+$color-brand-primary-text: #ffffff;
 
-$radius-pill: 9999px;
-$radius-lg: 0.75rem;
-$radius-xl: 12px;
+// Legacy yellow slot (unused)
+$color-brand-yellow: #0077ff;
+$color-brand-yellow-hover: #0066dd;
+$color-brand-yellow-text: #ffffff;
 
-$transition-fast: 0.2s;
+// VK blue — links, secondary actions
+$color-brand-blue: #0077ff;
+$color-brand-blue-hover: #0066dd;
+$color-brand-blue-muted: rgba(0, 119, 255, 0.12);
+
+// 2GIS green — status, active
+$color-brand-green: #20a663;
+$color-brand-green-muted: rgba(32, 166, 99, 0.14);
+
+// Apple neutrals
+$color-apple-gray: #f5f5f7;
+$color-apple-surface: #1d1d1f;
+
+// Legacy aliases used in SCSS
+$color-border-glass: $color-border-subtle;
+$color-border-card: $color-border;
+$color-green: $color-brand-primary-text;
+$color-green-accent: $color-brand-primary;
+$color-green-btn-bg: $color-brand-primary;
+$color-green-btn-hover: $color-brand-primary-hover;
+$color-green-glow: transparent;
+$color-yellow: $color-brand-blue;
+$color-yellow-accent: $color-brand-blue;
+$color-yellow-btn-bg: transparent;
+$color-yellow-btn-hover: $color-brand-blue-muted;
+$color-yellow-glow: transparent;
+$color-surface: $color-bg-elevated;
+$color-surface-hover: $color-bg-card;
+
+$font-display-fallback: 'Inter', system-ui, sans-serif;
+
+$radius-sm: 8px;
+$radius-md: 12px;
+$radius-lg: 16px;
+$radius-xl: 20px;
+$radius-pill: 980px;
+
+$transition: 0.2s;
+$transition-fast: 0.15s;
 $breakpoint-md: 768px;
+$breakpoint-lg: 1100px;
 
-$landing-max-width: 80rem;
-$landing-title-max-width: 72rem;
-$landing-subtitle-max-width: 40rem;
-
-// CSS custom properties (for Tailwind + runtime)
-:root {
-  --background: 0 0% 7%;
-  --foreground: 0 0% 98%;
-  --muted-foreground: 0 0% 60%;
-  --primary: 0 0% 98%;
-  --primary-foreground: 0 0% 4%;
-  --secondary: 0 0% 12%;
-  --muted: 0 0% 12%;
-  --accent: 0 0% 12%;
-  --border: 0 0% 18%;
-  --input: 0 0% 18%;
-  --font-display: 'Instrument Serif', serif;
-  --font-body: 'Inter', sans-serif;
-}
-
-@theme inline {
-  --font-sans: var(--font-body);
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-muted: hsl(var(--muted));
-  --color-accent: hsl(var(--accent));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-}
+$landing-max-width: 68rem;

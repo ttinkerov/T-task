@@ -23,7 +23,6 @@ export interface RegisterPayload {
   email: string;
   password: string;
   name: string;
-  workspaceName: string;
 }
 
 export interface LoginPayload {

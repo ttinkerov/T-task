@@ -1,0 +1,45 @@
+@use 'variables' as *;
+
+.tt-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background: $color-bg;
+
+  &__videos {
+    position: absolute;
+    inset: 0;
+  }
+
+  &__video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 2s ease-in-out;
+
+    &.is-active {
+      opacity: 0.18;
+    }
+  }
+
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.82);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-bg__video {
+    transition: none;
+
+    &:first-child {
+      opacity: 0.15;
+    }
+  }
+}

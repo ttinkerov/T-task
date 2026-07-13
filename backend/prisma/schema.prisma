@@ -14,6 +14,22 @@ enum WorkspaceRole {
   VIEWER
 }
 
+enum TeamSize {
+  SOLO
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+enum WorkspaceUseCase {
+  DEVELOPMENT
+  DESIGN
+  MARKETING
+  PRODUCT
+  OPERATIONS
+  OTHER
+}
+
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
@@ -50,17 +66,20 @@ model RefreshSession {
 }
 
 model Workspace {
-  id         String    @id @default(cuid())
+  id         String             @id @default(cuid())
   name       String
-  slug       String    @unique
-  ownerId    String    @map("owner_id")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
-  archivedAt DateTime? @map("archived_at")
-  deletedAt  DateTime? @map("deleted_at")
+  slug       String             @unique
+  ownerId    String             @map("owner_id")
+  teamSize   TeamSize?          @map("team_size")
+  useCases   WorkspaceUseCase[] @default([]) @map("use_cases")
+  createdAt  DateTime           @default(now()) @map("created_at")
+  updatedAt  DateTime           @updatedAt @map("updated_at")
+  archivedAt DateTime?          @map("archived_at")
+  deletedAt  DateTime?          @map("deleted_at")
 
   members     WorkspaceMember[]
   invitations Invitation[]
+  boards      Board[]
 
   @@map("workspaces")
 }
@@ -98,4 +117,48 @@ model Invitation {
   @@index([workspaceId])
   @@index([email])
   @@map("invitations")
+}
+
+model Board {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  name        String   @default("Доска")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  columns   BoardColumn[]
+
+  @@index([workspaceId])
+  @@map("boards")
+}
+
+model BoardColumn {
+  id        String   @id @default(cuid())
+  boardId   String   @map("board_id")
+  name      String
+  position  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks Task[]
+
+  @@index([boardId])
+  @@map("board_columns")
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  columnId    String   @map("column_id")
+  title       String
+  description String?
+  position    Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  column BoardColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
+
+  @@index([columnId])
+  @@map("tasks")
 }

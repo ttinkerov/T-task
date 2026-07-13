@@ -67,13 +67,7 @@ export class IdentityService {
         },
       });
 
-      const workspace = await this.workspacesService.createForNewUser(
-        tx,
-        user.id,
-        dto.workspaceName,
-      );
-
-      return { user, workspace };
+      return { user };
     });
 
     const tokens = await this.issueTokens(result.user.id, result.user.email, request);
@@ -81,12 +75,6 @@ export class IdentityService {
 
     return {
       user: this.toUserView(result.user),
-      workspace: {
-        id: result.workspace.id,
-        name: result.workspace.name,
-        slug: result.workspace.slug,
-        role: WorkspaceRole.OWNER,
-      },
     };
   }
 

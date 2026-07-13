@@ -8,7 +8,6 @@ export function RegisterForm() {
   const router = useRouter();
   const registerMutation = useRegisterMutation();
   const [name, setName] = useState('');
-  const [workspaceName, setWorkspaceName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -17,18 +16,21 @@ export function RegisterForm() {
 
     await registerMutation.mutateAsync({
       name,
-      workspaceName,
       email,
       password,
     });
-    router.push('/dashboard');
+    router.push('/onboarding');
     router.refresh();
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
-        <label htmlFor="name" className="text-sm font-medium text-slate-300">
+        <label
+          htmlFor="name"
+          className="text-sm font-medium"
+          style={{ color: 'rgba(255,255,255,0.7)' }}
+        >
           Имя
         </label>
         <input
@@ -41,20 +43,11 @@ export function RegisterForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="workspaceName" className="text-sm font-medium text-slate-300">
-          Название команды
-        </label>
-        <input
-          id="workspaceName"
-          required
-          value={workspaceName}
-          onChange={(event) => setWorkspaceName(event.target.value)}
-          className="glass-input"
-        />
-      </div>
-
-      <div className="space-y-1.5">
-        <label htmlFor="email" className="text-sm font-medium text-slate-300">
+        <label
+          htmlFor="email"
+          className="text-sm font-medium"
+          style={{ color: 'rgba(255,255,255,0.7)' }}
+        >
           Email
         </label>
         <input
@@ -68,7 +61,11 @@ export function RegisterForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="password" className="text-sm font-medium text-slate-300">
+        <label
+          htmlFor="password"
+          className="text-sm font-medium"
+          style={{ color: 'rgba(255,255,255,0.7)' }}
+        >
           Пароль
         </label>
         <input

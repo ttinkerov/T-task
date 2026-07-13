@@ -1,161 +1,715 @@
 @use 'variables' as *;
 @use 'mixins' as *;
 
-.landing-page {
+$radius-pill: 980px;
+$radius-card: 20px;
+
+.tt-landing {
   position: relative;
   min-height: 100vh;
-  overflow: hidden;
+  color: $color-text;
+  overflow-x: hidden;
+  font-family: var(--font-body);
+
+  &__content {
+    position: relative;
+    z-index: 10;
+  }
 }
 
-.landing-content {
-  position: relative;
-  z-index: 10;
-  display: flex;
-  min-height: 100vh;
-  flex-direction: column;
+// ── Nav ──
+
+.tt-nav-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding: 0.75rem 1.5rem;
+  max-width: calc($landing-max-width + 3rem);
+  margin: 0 auto;
+
+  @include md-up {
+    padding: 1rem 2.5rem;
+  }
 }
 
-.landing-nav {
+.tt-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  max-width: $landing-max-width;
-  margin: 0 auto;
-  width: 100%;
-  padding: 1.5rem 2rem;
+  padding: 0.625rem 0.75rem 0.625rem 1.25rem;
+  border: 1px solid $color-border-subtle;
+  border-radius: $radius-pill;
+  background: rgba(28, 28, 30, 0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+
+  &__links {
+    display: none;
+    align-items: center;
+    gap: 0.125rem;
+
+    @include md-up {
+      display: flex;
+    }
+  }
+
+  &__link {
+    padding: 0.5rem 0.875rem;
+    border-radius: $radius-pill;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: $color-text-muted;
+    text-decoration: none;
+    transition: color $transition-fast;
+
+    &:hover {
+      color: $color-white;
+    }
+  }
+
+  &__cta {
+    margin-top: 0 !important;
+    padding: 0.625rem 1.125rem !important;
+    font-size: 0.875rem !important;
+  }
 }
 
-.landing-logo {
-  @include font-display;
-  font-size: 1.875rem;
-  font-weight: 400;
+.tt-logo {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: $color-white;
+  text-decoration: none;
   letter-spacing: -0.02em;
-  color: $color-white;
-  text-decoration: none;
-
-  sup {
-    font-size: 0.65rem;
-    vertical-align: super;
-  }
 }
 
-.landing-nav-links {
-  display: none;
-  align-items: center;
-  gap: 2rem;
+// ── Buttons ──
 
-  @include md-up {
-    display: flex;
-  }
-}
-
-.landing-nav-link {
-  font-size: 0.875rem;
-  color: $color-gray-400;
-  text-decoration: none;
-  transition: color $transition-fast;
-
-  &:hover,
-  &.is-active {
-    color: $color-white;
-  }
-}
-
-.landing-nav-cta {
-  @include pill-button;
-  padding: 0.625rem 1.5rem;
-  font-size: 0.875rem;
-  color: $color-white;
-  white-space: nowrap;
-
-  @include hover-scale;
-}
-
-.landing-hero {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+.tt-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  padding: 2rem 1.5rem 5rem;
-}
-
-.landing-eyebrow {
-  margin-bottom: 1.5rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: $color-emerald-300;
-}
-
-.landing-title {
-  @include font-display;
-  max-width: $landing-title-max-width;
-  font-size: clamp(2.75rem, 7.5vw, 5.5rem);
-  font-weight: 400;
-  line-height: 0.95;
-  letter-spacing: -0.04em;
-  color: $color-white;
-
-  em {
-    font-style: normal;
-    color: $color-gray-400;
-  }
-}
-
-.landing-subtitle {
-  margin-top: 2rem;
-  max-width: $landing-subtitle-max-width;
-  font-size: clamp(1rem, 2vw, 1.125rem);
-  line-height: 1.7;
-  color: $color-gray-400;
-}
-
-.landing-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 3rem;
-}
-
-.landing-cta {
-  @include pill-button;
-  padding: 1.125rem 3.5rem;
-  font-size: 1rem;
-  color: $color-white;
-
-  @include hover-scale;
-}
-
-.landing-cta-secondary {
-  @include pill-button;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-  padding: 1.125rem 2rem;
+  border-radius: $radius-sm;
+  padding: 0.75rem 1.25rem;
   font-size: 0.9375rem;
-  color: $color-gray-300;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  outline: none;
   transition:
     background $transition-fast,
-    color $transition-fast,
-    transform $transition-fast;
+    border-color $transition-fast,
+    color $transition-fast;
+  margin-top: auto;
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.08);
+  &--pill {
+    border-radius: $radius-pill;
+    padding: 0.75rem 1.5rem;
+    margin-top: 0;
+  }
+
+  &--lg {
+    padding: 0.875rem 1.75rem;
+    font-size: 1rem;
+  }
+
+  &--primary {
+    color: $color-brand-primary-text;
+    background: $color-brand-primary;
+    border: none;
+
+    &:hover {
+      background: $color-brand-primary-hover;
+    }
+  }
+
+  &--secondary {
     color: $color-white;
+    background: transparent;
+    border: 1px solid $color-border;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+  }
+
+  &--ghost {
+    color: $color-brand-blue;
+    background: transparent;
+    border: 1px solid $color-brand-blue-muted;
+
+    &:hover {
+      background: $color-brand-blue-muted;
+    }
+  }
+
+  // legacy aliases
+  &--green {
+    @extend .tt-btn--primary;
+  }
+
+  &--yellow {
+    @extend .tt-btn--secondary;
+  }
+
+  &--neutral {
+    @extend .tt-btn--ghost;
   }
 }
 
-.landing-stats {
+// ── Hero ──
+
+.tt-hero {
+  max-width: $landing-max-width;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 4.5rem;
+
+  @include md-up {
+    padding: 4rem 2.5rem 5.5rem;
+  }
+
+  &__grid {
+    display: grid;
+    gap: 3rem;
+    align-items: center;
+
+    @include lg-up {
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+    }
+  }
+
+  &__tag {
+    display: inline-block;
+    padding: 0.3125rem 0.75rem;
+    border-radius: $radius-pill;
+    background: $color-brand-green-muted;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $color-brand-green;
+    letter-spacing: 0.01em;
+  }
+
+  &__title {
+    margin-top: 0;
+    font-size: clamp(2.5rem, 6vw, 3.75rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    color: $color-white;
+  }
+
+  &__text {
+    max-width: 30rem;
+    margin-top: 1.25rem;
+    font-size: 1.0625rem;
+    line-height: 1.5;
+    color: $color-text-muted;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.75rem;
+  }
+}
+
+.tt-stats {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 1.5rem;
+  gap: 2.5rem;
   margin-top: 2.5rem;
-  font-size: 0.8125rem;
-  color: $color-gray-500;
+  padding-top: 2rem;
+  border-top: 1px solid $color-border-subtle;
+
+  &__value {
+    display: block;
+    font-size: 1.375rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: $color-white;
+  }
+
+  &__label {
+    display: block;
+    margin-top: 0.125rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: $color-text-dim;
+  }
+}
+
+// ── Board preview (hero) ──
+
+.tt-board {
+  perspective: 1200px;
+  max-width: 28rem;
+  margin: 0 auto;
+
+  &__card {
+    padding: 1.25rem;
+    border-radius: $radius-card;
+    border: 1px solid $color-border;
+    background: $color-bg-elevated;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+    transform-style: preserve-3d;
+  }
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  &__label {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $color-text-dim;
+  }
+
+  &__name {
+    margin: 0.25rem 0 0;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: $color-white;
+  }
+
+  &__avatars {
+    display: flex;
+
+    img + img {
+      margin-left: -0.375rem;
+    }
+  }
+
+  &__avatar {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    border: 2px solid $color-bg-elevated;
+    object-fit: cover;
+  }
+
+  &__columns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  &__column {
+    padding: 0.625rem;
+    border-radius: $radius-md;
+    background: $color-bg-card;
+
+    &--active {
+      outline: 2px solid $color-brand-green;
+      outline-offset: -2px;
+    }
+  }
+
+  &__column-title {
+    margin: 0 0 0.5rem;
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: $color-text-dim;
+  }
+
+  &__task {
+    padding: 0.5rem 0.625rem;
+    margin-bottom: 0.375rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: $color-text-muted;
+    line-height: 1.3;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-top: 1rem;
+    padding: 0.375rem 0.625rem;
+    border-radius: $radius-pill;
+    background: $color-brand-green-muted;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: $color-brand-green;
+  }
+
+  &__status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: $color-brand-green;
+  }
+}
+
+// ── Sections ──
+
+.tt-section {
+  max-width: $landing-max-width;
+  margin: 0 auto;
+  padding: 4rem 1.5rem;
+
+  @include md-up {
+    padding: 5rem 2.5rem;
+  }
+
+  &--panel {
+    padding: 3rem 1.5rem;
+    border-radius: $radius-card;
+    background: $color-bg-elevated;
+    border: 1px solid $color-border-subtle;
+
+    @include md-up {
+      padding: 4rem 2.5rem;
+    }
+  }
+
+  &__head {
+    margin-bottom: 2.5rem;
+  }
+
+  &__title {
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: $color-white;
+  }
+
+  &__subtitle {
+    margin-top: 0.625rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: $color-text-muted;
+  }
+}
+
+// ── Features ──
+
+.tt-feature-grid {
+  display: grid;
+  gap: 1rem;
+
+  @include md-up {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+.tt-feature-card {
+  border-radius: $radius-card;
+  border: 1px solid $color-border-subtle;
+  background: $color-bg-elevated;
+  overflow: hidden;
+  transition: border-color $transition-fast;
+
+  &:hover {
+    border-color: $color-border;
+  }
+
+  &__media {
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background: $color-bg-card;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.85;
+    }
+  }
+
+  &__body {
+    padding: 1.25rem 1.375rem 1.5rem;
+  }
+
+  h3 {
+    margin: 0 0 0.375rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: $color-white;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: $color-text-muted;
+  }
+}
+
+// ── Steps ──
+
+.tt-steps {
+  display: grid;
+  gap: 1rem;
+
+  @include md-up {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+.tt-step-card {
+  border-radius: $radius-card;
+  border: 1px solid $color-border-subtle;
+  background: $color-bg-card;
+  overflow: hidden;
+
+  &__media {
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: $color-bg-elevated;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.8;
+    }
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    padding: 1.375rem 1.5rem 1.5rem;
+  }
+
+  &__num {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: $color-brand-blue;
+  }
+
+  h3 {
+    margin: 0.75rem 0 0.375rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: $color-white;
+  }
+
+  p {
+    flex: 1;
+    margin: 0 0 1.25rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: $color-text-muted;
+  }
+
+  .tt-btn {
+    align-self: flex-start;
+  }
+}
+
+// ── CTA ──
+
+.tt-cta-banner {
+  max-width: $landing-max-width;
+  margin: 0 auto 2rem;
+  padding: 0 1.5rem;
+
+  @include md-up {
+    padding: 0 2.5rem;
+  }
+
+  &__inner {
+    display: grid;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    border-radius: $radius-card;
+    border: 1px solid $color-border-subtle;
+    background: $color-bg-elevated;
+    overflow: hidden;
+
+    @include md-up {
+      grid-template-columns: 200px 1fr auto;
+      align-items: center;
+      gap: 2rem;
+      padding: 1.5rem 2rem;
+    }
+  }
+
+  &__media {
+    border-radius: $radius-md;
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+    background: $color-bg-card;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.85;
+    }
+  }
+
+  &__copy {
+    h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: $color-white;
+    }
+
+    p {
+      margin: 0.375rem 0 0;
+      font-size: 0.9375rem;
+      color: $color-text-muted;
+    }
+  }
+
+  .tt-btn {
+    justify-self: start;
+
+    @include md-up {
+      justify-self: end;
+    }
+  }
+}
+
+// ── Footer ──
+
+.tt-footer {
+  padding: 2.5rem 1.5rem 3.5rem;
+  text-align: center;
+  border-top: 1px solid $color-border-subtle;
+
+  &__logo {
+    font-size: 1rem;
+    font-weight: 600;
+    color: $color-white;
+  }
+
+  &__text {
+    margin-top: 0.375rem;
+    font-size: 0.8125rem;
+    color: $color-text-dim;
+  }
+}
+
+// ── Auth ──
+
+.tt-auth {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  &__nav {
+    border: none;
+    background: transparent;
+    backdrop-filter: none;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  &__main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem 3rem;
+  }
+
+  &__card {
+    width: 100%;
+    max-width: 26rem;
+    padding: 2rem;
+    border: 1px solid $color-border-subtle;
+    border-radius: $radius-card;
+    background: $color-bg-elevated;
+  }
+
+  &__head {
+    margin-bottom: 1.5rem;
+  }
+
+  &__title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: $color-white;
+  }
+
+  &__subtitle {
+    margin-top: 0.375rem;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: $color-text-muted;
+  }
+
+  &__footer {
+    margin-top: 1.25rem;
+    text-align: center;
+    font-size: 0.875rem;
+    color: $color-text-muted;
+
+    a {
+      color: $color-brand-blue;
+      font-weight: 600;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+@media (max-width: $breakpoint-md) {
+  .tt-hero__copy {
+    text-align: center;
+  }
+
+  .tt-hero__text {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .tt-hero__actions {
+    justify-content: center;
+  }
+
+  .tt-stats {
+    justify-content: center;
+  }
+
+  .tt-section__head {
+    text-align: center;
+  }
+
+  .tt-step-card .tt-btn {
+    align-self: stretch;
+  }
+
+  .tt-cta-banner__inner {
+    text-align: center;
+
+    .tt-btn {
+      width: 100%;
+      justify-self: stretch;
+    }
+  }
 }

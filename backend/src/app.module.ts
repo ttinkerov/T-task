@@ -5,7 +5,6 @@ import { RedisModule } from './infrastructure/redis/redis.module';
 import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
-import { ProjectsModule } from './modules/projects/projects.module';
 import { BoardsModule } from './modules/boards/boards.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { CommentsModule } from './modules/comments/comments.module';
@@ -21,7 +20,6 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
     HealthModule,
     IdentityModule,
     WorkspacesModule,
-    ProjectsModule,
     BoardsModule,
     TasksModule,
     CommentsModule,

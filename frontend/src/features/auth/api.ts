@@ -1,14 +1,11 @@
 import { apiFetch } from '@/shared/api/client';
-import type { AuthSession, LoginPayload, RegisterPayload, WorkspaceSummary } from './types';
+import type { AuthSession, LoginPayload, RegisterPayload } from './types';
 
 export async function register(payload: RegisterPayload) {
-  return apiFetch<{ user: AuthSession['user']; workspace: WorkspaceSummary }>(
-    '/api/v1/auth/register',
-    {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    },
-  );
+  return apiFetch<{ user: AuthSession['user'] }>('/api/v1/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function login(payload: LoginPayload) {

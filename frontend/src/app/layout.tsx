@@ -1,18 +1,18 @@
 import type { Metadata } from 'next';
-import { Instrument_Serif, Inter } from 'next/font/google';
+import { Inter, Unbounded } from 'next/font/google';
 import { AppProviders } from '@/providers/app-providers';
+import '@/styles/tailwind.css';
 import '@/styles/globals.scss';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
-  weight: ['400', '500'],
+  weight: ['400', '500', '600'],
   variable: '--font-body',
 });
 
-const instrumentSerif = Instrument_Serif({
-  subsets: ['latin'],
-  weight: ['400'],
-  style: ['normal', 'italic'],
+const unbounded = Unbounded({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-display',
 });
 
@@ -28,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body className={`${inter.variable} ${instrumentSerif.variable} antialiased`}>
+      <body className={`${inter.variable} ${unbounded.variable} antialiased`}>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
