@@ -1,0 +1,161 @@
+@use 'variables' as *;
+@use 'mixins' as *;
+
+.landing-page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.landing-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+.landing-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: $landing-max-width;
+  margin: 0 auto;
+  width: 100%;
+  padding: 1.5rem 2rem;
+}
+
+.landing-logo {
+  @include font-display;
+  font-size: 1.875rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: $color-white;
+  text-decoration: none;
+
+  sup {
+    font-size: 0.65rem;
+    vertical-align: super;
+  }
+}
+
+.landing-nav-links {
+  display: none;
+  align-items: center;
+  gap: 2rem;
+
+  @include md-up {
+    display: flex;
+  }
+}
+
+.landing-nav-link {
+  font-size: 0.875rem;
+  color: $color-gray-400;
+  text-decoration: none;
+  transition: color $transition-fast;
+
+  &:hover,
+  &.is-active {
+    color: $color-white;
+  }
+}
+
+.landing-nav-cta {
+  @include pill-button;
+  padding: 0.625rem 1.5rem;
+  font-size: 0.875rem;
+  color: $color-white;
+  white-space: nowrap;
+
+  @include hover-scale;
+}
+
+.landing-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem 1.5rem 5rem;
+}
+
+.landing-eyebrow {
+  margin-bottom: 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: $color-emerald-300;
+}
+
+.landing-title {
+  @include font-display;
+  max-width: $landing-title-max-width;
+  font-size: clamp(2.75rem, 7.5vw, 5.5rem);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: $color-white;
+
+  em {
+    font-style: normal;
+    color: $color-gray-400;
+  }
+}
+
+.landing-subtitle {
+  margin-top: 2rem;
+  max-width: $landing-subtitle-max-width;
+  font-size: clamp(1rem, 2vw, 1.125rem);
+  line-height: 1.7;
+  color: $color-gray-400;
+}
+
+.landing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 3rem;
+}
+
+.landing-cta {
+  @include pill-button;
+  padding: 1.125rem 3.5rem;
+  font-size: 1rem;
+  color: $color-white;
+
+  @include hover-scale;
+}
+
+.landing-cta-secondary {
+  @include pill-button;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1.125rem 2rem;
+  font-size: 0.9375rem;
+  color: $color-gray-300;
+  transition:
+    background $transition-fast,
+    color $transition-fast,
+    transform $transition-fast;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: $color-white;
+  }
+}
+
+.landing-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+  font-size: 0.8125rem;
+  color: $color-gray-500;
+}

@@ -1,0 +1,154 @@
+@use 'variables' as *;
+@use 'mixins' as *;
+
+.team-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+
+  &__base {
+    position: absolute;
+    inset: 0;
+    background: $color-bg-dark;
+  }
+
+  &__grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 20%, transparent 75%);
+  }
+
+  &__orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.5;
+
+    &--1 {
+      top: -10%;
+      left: 15%;
+      width: 45vw;
+      height: 45vw;
+      background: rgba(16, 185, 129, 0.18);
+      animation: orb-drift-1 18s ease-in-out infinite;
+    }
+
+    &--2 {
+      top: 30%;
+      right: -5%;
+      width: 35vw;
+      height: 35vw;
+      background: rgba(99, 102, 241, 0.14);
+      animation: orb-drift-2 22s ease-in-out infinite;
+    }
+
+    &--3 {
+      bottom: -15%;
+      left: 35%;
+      width: 50vw;
+      height: 40vw;
+      background: rgba(52, 211, 153, 0.1);
+      animation: orb-drift-3 20s ease-in-out infinite;
+    }
+  }
+
+  &__beam {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(110, 231, 183, 0.35) 35%,
+      rgba(110, 231, 183, 0.08) 65%,
+      transparent 100%
+    );
+    transform: translateX(-50%);
+    animation: beam-pulse 6s ease-in-out infinite;
+  }
+
+  &__card {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-radius: $radius-xl;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(8px);
+    padding: 12px 14px;
+
+    span {
+      display: block;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.1);
+
+      &:first-child {
+        width: 60%;
+        background: rgba(110, 231, 183, 0.35);
+      }
+    }
+
+    &--1 {
+      top: 18%;
+      left: 8%;
+      width: 140px;
+      animation: card-float-1 12s ease-in-out infinite;
+    }
+
+    &--2 {
+      top: 55%;
+      right: 10%;
+      width: 120px;
+      animation: card-float-2 14s ease-in-out infinite;
+    }
+
+    &--3 {
+      bottom: 20%;
+      left: 12%;
+      width: 130px;
+      animation: card-float-3 16s ease-in-out infinite;
+    }
+  }
+
+  &__progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    gap: 4px;
+    height: 3px;
+    opacity: 0.4;
+  }
+
+  &__progress-bar {
+    flex: 1;
+    background: linear-gradient(90deg, transparent, $color-emerald-400, transparent);
+    animation: progress-sweep 4s ease-in-out infinite;
+
+    &--delay {
+      animation-delay: 1.3s;
+    }
+
+    &--delay-2 {
+      animation-delay: 2.6s;
+    }
+  }
+
+  @include md-down {
+    &__card {
+      opacity: 0.5;
+      transform: scale(0.85);
+    }
+  }
+}

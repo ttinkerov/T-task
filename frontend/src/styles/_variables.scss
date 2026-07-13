@@ -1,0 +1,51 @@
+// Design tokens
+$color-white: #fafafa;
+$color-gray-300: #d1d5db;
+$color-gray-400: #9ca3af;
+$color-gray-500: #6b7280;
+$color-emerald-300: #6ee7b7;
+$color-emerald-400: #34d399;
+$color-bg-dark: #0a0a0c;
+
+$font-display-fallback: 'Instrument Serif', Georgia, serif;
+
+$radius-pill: 9999px;
+$radius-lg: 0.75rem;
+$radius-xl: 12px;
+
+$transition-fast: 0.2s;
+$breakpoint-md: 768px;
+
+$landing-max-width: 80rem;
+$landing-title-max-width: 72rem;
+$landing-subtitle-max-width: 40rem;
+
+// CSS custom properties (for Tailwind + runtime)
+:root {
+  --background: 0 0% 7%;
+  --foreground: 0 0% 98%;
+  --muted-foreground: 0 0% 60%;
+  --primary: 0 0% 98%;
+  --primary-foreground: 0 0% 4%;
+  --secondary: 0 0% 12%;
+  --muted: 0 0% 12%;
+  --accent: 0 0% 12%;
+  --border: 0 0% 18%;
+  --input: 0 0% 18%;
+  --font-display: 'Instrument Serif', serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+@theme inline {
+  --font-sans: var(--font-body);
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-muted: hsl(var(--muted));
+  --color-accent: hsl(var(--accent));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+}

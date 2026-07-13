@@ -1,0 +1,1 @@
+-- Initial migration: empty schema bootstrap for T-task infrastructure.
