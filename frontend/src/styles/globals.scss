@@ -1,3 +1,5 @@
+@use 'theme';
+@use 'fonts';
 @use 'variables';
 @use 'base';
 @use 'animations';
@@ -6,4 +8,4 @@
 @use 'kanban';
 @use 'task-drawer';
 @use 'landing';
-@use 'big-tech-bg';
+@use 'landing-bg';

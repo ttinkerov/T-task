@@ -10,11 +10,16 @@ html {
 }
 
 body {
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  font-family: var(--font-body);
+  background: var(--tt-bg);
+  color: var(--tt-text);
+  font-family: 'Ttask', system-ui, sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
+}
+
+.app-shell {
+  background: var(--tt-bg);
+  color: var(--tt-text);
 }
 
 .font-display {

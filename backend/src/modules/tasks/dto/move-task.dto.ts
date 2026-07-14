@@ -1,7 +1,7 @@
-import { IsInt, IsString, Min } from 'class-validator';
+import { IsInt, IsUUID, Min } from 'class-validator';
 
 export class MoveTaskDto {
-  @IsString()
+  @IsUUID()
   columnId!: string;
 
   @IsInt()

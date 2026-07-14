@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { SecurityModule } from './common/security/security.module';
 import { AppConfigModule } from './config/config.module';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
@@ -15,6 +16,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
 @Module({
   imports: [
     AppConfigModule,
+    SecurityModule,
     PrismaModule,
     RedisModule,
     HealthModule,

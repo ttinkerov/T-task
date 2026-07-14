@@ -59,7 +59,7 @@ export class TasksService {
   async update(workspaceId: string, taskId: string, userId: string, dto: UpdateTaskDto) {
     const task = await this.assertTaskInWorkspace(workspaceId, taskId, userId);
 
-    if (dto.assigneeId) {
+    if (dto.assigneeId !== undefined && dto.assigneeId !== null) {
       const membership = await this.prisma.workspaceMember.findUnique({
         where: {
           workspaceId_userId: { workspaceId, userId: dto.assigneeId },

@@ -26,11 +26,7 @@ export function RegisterForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
-        <label
-          htmlFor="name"
-          className="text-sm font-medium"
-          style={{ color: 'rgba(255,255,255,0.7)' }}
-        >
+        <label htmlFor="name" className="tt-auth__label">
           Имя
         </label>
         <input
@@ -43,11 +39,7 @@ export function RegisterForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label
-          htmlFor="email"
-          className="text-sm font-medium"
-          style={{ color: 'rgba(255,255,255,0.7)' }}
-        >
+        <label htmlFor="email" className="tt-auth__label">
           Email
         </label>
         <input
@@ -61,11 +53,7 @@ export function RegisterForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label
-          htmlFor="password"
-          className="text-sm font-medium"
-          style={{ color: 'rgba(255,255,255,0.7)' }}
-        >
+        <label htmlFor="password" className="tt-auth__label">
           Пароль
         </label>
         <input

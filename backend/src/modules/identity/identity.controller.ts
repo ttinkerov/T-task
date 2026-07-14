@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Public } from '../../common/auth/decorators/public.decorator';
+import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { LoginDto } from './dto/login.dto';
@@ -13,6 +14,7 @@ export class IdentityController {
   constructor(private readonly identityService: IdentityService) {}
 
   @Public()
+  @UseGuards(AuthRateLimitGuard)
   @Post('register')
   async register(
     @Body() dto: RegisterDto,
@@ -24,6 +26,7 @@ export class IdentityController {
   }
 
   @Public()
+  @UseGuards(AuthRateLimitGuard)
   @Post('login')
   async login(
     @Body() dto: LoginDto,
@@ -35,6 +38,7 @@ export class IdentityController {
   }
 
   @Public()
+  @UseGuards(AuthRateLimitGuard)
   @Post('refresh')
   async refresh(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
     const data = await this.identityService.refresh(request, response);

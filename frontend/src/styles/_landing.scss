@@ -1,19 +1,56 @@
 @use 'variables' as *;
 @use 'mixins' as *;
 
+// Weeek-inspired landing palette (theme-aware)
+$l-bg: var(--tt-bg);
+$l-surface: var(--tt-surface);
+$l-surface-muted: var(--tt-surface-muted);
+$l-text: var(--tt-text);
+$l-text-muted: var(--tt-text-muted);
+$l-text-dim: var(--tt-text-dim);
+$l-border: var(--tt-border);
+$l-brand: var(--tt-brand);
+$l-brand-hover: var(--tt-brand-hover);
+$l-brand-muted: var(--tt-brand-muted);
+$l-shadow: var(--tt-shadow);
+
 $radius-pill: 980px;
 $radius-card: 20px;
 
 .tt-landing {
   position: relative;
   min-height: 100vh;
-  color: $color-text;
+  color: $l-text;
   overflow-x: hidden;
-  font-family: var(--font-body);
+  font-family: 'Ttask', system-ui, sans-serif;
+  background: $l-bg;
 
   &__content {
     position: relative;
     z-index: 10;
+  }
+
+  .glass-input {
+    border: 1px solid $l-border;
+    background: $l-surface;
+    color: $l-text;
+
+    &::placeholder {
+      color: $l-text-dim;
+    }
+
+    &:focus {
+      border-color: $l-brand;
+      box-shadow: 0 0 0 3px $l-brand-muted;
+    }
+  }
+
+  .btn-primary {
+    background: $l-brand;
+
+    &:hover:not(:disabled) {
+      background: $l-brand-hover;
+    }
   }
 }
 
@@ -37,11 +74,12 @@ $radius-card: 20px;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.625rem 0.75rem 0.625rem 1.25rem;
-  border: 1px solid $color-border-subtle;
+  padding: 0.5rem 0.625rem 0.5rem 1.125rem;
+  border: 1px solid $l-border;
   border-radius: $radius-pill;
-  background: rgba(28, 28, 30, 0.72);
-  backdrop-filter: saturate(180%) blur(20px);
+  background: var(--tt-nav-bg);
+  backdrop-filter: saturate(180%) blur(16px);
+  box-shadow: var(--tt-shadow);
 
   &__links {
     display: none;
@@ -58,28 +96,81 @@ $radius-card: 20px;
     border-radius: $radius-pill;
     font-size: 0.875rem;
     font-weight: 500;
-    color: $color-text-muted;
+    color: $l-text-muted;
     text-decoration: none;
     transition: color $transition-fast;
 
     &:hover {
-      color: $color-white;
+      color: $l-text;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__login {
+    display: none;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: $l-text-muted;
+    text-decoration: none;
+    transition: color $transition-fast;
+
+    @include md-up {
+      display: inline-flex;
+    }
+
+    &:hover {
+      color: $l-text;
     }
   }
 
   &__cta {
     margin-top: 0 !important;
-    padding: 0.625rem 1.125rem !important;
+    padding: 0.5625rem 1rem !important;
     font-size: 0.875rem !important;
+    border-radius: $radius-pill !important;
   }
 }
 
 .tt-logo {
-  font-size: 1.0625rem;
-  font-weight: 600;
-  color: $color-white;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: $l-text;
   text-decoration: none;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+}
+
+.tt-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+
+  &__mark {
+    display: inline-flex;
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  &__text {
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: $l-text;
+  }
 }
 
 // ── Buttons ──
@@ -98,7 +189,8 @@ $radius-card: 20px;
   transition:
     background $transition-fast,
     border-color $transition-fast,
-    color $transition-fast;
+    color $transition-fast,
+    box-shadow $transition-fast;
   margin-top: auto;
 
   &--pill {
@@ -113,46 +205,34 @@ $radius-card: 20px;
   }
 
   &--primary {
-    color: $color-brand-primary-text;
-    background: $color-brand-primary;
+    color: #ffffff;
+    background: $l-brand;
     border: none;
 
     &:hover {
-      background: $color-brand-primary-hover;
+      background: $l-brand-hover;
     }
   }
 
   &--secondary {
-    color: $color-white;
-    background: transparent;
-    border: 1px solid $color-border;
+    color: $l-text;
+    background: $l-surface;
+    border: 1px solid $l-border;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.06);
+      background: $l-surface-muted;
+      border-color: rgba(20, 24, 36, 0.16);
     }
   }
 
   &--ghost {
-    color: $color-brand-blue;
+    color: $l-brand;
     background: transparent;
-    border: 1px solid $color-brand-blue-muted;
+    border: 1px solid $l-brand-muted;
 
     &:hover {
-      background: $color-brand-blue-muted;
+      background: $l-brand-muted;
     }
-  }
-
-  // legacy aliases
-  &--green {
-    @extend .tt-btn--primary;
-  }
-
-  &--yellow {
-    @extend .tt-btn--secondary;
-  }
-
-  &--neutral {
-    @extend .tt-btn--ghost;
   }
 }
 
@@ -161,100 +241,115 @@ $radius-card: 20px;
 .tt-hero {
   max-width: $landing-max-width;
   margin: 0 auto;
-  padding: 3rem 1.5rem 4.5rem;
+  padding: 2.5rem 1.5rem 3.5rem;
 
   @include md-up {
-    padding: 4rem 2.5rem 5.5rem;
+    padding: 3.5rem 2.5rem 4.5rem;
   }
 
-  &__grid {
-    display: grid;
-    gap: 3rem;
-    align-items: center;
-
-    @include lg-up {
-      grid-template-columns: 1fr 1fr;
-      gap: 4rem;
-    }
+  &--centered {
+    text-align: center;
   }
 
-  &__tag {
+  &__copy {
+    max-width: 42rem;
+    margin: 0 auto;
+  }
+
+  &__badge {
     display: inline-block;
     padding: 0.3125rem 0.75rem;
     border-radius: $radius-pill;
-    background: $color-brand-green-muted;
+    background: $l-brand-muted;
     font-size: 0.75rem;
     font-weight: 600;
-    color: $color-brand-green;
+    color: $l-brand;
     letter-spacing: 0.01em;
   }
 
   &__title {
-    margin-top: 0;
-    font-size: clamp(2.5rem, 6vw, 3.75rem);
+    margin: 1rem 0 0;
+    font-family: 'Ttask', system-ui, sans-serif;
+    font-size: clamp(2.25rem, 6vw, 3.5rem);
     font-weight: 700;
-    line-height: 1.05;
+    line-height: 1.08;
     letter-spacing: -0.035em;
-    color: $color-white;
+    color: $l-text;
   }
 
   &__text {
-    max-width: 30rem;
-    margin-top: 1.25rem;
+    max-width: 34rem;
+    margin: 1.25rem auto 0;
     font-size: 1.0625rem;
-    line-height: 1.5;
-    color: $color-text-muted;
+    line-height: 1.55;
+    color: $l-text-muted;
   }
 
   &__actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
+    justify-content: center;
     margin-top: 1.75rem;
   }
+
+  &__demo {
+    margin-top: 2.5rem;
+    max-width: 52rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
-.tt-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2.5rem;
+// ── Logo marquee ──
+
+.tt-marquee {
   margin-top: 2.5rem;
-  padding-top: 2rem;
-  border-top: 1px solid $color-border-subtle;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, black 12%, black 88%, transparent);
 
-  &__value {
-    display: block;
-    font-size: 1.375rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: $color-white;
+  &__track {
+    display: flex;
+    gap: 2.5rem;
+    width: max-content;
+    animation: tt-marquee 32s linear infinite;
   }
 
-  &__label {
-    display: block;
-    margin-top: 0.125rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: $color-text-dim;
+  &__item {
+    flex-shrink: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $l-text-dim;
+    white-space: nowrap;
   }
 }
 
-// ── Board preview (hero) ──
+@keyframes tt-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+// ── Board demo ──
 
 .tt-board {
-  perspective: 1200px;
-  max-width: 28rem;
+  max-width: 100%;
   margin: 0 auto;
+  text-align: left;
 
   &__card {
     padding: 1.25rem;
     border-radius: $radius-card;
-    border: 1px solid $color-border;
-    background: $color-bg-elevated;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
-    transform-style: preserve-3d;
+    border: 1px solid $l-border;
+    background: $l-surface;
+
+    &--interactive {
+      padding: 1rem 1rem 1.125rem;
+    }
   }
 
   &__header {
@@ -262,7 +357,7 @@ $radius-card: 20px;
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
   }
 
   &__label {
@@ -271,7 +366,7 @@ $radius-card: 20px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: $color-text-dim;
+    color: $l-brand;
   }
 
   &__name {
@@ -279,84 +374,368 @@ $radius-card: 20px;
     font-size: 1rem;
     font-weight: 600;
     letter-spacing: -0.02em;
-    color: $color-white;
+    color: $l-text;
   }
 
-  &__avatars {
-    display: flex;
-
-    img + img {
-      margin-left: -0.375rem;
-    }
-  }
-
-  &__avatar {
-    width: 1.75rem;
-    height: 1.75rem;
-    border-radius: 50%;
-    border: 2px solid $color-bg-elevated;
-    object-fit: cover;
-  }
-
-  &__columns {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
-  }
-
-  &__column {
-    padding: 0.625rem;
-    border-radius: $radius-md;
-    background: $color-bg-card;
-
-    &--active {
-      outline: 2px solid $color-brand-green;
-      outline-offset: -2px;
-    }
-  }
-
-  &__column-title {
-    margin: 0 0 0.5rem;
-    font-size: 0.625rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: $color-text-dim;
-  }
-
-  &__task {
-    padding: 0.5rem 0.625rem;
-    margin-bottom: 0.375rem;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.06);
-    font-size: 0.6875rem;
-    font-weight: 500;
-    color: $color-text-muted;
-    line-height: 1.3;
-
-    &:last-child {
-      margin-bottom: 0;
-    }
+  &__hint {
+    margin: 0 0 0.875rem;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: $l-text-dim;
   }
 
   &__status {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    margin-top: 1rem;
-    padding: 0.375rem 0.625rem;
+    flex-shrink: 0;
+    padding: 0.3125rem 0.625rem;
     border-radius: $radius-pill;
-    background: $color-brand-green-muted;
-    font-size: 0.6875rem;
+    background: rgba(32, 166, 99, 0.12);
+    font-size: 0.625rem;
     font-weight: 600;
-    color: $color-brand-green;
+    color: #1a9b5c;
+    white-space: nowrap;
   }
 
   &__status-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: $color-brand-green;
+    background: #20a663;
+    animation: tt-demo-pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes tt-demo-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.tt-demo-board {
+  display: flex;
+  gap: 0.625rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  min-height: 15rem;
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(20, 24, 36, 0.12);
+    border-radius: $radius-pill;
+  }
+
+  &__add-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    flex: 0 0 8.5rem;
+    min-width: 8.5rem;
+    padding: 0.625rem;
+    border-radius: $radius-md;
+    border: 1px dashed rgba(20, 24, 36, 0.14);
+    background: $l-surface-muted;
+    align-self: flex-start;
+  }
+
+  &__input {
+    width: 100%;
+    padding: 0.5rem 0.625rem;
+    border-radius: $radius-sm;
+    border: 1px solid $l-border;
+    background: $l-surface;
+    font-size: 0.75rem;
+    color: $l-text;
+    outline: none;
+
+    &::placeholder {
+      color: $l-text-dim;
+    }
+
+    &:focus {
+      border-color: $l-brand;
+    }
+  }
+
+  &__add-btn {
+    border: none;
+    border-radius: $radius-sm;
+    padding: 0.5rem;
+    background: $l-brand-muted;
+    color: $l-brand;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background $transition-fast;
+
+    &:hover:not(:disabled) {
+      background: rgba(190, 24, 93, 0.2);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.tt-demo-column-wrap {
+  flex: 0 0 9.5rem;
+  min-width: 9.5rem;
+}
+
+.tt-demo-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 13rem;
+  border-radius: $radius-md;
+  border: 1px solid $l-border;
+  background: $l-surface-muted;
+  transition: border-color $transition-fast;
+
+  &--over {
+    border-color: $l-brand;
+  }
+
+  &--dragging {
+    box-shadow: $l-shadow;
+    border-color: $l-brand;
+    background: $l-surface;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.625rem 0.625rem 0.5rem;
+    border-bottom: 1px solid $l-border;
+    flex-shrink: 0;
+  }
+
+  &__drag {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: $l-text-dim;
+    cursor: grab;
+    padding: 0;
+    font-size: 0.75rem;
+    line-height: 1;
+    opacity: 0.55;
+
+    &:hover {
+      opacity: 1;
+    }
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  &__title {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    padding: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $l-text;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: text;
+  }
+
+  &__title-input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    border: 1px solid $l-brand;
+    background: $l-surface;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $l-text;
+    outline: none;
+  }
+
+  &__count {
+    flex-shrink: 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: $l-text-dim;
+  }
+
+  &__delete {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: $l-text-dim;
+    font-size: 0.875rem;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0;
+
+    .tt-demo-column:hover & {
+      opacity: 0.6;
+    }
+
+    &:hover {
+      opacity: 1 !important;
+      color: #e5484d;
+    }
+  }
+
+  &__tasks {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    flex: 1;
+    min-height: 3rem;
+    padding: 0.5rem 0.5rem 0;
+    overflow-y: auto;
+    max-height: 9rem;
+  }
+
+  &__add {
+    display: flex;
+    gap: 0.3125rem;
+    padding: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  &__add-input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.375rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: $l-surface;
+    font-size: 0.6875rem;
+    color: $l-text;
+    outline: none;
+
+    &::placeholder {
+      color: $l-text-dim;
+    }
+
+    &:focus {
+      border-color: $l-border;
+    }
+  }
+
+  &__add-btn {
+    flex-shrink: 0;
+    width: 1.625rem;
+    height: 1.625rem;
+    border: none;
+    border-radius: 6px;
+    background: $l-brand-muted;
+    color: $l-brand;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.tt-demo-task {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4375rem 0.375rem;
+  border-radius: 8px;
+  background: $l-surface;
+  border: 1px solid $l-border;
+  transition: border-color $transition-fast;
+
+  &:hover {
+    border-color: rgba(20, 24, 36, 0.16);
+  }
+
+  &--dragging {
+    box-shadow: $l-shadow;
+    border-color: $l-brand;
+  }
+
+  &__drag {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: $l-text-dim;
+    cursor: grab;
+    padding: 0;
+    font-size: 0.625rem;
+    opacity: 0.45;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  &__title {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    padding: 0;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: $l-text-muted;
+    text-align: left;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    border: 1px solid $l-brand;
+    background: $l-surface;
+    font-size: 0.6875rem;
+    color: $l-text;
+    outline: none;
+  }
+
+  &__delete {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: $l-text-dim;
+    font-size: 0.75rem;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0;
+
+    .tt-demo-task:hover & {
+      opacity: 0.5;
+    }
+
+    &:hover {
+      opacity: 1 !important;
+      color: #e5484d;
+    }
   }
 }
 
@@ -365,39 +744,48 @@ $radius-card: 20px;
 .tt-section {
   max-width: $landing-max-width;
   margin: 0 auto;
-  padding: 4rem 1.5rem;
+  padding: 3.5rem 1.5rem;
 
   @include md-up {
-    padding: 5rem 2.5rem;
+    padding: 4.5rem 2.5rem;
   }
 
   &--panel {
+    max-width: calc($landing-max-width + 1rem);
+    margin-left: auto;
+    margin-right: auto;
     padding: 3rem 1.5rem;
     border-radius: $radius-card;
-    background: $color-bg-elevated;
-    border: 1px solid $color-border-subtle;
+    background: $l-surface;
+    border: 1px solid $l-border;
+    box-shadow: $l-shadow;
 
     @include md-up {
-      padding: 4rem 2.5rem;
+      padding: 3.5rem 2.5rem;
     }
   }
 
   &__head {
-    margin-bottom: 2.5rem;
+    margin-bottom: 2rem;
+
+    &--center {
+      text-align: center;
+    }
   }
 
   &__title {
+    font-family: 'Ttask', system-ui, sans-serif;
     font-size: clamp(1.75rem, 4vw, 2.25rem);
     font-weight: 700;
     letter-spacing: -0.03em;
-    color: $color-white;
+    color: $l-text;
   }
 
   &__subtitle {
     margin-top: 0.625rem;
     font-size: 1rem;
     line-height: 1.5;
-    color: $color-text-muted;
+    color: $l-text-muted;
   }
 }
 
@@ -414,46 +802,58 @@ $radius-card: 20px;
 }
 
 .tt-feature-card {
+  padding: 1.5rem 1.375rem;
   border-radius: $radius-card;
-  border: 1px solid $color-border-subtle;
-  background: $color-bg-elevated;
-  overflow: hidden;
-  transition: border-color $transition-fast;
+  border: 1px solid $l-border;
+  background: $l-surface;
+  transition:
+    border-color $transition-fast,
+    box-shadow $transition-fast;
 
   &:hover {
-    border-color: $color-border;
+    border-color: rgba(20, 24, 36, 0.14);
+    box-shadow: $l-shadow;
   }
 
-  &__media {
-    aspect-ratio: 16 / 10;
-    overflow: hidden;
-    background: $color-bg-card;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      opacity: 0.85;
-    }
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 12px;
+    font-size: 1.125rem;
+    margin-bottom: 1rem;
   }
 
-  &__body {
-    padding: 1.25rem 1.375rem 1.5rem;
+  &--violet &__icon {
+    background: $l-brand-muted;
+    color: $l-brand;
+  }
+
+  &--blue &__icon {
+      background: rgba(190, 24, 93, 0.1);
+      color: #be185d;
+  }
+
+  &--green &__icon {
+    background: rgba(32, 166, 99, 0.12);
+    color: #1a9b5c;
   }
 
   h3 {
-    margin: 0 0 0.375rem;
+    margin: 0 0 0.5rem;
     font-size: 1.0625rem;
     font-weight: 600;
     letter-spacing: -0.02em;
-    color: $color-white;
+    color: $l-text;
   }
 
   p {
     margin: 0;
     font-size: 0.875rem;
-    line-height: 1.5;
-    color: $color-text-muted;
+    line-height: 1.55;
+    color: $l-text-muted;
   }
 }
 
@@ -470,55 +870,124 @@ $radius-card: 20px;
 }
 
 .tt-step-card {
-  border-radius: $radius-card;
-  border: 1px solid $color-border-subtle;
-  background: $color-bg-card;
-  overflow: hidden;
-
-  &__media {
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
-    background: $color-bg-elevated;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      opacity: 0.8;
-    }
-  }
-
-  &__body {
-    display: flex;
-    flex-direction: column;
-    padding: 1.375rem 1.5rem 1.5rem;
-  }
+  padding: 1.5rem;
+  border-radius: $radius-md;
+  border: 1px solid $l-border;
+  background: $l-surface-muted;
 
   &__num {
     font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.08em;
-    color: $color-brand-blue;
+    color: $l-brand;
   }
 
   h3 {
     margin: 0.75rem 0 0.375rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    color: $l-text;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: $l-text-muted;
+  }
+
+  &__link {
+    display: inline-block;
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $l-brand;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+// ── Audiences ──
+
+.tt-audience-grid {
+  display: grid;
+  gap: 1rem;
+
+  @include md-up {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+.tt-audience-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1.375rem;
+  border-radius: $radius-card;
+  border: 1px solid $l-border;
+  background: $l-surface;
+  transition:
+    border-color $transition-fast,
+    box-shadow $transition-fast;
+
+  &:hover {
+    border-color: rgba(20, 24, 36, 0.14);
+    box-shadow: $l-shadow;
+  }
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 14px;
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  &--violet &__icon {
+    background: $l-brand-muted;
+  }
+
+  &--blue &__icon {
+    background: rgba(190, 24, 93, 0.08);
+  }
+
+  &--green &__icon {
+    background: rgba(32, 166, 99, 0.12);
+  }
+
+  h3 {
+    margin: 0 0 0.5rem;
     font-size: 1.125rem;
     font-weight: 600;
     letter-spacing: -0.02em;
-    color: $color-white;
+    color: $l-text;
   }
 
   p {
     flex: 1;
-    margin: 0 0 1.25rem;
+    margin: 0;
     font-size: 0.875rem;
-    line-height: 1.5;
-    color: $color-text-muted;
+    line-height: 1.55;
+    color: $l-text-muted;
   }
 
-  .tt-btn {
-    align-self: flex-start;
+  &__link {
+    display: inline-block;
+    margin-top: 1.125rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $l-brand;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 }
 
@@ -534,57 +1003,36 @@ $radius-card: 20px;
   }
 
   &__inner {
-    display: grid;
-    gap: 1.5rem;
-    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.25rem;
+    padding: 2rem 1.5rem;
     border-radius: $radius-card;
-    border: 1px solid $color-border-subtle;
-    background: $color-bg-elevated;
-    overflow: hidden;
+    border: 1px solid $l-border;
+    background: linear-gradient(135deg, rgba(190, 24, 93, 0.08) 0%, $l-surface 60%);
 
     @include md-up {
-      grid-template-columns: 200px 1fr auto;
+      flex-direction: row;
       align-items: center;
-      gap: 2rem;
-      padding: 1.5rem 2rem;
-    }
-  }
-
-  &__media {
-    border-radius: $radius-md;
-    overflow: hidden;
-    aspect-ratio: 16 / 10;
-    background: $color-bg-card;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      opacity: 0.85;
+      justify-content: space-between;
+      padding: 2rem 2.25rem;
     }
   }
 
   &__copy {
     h2 {
       margin: 0;
-      font-size: 1.5rem;
+      font-size: 1.375rem;
       font-weight: 700;
       letter-spacing: -0.03em;
-      color: $color-white;
+      color: $l-text;
     }
 
     p {
       margin: 0.375rem 0 0;
       font-size: 0.9375rem;
-      color: $color-text-muted;
-    }
-  }
-
-  .tt-btn {
-    justify-self: start;
-
-    @include md-up {
-      justify-self: end;
+      color: $l-text-muted;
     }
   }
 }
@@ -592,20 +1040,51 @@ $radius-card: 20px;
 // ── Footer ──
 
 .tt-footer {
-  padding: 2.5rem 1.5rem 3.5rem;
-  text-align: center;
-  border-top: 1px solid $color-border-subtle;
+  padding: 2rem 1.5rem 3rem;
+  border-top: 1px solid $l-border;
+
+  &__inner {
+    max-width: $landing-max-width;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+
+    @include md-up {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
 
   &__logo {
+    margin: 0;
     font-size: 1rem;
-    font-weight: 600;
-    color: $color-white;
+    font-weight: 700;
+    color: $l-text;
   }
 
   &__text {
-    margin-top: 0.375rem;
+    margin: 0.25rem 0 0;
     font-size: 0.8125rem;
-    color: $color-text-dim;
+    color: $l-text-dim;
+  }
+
+  &__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    a {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: $l-text-muted;
+      text-decoration: none;
+
+      &:hover {
+        color: $l-brand;
+      }
+    }
   }
 }
 
@@ -620,6 +1099,7 @@ $radius-card: 20px;
     border: none;
     background: transparent;
     backdrop-filter: none;
+    box-shadow: none;
     padding-left: 0;
     padding-right: 0;
   }
@@ -637,9 +1117,10 @@ $radius-card: 20px;
     width: 100%;
     max-width: 26rem;
     padding: 2rem;
-    border: 1px solid $color-border-subtle;
+    border: 1px solid $l-border;
     border-radius: $radius-card;
-    background: $color-bg-elevated;
+    background: $l-surface;
+    box-shadow: $l-shadow;
   }
 
   &__head {
@@ -650,24 +1131,24 @@ $radius-card: 20px;
     font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: -0.03em;
-    color: $color-white;
+    color: $l-text;
   }
 
   &__subtitle {
     margin-top: 0.375rem;
     font-size: 0.9375rem;
     line-height: 1.5;
-    color: $color-text-muted;
+    color: $l-text-muted;
   }
 
   &__footer {
     margin-top: 1.25rem;
     text-align: center;
     font-size: 0.875rem;
-    color: $color-text-muted;
+    color: $l-text-muted;
 
     a {
-      color: $color-brand-blue;
+      color: $l-brand;
       font-weight: 600;
       text-decoration: none;
 
@@ -676,40 +1157,16 @@ $radius-card: 20px;
       }
     }
   }
+
+  &__label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: $l-text-muted;
+  }
 }
 
-@media (max-width: $breakpoint-md) {
-  .tt-hero__copy {
-    text-align: center;
-  }
-
-  .tt-hero__text {
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  .tt-hero__actions {
-    justify-content: center;
-  }
-
-  .tt-stats {
-    justify-content: center;
-  }
-
-  .tt-section__head {
-    text-align: center;
-  }
-
-  .tt-step-card .tt-btn {
-    align-self: stretch;
-  }
-
-  .tt-cta-banner__inner {
-    text-align: center;
-
-    .tt-btn {
-      width: 100%;
-      justify-self: stretch;
-    }
+@media (prefers-reduced-motion: reduce) {
+  .tt-marquee__track {
+    animation: none;
   }
 }

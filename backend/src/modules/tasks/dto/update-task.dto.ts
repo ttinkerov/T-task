@@ -5,6 +5,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -44,6 +45,6 @@ export class UpdateTaskDto {
 
   @IsOptional()
   @ValidateIf((_, value) => value !== null)
-  @IsString()
+  @IsUUID()
   assigneeId?: string | null;
 }

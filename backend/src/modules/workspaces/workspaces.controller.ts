@@ -1,8 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { WorkspaceRole } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Public } from '../../common/auth/decorators/public.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
+import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
@@ -139,6 +140,7 @@ export class InvitationsController {
   constructor(private readonly workspacesService: WorkspacesService) {}
 
   @Public()
+  @UseGuards(AuthRateLimitGuard)
   @Get(':token')
   async preview(@Param('token') token: string) {
     const invitation = await this.workspacesService.getInvitationPreview(token);

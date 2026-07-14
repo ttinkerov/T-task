@@ -5,7 +5,7 @@
   top: 0;
   z-index: 40;
   border-bottom: 1px solid $color-border-subtle;
-  background: rgba(0, 0, 0, 0.92);
+  background: var(--tt-nav-bg);
   backdrop-filter: blur(12px);
 }
 
@@ -31,6 +31,10 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   white-space: nowrap;
+
+  .tt-brand-logo__text {
+    color: var(--tt-text);
+  }
 }
 
 .dashboard-header__nav {
@@ -48,13 +52,13 @@
   transition: color $transition-fast, background $transition-fast;
 
   &:hover {
-    color: $color-white;
-    background: rgba(255, 255, 255, 0.06);
+    color: $color-text;
+    background: var(--tt-hover);
   }
 
   &--active {
-    color: $color-white;
-    background: rgba(255, 255, 255, 0.08);
+    color: $color-text;
+    background: var(--tt-hover-strong);
   }
 }
 
@@ -93,9 +97,9 @@
   transition: background $transition-fast, color $transition-fast, border-color $transition-fast;
 
   &:hover {
-    color: $color-white;
+    color: $color-text;
     border-color: $color-border;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--tt-hover);
   }
 }
 

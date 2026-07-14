@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 
 export class CreateTaskDto {
   @IsString()
@@ -6,7 +6,7 @@ export class CreateTaskDto {
   @MaxLength(200)
   title!: string;
 
-  @IsString()
+  @IsUUID()
   columnId!: string;
 
   @IsOptional()

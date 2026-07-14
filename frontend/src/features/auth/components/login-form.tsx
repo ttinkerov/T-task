@@ -1,11 +1,13 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FormEvent, useState } from 'react';
+import { getSafeRedirectPath } from '@/shared/lib/safe-redirect';
 import { useLoginMutation } from '../hooks';
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const loginMutation = useLoginMutation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,8 +16,9 @@ export function LoginForm() {
     event.preventDefault();
 
     const session = await loginMutation.mutateAsync({ email, password });
-    const destination =
+    const defaultDestination =
       session && session.workspaces.length === 0 ? '/onboarding' : '/dashboard/board';
+    const destination = getSafeRedirectPath(searchParams.get('next'), defaultDestination);
     router.push(destination);
     router.refresh();
   };
@@ -23,11 +26,7 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
-        <label
-          htmlFor="email"
-          className="text-sm font-medium"
-          style={{ color: 'rgba(255,255,255,0.7)' }}
-        >
+        <label htmlFor="email" className="tt-auth__label">
           Email
         </label>
         <input
@@ -41,11 +40,7 @@ export function LoginForm() {
       </div>
 
       <div className="space-y-1.5">
-        <label
-          htmlFor="password"
-          className="text-sm font-medium"
-          style={{ color: 'rgba(255,255,255,0.7)' }}
-        >
+        <label htmlFor="password" className="tt-auth__label">
           Пароль
         </label>
         <input

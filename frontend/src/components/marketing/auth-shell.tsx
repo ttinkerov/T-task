@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { BigTechBackground } from './big-tech-background';
+import { BrandLogo } from './brand-logo';
+import { LandingBackground } from './landing-background';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
 
 interface AuthShellProps {
   title: string;
@@ -12,17 +14,18 @@ interface AuthShellProps {
 export function AuthShell({ title, subtitle, children, footer }: AuthShellProps) {
   return (
     <div className="tt-landing">
-      <BigTechBackground />
+      <LandingBackground />
 
       <div className="tt-landing__content tt-auth">
         <header className="tt-nav-wrap">
           <nav className="tt-nav tt-auth__nav">
-            <Link href="/" className="tt-logo">
-              T-task
-            </Link>
-            <Link href="/register" className="tt-btn tt-btn--primary tt-btn--pill tt-nav__cta">
-              Регистрация
-            </Link>
+            <BrandLogo />
+            <div className="tt-nav__actions">
+              <ThemeToggle />
+              <Link href="/register" className="tt-btn tt-btn--primary tt-btn--pill tt-nav__cta">
+                Регистрация
+              </Link>
+            </div>
           </nav>
         </header>
 

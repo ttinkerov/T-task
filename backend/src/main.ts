@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import * as cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseEnvelopeInterceptor } from './common/interceptors/response-envelope.interceptor';
@@ -12,14 +13,25 @@ async function bootstrap(): Promise<void> {
   const configService = app.get(ConfigService);
   const port = configService.get<number>('BACKEND_PORT', 3001);
   const corsOrigin = configService.get<string>('CORS_ORIGIN', 'http://localhost');
+  const isProduction = configService.get<string>('NODE_ENV') === 'production';
+
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
   app.setGlobalPrefix('api/v1', {
     exclude: ['health/live', 'health/ready'],
   });
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      contentSecurityPolicy: isProduction ? undefined : false,
+    }),
+  );
   app.use(cookieParser());
   app.enableCors({
     origin: corsOrigin,
     credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-workspace-id'],
   });
 
   app.useGlobalPipes(

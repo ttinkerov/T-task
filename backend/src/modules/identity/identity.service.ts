@@ -12,6 +12,10 @@ import {
   parseDurationToSeconds,
 } from '../../common/auth/utils/token.util';
 import { ACCESS_TOKEN_COOKIE } from '../../common/auth/services/token-extractor.service';
+import {
+  buildAuthCookieClearOptions,
+  buildAuthCookieOptions,
+} from '../../common/security/cookie-options.util';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { LoginDto } from './dto/login.dto';
@@ -122,7 +126,16 @@ export class IdentityService {
       },
     });
 
-    if (!session || session.revokedAt || session.expiresAt < new Date()) {
+    if (!session) {
+      throw new UnauthorizedException('Refresh token is invalid or expired');
+    }
+
+    if (session.revokedAt) {
+      await this.revokeRefreshFamily(session.familyId);
+      throw new UnauthorizedException('Refresh token is invalid or expired');
+    }
+
+    if (session.expiresAt < new Date()) {
       throw new UnauthorizedException('Refresh token is invalid or expired');
     }
 
@@ -130,12 +143,20 @@ export class IdentityService {
       throw new UnauthorizedException('User is not available');
     }
 
-    await this.prisma.refreshSession.update({
-      where: { id: session.id },
+    const revoked = await this.prisma.refreshSession.updateMany({
+      where: {
+        id: session.id,
+        revokedAt: null,
+      },
       data: {
         revokedAt: new Date(),
       },
     });
+
+    if (revoked.count === 0) {
+      await this.revokeRefreshFamily(session.familyId);
+      throw new UnauthorizedException('Refresh token is invalid or expired');
+    }
 
     const tokens = await this.issueTokens(
       session.user.id,
@@ -259,26 +280,37 @@ export class IdentityService {
     );
     const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
 
-    response.cookie(ACCESS_TOKEN_COOKIE, tokens.accessToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: accessTtlSeconds * 1000,
-    });
+    response.cookie(
+      ACCESS_TOKEN_COOKIE,
+      tokens.accessToken,
+      buildAuthCookieOptions(accessTtlSeconds * 1000, isProduction),
+    );
 
-    response.cookie(REFRESH_TOKEN_COOKIE, tokens.refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: refreshTtlSeconds * 1000,
-    });
+    response.cookie(
+      REFRESH_TOKEN_COOKIE,
+      tokens.refreshToken,
+      buildAuthCookieOptions(refreshTtlSeconds * 1000, isProduction),
+    );
   }
 
   private clearAuthCookies(response: Response): void {
-    response.clearCookie(ACCESS_TOKEN_COOKIE, { path: '/' });
-    response.clearCookie(REFRESH_TOKEN_COOKIE, { path: '/' });
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    const clearOptions = buildAuthCookieClearOptions(isProduction);
+
+    response.clearCookie(ACCESS_TOKEN_COOKIE, clearOptions);
+    response.clearCookie(REFRESH_TOKEN_COOKIE, clearOptions);
+  }
+
+  private async revokeRefreshFamily(familyId: string): Promise<void> {
+    await this.prisma.refreshSession.updateMany({
+      where: {
+        familyId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
   }
 
   private toUserView(user: {

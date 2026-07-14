@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { BrandLogo } from '@/components/marketing/brand-logo';
+import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { useLogoutMutation, useMeQuery } from '@/features/auth/hooks';
 import { WorkspaceSwitcher } from '@/features/workspaces/components/workspace-switcher';
 
@@ -55,13 +57,11 @@ export function DashboardShell({
     `dashboard-header__nav-link${pathname === href || pathname.startsWith(`${href}/`) ? ' dashboard-header__nav-link--active' : ''}`;
 
   return (
-    <div className="min-h-screen" style={{ background: '#000000', color: '#fff' }}>
+    <div className="app-shell min-h-screen">
       <header className="dashboard-header">
         <div className="dashboard-header__inner">
           <div className="dashboard-header__left">
-            <Link href="/dashboard" className="dashboard-header__logo tt-logo">
-              T-task
-            </Link>
+            <BrandLogo href="/dashboard" className="dashboard-header__logo" />
             <nav className="dashboard-header__nav">
               <Link href="/dashboard" className={navLinkClass('/dashboard')}>
                 Главная
@@ -73,6 +73,7 @@ export function DashboardShell({
           </div>
 
           <div className="dashboard-header__right">
+            <ThemeToggle />
             <span className="dashboard-header__user">{session.user.name}</span>
             <WorkspaceSwitcher />
             <button

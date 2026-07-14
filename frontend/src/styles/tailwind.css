@@ -1,22 +1,7 @@
 @import 'tailwindcss';
 
-:root {
-  --background: 0 0% 0%;
-  --foreground: 0 0% 100%;
-  --muted-foreground: 240 4% 65%;
-  --primary: 211 100% 50%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 240 4% 11%;
-  --muted: 240 3% 18%;
-  --accent: 211 100% 50%;
-  --border: 0 0% 100% / 0.12;
-  --input: 240 3% 18%;
-  --font-display: 'Inter', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
-}
-
 @theme inline {
-  --font-sans: var(--font-body);
+  --font-sans: 'Ttask', system-ui, sans-serif;
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
   --color-muted-foreground: hsl(var(--muted-foreground));
