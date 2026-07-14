@@ -22,6 +22,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { FormEvent, useMemo, useState } from 'react';
 import { useMeQuery } from '@/features/auth/hooks';
+import { formatMinutes } from '@/shared/lib/format-duration';
 import {
   useBoardQuery,
   useCreateColumnMutation,
@@ -40,6 +41,7 @@ import {
   type BoardView,
 } from '../types';
 import { BoardFiltersBar } from './board-filters-bar';
+import { BoardWorkloadPanel } from './board-workload-panel';
 import { TaskDetailDrawer } from './task-detail-drawer';
 
 type DragType = 'column' | 'task';
@@ -133,6 +135,7 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
   return (
     <>
       <BoardFiltersBar workspaceId={workspaceId} filters={filters} onChange={setFilters} />
+      <BoardWorkloadPanel board={board} />
 
       <DndContext
         sensors={sensors}
@@ -454,7 +457,12 @@ function KanbanTaskCard({ task, onOpen }: { task: BoardTask; onOpen: () => void 
         <div className="min-w-0 flex-1">
           <p className="kanban-task-card__title">{task.title}</p>
           {task.description ? <p className="kanban-task-card__desc">{task.description}</p> : null}
-          {(task.priority || task.complexity || dueLabel || task.assignee) && (
+          {(task.priority ||
+            task.complexity ||
+            task.timeEstimateMinutes ||
+            task.actualMinutes ||
+            dueLabel ||
+            task.assignee) && (
             <div className="kanban-task-meta">
               {task.assignee ? (
                 <span className="kanban-task-chip">{task.assignee.name.split(' ')[0]}</span>
@@ -466,6 +474,16 @@ function KanbanTaskCard({ task, onOpen }: { task: BoardTask; onOpen: () => void 
               ) : null}
               {task.complexity ? (
                 <span className="kanban-task-chip">{task.complexity} SP</span>
+              ) : null}
+              {task.timeEstimateMinutes ? (
+                <span className="kanban-task-chip kanban-task-chip--estimate">
+                  {formatMinutes(task.timeEstimateMinutes)}
+                </span>
+              ) : null}
+              {task.actualMinutes ? (
+                <span className="kanban-task-chip kanban-task-chip--actual">
+                  факт {formatMinutes(task.actualMinutes)}
+                </span>
               ) : null}
               {dueLabel ? <span className="kanban-task-chip">{dueLabel}</span> : null}
             </div>

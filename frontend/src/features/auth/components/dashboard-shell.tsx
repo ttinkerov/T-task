@@ -53,8 +53,16 @@ export function DashboardShell({
     );
   }
 
+  const isNavActive = (href: string) => {
+    if (href === '/dashboard') {
+      return pathname === '/dashboard';
+    }
+
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
   const navLinkClass = (href: string) =>
-    `dashboard-header__nav-link${pathname === href || pathname.startsWith(`${href}/`) ? ' dashboard-header__nav-link--active' : ''}`;
+    `dashboard-header__nav-link${isNavActive(href) ? ' dashboard-header__nav-link--active' : ''}`;
 
   return (
     <div className="app-shell min-h-screen">
@@ -68,6 +76,18 @@ export function DashboardShell({
               </Link>
               <Link href="/dashboard/board" className={navLinkClass('/dashboard/board')}>
                 Доска
+              </Link>
+              <Link href="/dashboard/analytics" className={navLinkClass('/dashboard/analytics')}>
+                Аналитика
+              </Link>
+              <Link href="/dashboard/crm" className={navLinkClass('/dashboard/crm')}>
+                CRM
+              </Link>
+              <Link href="/dashboard/forms" className={navLinkClass('/dashboard/forms')}>
+                Формы
+              </Link>
+              <Link href="/dashboard/focus" className={navLinkClass('/dashboard/focus')}>
+                Фокус
               </Link>
             </nav>
           </div>

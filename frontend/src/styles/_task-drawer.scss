@@ -387,4 +387,114 @@
     color: #ff6b6b;
     border-color: rgba(255, 107, 107, 0.3);
   }
+
+  &--estimate {
+    color: $color-brand-blue;
+    border-color: var(--tt-brand-muted);
+    background: var(--tt-brand-muted);
+  }
+
+  &--actual {
+    color: $color-text-muted;
+    background: var(--tt-hover);
+  }
+}
+
+.board-workload {
+  margin-bottom: 0.75rem;
+  border: 1px solid $color-border-subtle;
+  border-radius: $radius-md;
+  background: $color-bg-elevated;
+  padding: 0.875rem 1rem;
+  flex-shrink: 0;
+}
+
+.board-workload__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.board-workload__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.board-workload__hint {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: $color-text-dim;
+  max-width: 36rem;
+}
+
+.board-workload__toggle {
+  display: inline-flex;
+  border: 1px solid $color-border-subtle;
+  border-radius: $radius-pill;
+  padding: 0.125rem;
+  flex-shrink: 0;
+}
+
+.board-workload__toggle-btn {
+  border: none;
+  background: transparent;
+  color: $color-text-muted;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.3125rem 0.625rem;
+  border-radius: $radius-pill;
+  cursor: pointer;
+  transition:
+    background $transition-fast,
+    color $transition-fast;
+
+  &--active {
+    background: var(--tt-hover-strong);
+    color: $color-text;
+  }
+}
+
+.board-workload__table-wrap {
+  overflow-x: auto;
+}
+
+.board-workload__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+
+  th,
+  td {
+    padding: 0.5rem 0.625rem;
+    text-align: left;
+    border-bottom: 1px solid var(--tt-border-subtle);
+    white-space: nowrap;
+  }
+
+  th {
+    font-weight: 500;
+    color: $color-text-dim;
+    font-size: 0.75rem;
+  }
+
+  tfoot td {
+    font-weight: 600;
+    border-bottom: none;
+    border-top: 1px solid $color-border-subtle;
+    padding-top: 0.625rem;
+  }
+}
+
+.board-workload__delta {
+  font-weight: 500;
+
+  &--over {
+    color: #ff6b6b;
+  }
+
+  &--under {
+    color: #20a663;
+  }
 }

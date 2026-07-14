@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEntityId } from '../../../common/validators/is-entity-id.decorator';
 
 export class CreateTaskDto {
   @IsString()
@@ -6,7 +7,7 @@ export class CreateTaskDto {
   @MaxLength(200)
   title!: string;
 
-  @IsUUID()
+  @IsEntityId()
   columnId!: string;
 
   @IsOptional()

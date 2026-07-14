@@ -14,6 +14,7 @@ import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { assertCanAssignRole, createUniqueWorkspaceSlug } from './utils/workspace.util';
 import { createDefaultBoard } from '../boards/utils/create-default-board.util';
+import { createDefaultFunnel } from '../funnels/utils/create-default-funnel.util';
 
 const INVITATION_TTL_DAYS = 7;
 
@@ -61,6 +62,7 @@ export class WorkspacesService {
       });
 
       await createDefaultBoard(tx, created.id);
+      await createDefaultFunnel(tx, created.id);
 
       return created;
     });

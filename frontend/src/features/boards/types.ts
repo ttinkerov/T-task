@@ -18,6 +18,8 @@ export interface BoardTask {
   description: string | null;
   priority: TaskPriority | null;
   complexity: number | null;
+  timeEstimateMinutes: number | null;
+  actualMinutes: number | null;
   dueDate: string | null;
   assigneeId: string | null;
   assignee: TaskAssignee | null;
@@ -45,6 +47,8 @@ export interface UpdateTaskPayload {
   description?: string | null;
   priority?: TaskPriority | null;
   complexity?: number | null;
+  timeEstimateMinutes?: number | null;
+  actualMinutes?: number | null;
   dueDate?: string | null;
   assigneeId?: string | null;
 }
@@ -96,6 +100,16 @@ export const COMPLEXITY_OPTIONS: { value: number | ''; label: string }[] = [
   { value: 5, label: '5' },
   { value: 8, label: '8' },
   { value: 13, label: '13' },
+];
+
+export const TIME_ESTIMATE_OPTIONS: { value: number | ''; label: string }[] = [
+  { value: '', label: 'Не указана' },
+  { value: 15, label: '15 мин' },
+  { value: 30, label: '30 мин' },
+  { value: 60, label: '1 ч' },
+  { value: 120, label: '2 ч' },
+  { value: 240, label: '4 ч' },
+  { value: 480, label: '8 ч' },
 ];
 
 export const PRIORITY_LABELS: Record<TaskPriority, string> = {

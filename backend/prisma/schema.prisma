@@ -37,6 +37,13 @@ enum TaskPriority {
   URGENT
 }
 
+enum FormFieldType {
+  SHORT_TEXT
+  LONG_TEXT
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+}
+
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
@@ -51,6 +58,7 @@ model User {
   memberships      WorkspaceMember[]
   sentInvitations  Invitation[]     @relation("InvitationInviter")
   assignedTasks    Task[]           @relation("TaskAssignee")
+  assignedDeals    Deal[]           @relation("DealAssignee")
   comments         Comment[]
 
   @@map("users")
@@ -89,6 +97,8 @@ model Workspace {
   members     WorkspaceMember[]
   invitations Invitation[]
   boards      Board[]
+  funnels     Funnel[]
+  forms       Form[]
 
   @@map("workspaces")
 }
@@ -164,6 +174,8 @@ model Task {
   description String?
   priority    TaskPriority?
   complexity  Int?
+  timeEstimateMinutes Int? @map("time_estimate_minutes")
+  actualMinutes       Int? @map("actual_minutes")
   dueDate     DateTime?     @map("due_date")
   assigneeId  String?       @map("assignee_id")
   position    Int
@@ -177,6 +189,104 @@ model Task {
   @@index([columnId])
   @@index([assigneeId])
   @@map("tasks")
+}
+
+model Funnel {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  name        String   @default("Продажи")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  stages    FunnelStage[]
+
+  @@index([workspaceId])
+  @@map("funnels")
+}
+
+model FunnelStage {
+  id        String   @id @default(cuid())
+  funnelId  String   @map("funnel_id")
+  name      String
+  position  Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  funnel Funnel @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  deals  Deal[]
+
+  @@index([funnelId])
+  @@map("funnel_stages")
+}
+
+model Deal {
+  id          String   @id @default(cuid())
+  stageId     String   @map("stage_id")
+  title       String
+  description String?
+  amount      Int?
+  contactName String?  @map("contact_name")
+  companyName String?  @map("company_name")
+  assigneeId  String?  @map("assignee_id")
+  position    Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  stage    FunnelStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  assignee User?       @relation("DealAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  @@index([stageId])
+  @@index([assigneeId])
+  @@map("deals")
+}
+
+model Form {
+  id                 String   @id @default(cuid())
+  workspaceId        String   @map("workspace_id")
+  title              String
+  description        String?
+  publicToken        String   @unique @map("public_token")
+  isPublic           Boolean  @default(true) @map("is_public")
+  createTaskOnSubmit Boolean  @default(false) @map("create_task_on_submit")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  fields    FormField[]
+  responses FormResponse[]
+
+  @@index([workspaceId])
+  @@map("forms")
+}
+
+model FormField {
+  id       String        @id @default(cuid())
+  formId   String        @map("form_id")
+  type     FormFieldType
+  label    String
+  options  String[]      @default([])
+  required Boolean       @default(false)
+  position Int
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId])
+  @@map("form_fields")
+}
+
+model FormResponse {
+  id        String   @id @default(cuid())
+  formId    String   @map("form_id")
+  answers   Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId])
+  @@map("form_responses")
 }
 
 model Comment {

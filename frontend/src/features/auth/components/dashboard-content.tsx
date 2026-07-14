@@ -40,6 +40,56 @@ export function DashboardContent() {
         </div>
       </div>
 
+      <div className="glass-panel rounded-2xl p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-medium text-muted-foreground">Pomodoro</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Таймер фокуса и перерывов</p>
+          </div>
+          <Link href="/dashboard/focus" className="btn-ghost text-sm">
+            Открыть таймер
+          </Link>
+        </div>
+      </div>
+
+      <div className="glass-panel rounded-2xl p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-medium text-muted-foreground">Формы</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Опросы, сбор ответов и статистика</p>
+          </div>
+          <Link href="/dashboard/forms" className="btn-ghost text-sm">
+            Открыть формы
+          </Link>
+        </div>
+      </div>
+
+      <div className="glass-panel rounded-2xl p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-medium text-muted-foreground">CRM</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Воронки продаж и сделки по этапам</p>
+          </div>
+          <Link href="/dashboard/crm" className="btn-ghost text-sm">
+            Открыть CRM
+          </Link>
+        </div>
+      </div>
+
+      <div className="glass-panel rounded-2xl p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-medium text-muted-foreground">Аналитика</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Продуктивность команды, план и факт по задачам
+            </p>
+          </div>
+          <Link href="/dashboard/analytics" className="btn-ghost text-sm">
+            Открыть аналитику
+          </Link>
+        </div>
+      </div>
+
       <div className="glass-panel space-y-3 rounded-2xl p-5">
         <h2 className="text-sm font-medium text-muted-foreground">Активная команда</h2>
         <WorkspaceSwitcher />

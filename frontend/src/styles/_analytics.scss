@@ -1,0 +1,137 @@
+@use 'variables' as *;
+
+.analytics-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.analytics-page__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.analytics-page__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.analytics-page__subtitle {
+  font-size: 0.875rem;
+  color: $color-text-muted;
+  max-width: 42rem;
+}
+
+.analytics-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  padding: 1rem;
+  border: 1px solid $color-border-subtle;
+  border-radius: $radius-md;
+  background: $color-bg-elevated;
+}
+
+.analytics-filters__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.analytics-filters__label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: $color-text-muted;
+}
+
+.analytics-filters__periods {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid $color-border-subtle;
+  border-radius: $radius-pill;
+  padding: 0.125rem;
+}
+
+.analytics-filters__dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.analytics-filters__date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 10rem;
+
+  span {
+    font-size: 0.75rem;
+    color: $color-text-muted;
+  }
+}
+
+.analytics-filters__member {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 12rem;
+}
+
+.analytics-summary,
+.analytics-drilldown {
+  border: 1px solid $color-border-subtle;
+  border-radius: $radius-md;
+  background: $color-bg-elevated;
+  padding: 1rem;
+}
+
+.analytics-summary__head,
+.analytics-drilldown__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.875rem;
+}
+
+.analytics-summary__title,
+.analytics-drilldown__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.analytics-summary__hint,
+.analytics-drilldown__hint {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: $color-text-dim;
+}
+
+.analytics-summary__empty,
+.analytics-drilldown__empty {
+  font-size: 0.8125rem;
+  color: $color-text-muted;
+}
+
+.analytics-table__row {
+  cursor: pointer;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: var(--tt-hover);
+  }
+
+  &--active {
+    background: var(--tt-hover-strong);
+  }
+}
+
+.analytics-drilldown__task-title {
+  font-weight: 500;
+  max-width: 16rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

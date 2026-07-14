@@ -7,6 +7,9 @@ import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { BoardsModule } from './modules/boards/boards.module';
+import { FunnelsModule } from './modules/funnels/funnels.module';
+import { DealsModule } from './modules/deals/deals.module';
+import { FormsModule } from './modules/forms/forms.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { CommentsModule } from './modules/comments/comments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -23,6 +26,9 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
     IdentityModule,
     WorkspacesModule,
     BoardsModule,
+    FunnelsModule,
+    DealsModule,
+    FormsModule,
     TasksModule,
     CommentsModule,
     NotificationsModule,

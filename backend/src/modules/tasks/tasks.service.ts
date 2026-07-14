@@ -78,6 +78,10 @@ export class TasksService {
         ...(dto.description !== undefined ? { description: dto.description?.trim() || null } : {}),
         ...(dto.priority !== undefined ? { priority: dto.priority } : {}),
         ...(dto.complexity !== undefined ? { complexity: dto.complexity } : {}),
+        ...(dto.timeEstimateMinutes !== undefined
+          ? { timeEstimateMinutes: dto.timeEstimateMinutes }
+          : {}),
+        ...(dto.actualMinutes !== undefined ? { actualMinutes: dto.actualMinutes } : {}),
         ...(dto.dueDate !== undefined
           ? { dueDate: dto.dueDate ? new Date(dto.dueDate) : null }
           : {}),
@@ -220,6 +224,8 @@ export class TasksService {
     description: string | null;
     priority: TaskPriority | null;
     complexity: number | null;
+    timeEstimateMinutes: number | null;
+    actualMinutes: number | null;
     dueDate: Date | null;
     assigneeId: string | null;
     position: number;

@@ -5,13 +5,13 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  IsUUID,
   Max,
   MaxLength,
   Min,
   MinLength,
   ValidateIf,
 } from 'class-validator';
+import { IsEntityId } from '../../../common/validators/is-entity-id.decorator';
 
 export class UpdateTaskDto {
   @IsOptional()
@@ -40,11 +40,25 @@ export class UpdateTaskDto {
 
   @IsOptional()
   @ValidateIf((_, value) => value !== null)
+  @IsInt()
+  @Min(1)
+  @Max(10080)
+  timeEstimateMinutes?: number | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsInt()
+  @Min(1)
+  @Max(10080)
+  actualMinutes?: number | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
   @IsDateString()
   dueDate?: string | null;
 
   @IsOptional()
   @ValidateIf((_, value) => value !== null)
-  @IsUUID()
+  @IsEntityId()
   assigneeId?: string | null;
 }

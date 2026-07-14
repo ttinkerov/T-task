@@ -10,7 +10,13 @@ import {
   useDeleteTaskMutation,
   useUpdateTaskMutation,
 } from '../hooks';
-import { COMPLEXITY_OPTIONS, PRIORITY_OPTIONS, type BoardTask, type TaskPriority } from '../types';
+import {
+  COMPLEXITY_OPTIONS,
+  PRIORITY_OPTIONS,
+  TIME_ESTIMATE_OPTIONS,
+  type BoardTask,
+  type TaskPriority,
+} from '../types';
 
 interface TaskDetailDrawerProps {
   workspaceId: string;
@@ -40,6 +46,10 @@ export function TaskDetailDrawer({
   const [description, setDescription] = useState(task.description ?? '');
   const [priority, setPriority] = useState<TaskPriority | ''>(task.priority ?? '');
   const [complexity, setComplexity] = useState<number | ''>(task.complexity ?? '');
+  const [timeEstimateMinutes, setTimeEstimateMinutes] = useState<number | ''>(
+    task.timeEstimateMinutes ?? '',
+  );
+  const [actualMinutes, setActualMinutes] = useState<number | ''>(task.actualMinutes ?? '');
   const [dueDate, setDueDate] = useState(toDateInputValue(task.dueDate));
   const [assigneeId, setAssigneeId] = useState(task.assigneeId ?? '');
   const [commentBody, setCommentBody] = useState('');
@@ -49,6 +59,8 @@ export function TaskDetailDrawer({
     setDescription(task.description ?? '');
     setPriority(task.priority ?? '');
     setComplexity(task.complexity ?? '');
+    setTimeEstimateMinutes(task.timeEstimateMinutes ?? '');
+    setActualMinutes(task.actualMinutes ?? '');
     setDueDate(toDateInputValue(task.dueDate));
     setAssigneeId(task.assigneeId ?? '');
   }, [task]);
@@ -72,6 +84,8 @@ export function TaskDetailDrawer({
         description: description.trim() || null,
         priority: priority || null,
         complexity: complexity === '' ? null : Number(complexity),
+        timeEstimateMinutes: timeEstimateMinutes === '' ? null : Number(timeEstimateMinutes),
+        actualMinutes: actualMinutes === '' ? null : Number(actualMinutes),
         dueDate: dueDate ? new Date(`${dueDate}T12:00:00`).toISOString() : null,
         assigneeId: assigneeId || null,
       },
@@ -183,6 +197,44 @@ export function TaskDetailDrawer({
               >
                 {COMPLEXITY_OPTIONS.map((option) => (
                   <option key={option.label} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="task-drawer__grid">
+            <label className="task-drawer__field">
+              <span>Оценка времени</span>
+              <select
+                value={timeEstimateMinutes}
+                onChange={(event) =>
+                  setTimeEstimateMinutes(
+                    event.target.value === '' ? '' : Number(event.target.value),
+                  )
+                }
+                className="glass-input"
+              >
+                {TIME_ESTIMATE_OPTIONS.map((option) => (
+                  <option key={option.label} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="task-drawer__field">
+              <span>Фактическое время</span>
+              <select
+                value={actualMinutes}
+                onChange={(event) =>
+                  setActualMinutes(event.target.value === '' ? '' : Number(event.target.value))
+                }
+                className="glass-input"
+              >
+                {TIME_ESTIMATE_OPTIONS.map((option) => (
+                  <option key={`actual-${option.label}`} value={option.value}>
                     {option.label}
                   </option>
                 ))}

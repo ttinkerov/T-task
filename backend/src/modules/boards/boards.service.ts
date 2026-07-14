@@ -186,6 +186,8 @@ export class BoardsService {
     description: string | null;
     priority: import('@prisma/client').TaskPriority | null;
     complexity: number | null;
+    timeEstimateMinutes: number | null;
+    actualMinutes: number | null;
     dueDate: Date | null;
     assigneeId?: string | null;
     position: number;
@@ -204,6 +206,8 @@ export class BoardsService {
       description: task.description,
       priority: task.priority,
       complexity: task.complexity,
+      timeEstimateMinutes: task.timeEstimateMinutes,
+      actualMinutes: task.actualMinutes,
       dueDate: task.dueDate?.toISOString() ?? null,
       assigneeId: task.assigneeId ?? null,
       assignee: task.assignee
