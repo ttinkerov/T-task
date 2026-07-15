@@ -5,6 +5,10 @@ export type WorkspaceUseCase =
 
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
+export type TaskRecurrenceRule = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+
+export type TaskRecurrenceAction = 'DUPLICATE' | 'RESCHEDULE';
+
 export interface TaskAssignee {
   id: string;
   name: string;
@@ -25,6 +29,10 @@ export interface BoardTask {
   assignee: TaskAssignee | null;
   position: number;
   columnId: string;
+  recurrenceRule: TaskRecurrenceRule;
+  recurrenceAction: TaskRecurrenceAction;
+  recurrenceWeekdays: number[];
+  recurrenceOriginColumnId: string | null;
   createdAt: string;
 }
 
@@ -51,6 +59,10 @@ export interface UpdateTaskPayload {
   actualMinutes?: number | null;
   dueDate?: string | null;
   assigneeId?: string | null;
+  recurrenceRule?: TaskRecurrenceRule;
+  recurrenceAction?: TaskRecurrenceAction;
+  recurrenceWeekdays?: number[];
+  recurrenceOriginColumnId?: string | null;
 }
 
 export interface TaskComment {
@@ -124,4 +136,34 @@ export const EMPTY_BOARD_FILTERS: BoardFilters = {
   priority: '',
   assigneeId: '',
   myTasksOnly: false,
+};
+
+export const RECURRENCE_RULE_OPTIONS: { value: TaskRecurrenceRule; label: string }[] = [
+  { value: 'NONE', label: 'Не повторяется' },
+  { value: 'DAILY', label: 'Каждый день' },
+  { value: 'WEEKLY', label: 'Каждую неделю' },
+  { value: 'MONTHLY', label: 'Каждый месяц' },
+  { value: 'YEARLY', label: 'Каждый год' },
+];
+
+export const RECURRENCE_ACTION_OPTIONS: { value: TaskRecurrenceAction; label: string }[] = [
+  { value: 'DUPLICATE', label: 'Создать копию' },
+  { value: 'RESCHEDULE', label: 'Перенести задачу' },
+];
+
+export const RECURRENCE_WEEKDAY_OPTIONS: { value: number; label: string }[] = [
+  { value: 1, label: 'Пн' },
+  { value: 2, label: 'Вт' },
+  { value: 3, label: 'Ср' },
+  { value: 4, label: 'Чт' },
+  { value: 5, label: 'Пт' },
+  { value: 6, label: 'Сб' },
+  { value: 7, label: 'Вс' },
+];
+
+export const RECURRENCE_RULE_LABELS: Record<Exclude<TaskRecurrenceRule, 'NONE'>, string> = {
+  DAILY: 'Каждый день',
+  WEEKLY: 'Повтор',
+  MONTHLY: 'Каждый месяц',
+  YEARLY: 'Каждый год',
 };

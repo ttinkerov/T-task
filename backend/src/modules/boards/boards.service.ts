@@ -192,6 +192,10 @@ export class BoardsService {
     assigneeId?: string | null;
     position: number;
     columnId: string;
+    recurrenceRule: import('@prisma/client').TaskRecurrenceRule;
+    recurrenceAction: import('@prisma/client').TaskRecurrenceAction;
+    recurrenceWeekdays: number[];
+    recurrenceOriginColumnId: string | null;
     createdAt: Date;
     assignee?: {
       id: string;
@@ -220,6 +224,10 @@ export class BoardsService {
         : null,
       position: task.position,
       columnId: task.columnId,
+      recurrenceRule: task.recurrenceRule,
+      recurrenceAction: task.recurrenceAction,
+      recurrenceWeekdays: task.recurrenceWeekdays,
+      recurrenceOriginColumnId: task.recurrenceOriginColumnId,
       createdAt: task.createdAt.toISOString(),
     };
   }

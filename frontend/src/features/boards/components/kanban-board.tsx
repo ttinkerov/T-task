@@ -23,6 +23,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { FormEvent, useMemo, useState } from 'react';
 import { useMeQuery } from '@/features/auth/hooks';
 import { formatMinutes } from '@/shared/lib/format-duration';
+import { formatRecurrenceLabel } from '@/shared/lib/format-recurrence';
 import {
   useBoardQuery,
   useCreateColumnMutation,
@@ -427,6 +428,7 @@ function KanbanTaskCard({ task, onOpen }: { task: BoardTask; onOpen: () => void 
   const dueLabel = task.dueDate
     ? new Date(task.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
     : null;
+  const recurrenceLabel = formatRecurrenceLabel(task.recurrenceRule, task.recurrenceWeekdays);
 
   return (
     <div
@@ -462,8 +464,14 @@ function KanbanTaskCard({ task, onOpen }: { task: BoardTask; onOpen: () => void 
             task.timeEstimateMinutes ||
             task.actualMinutes ||
             dueLabel ||
+            recurrenceLabel ||
             task.assignee) && (
             <div className="kanban-task-meta">
+              {recurrenceLabel ? (
+                <span className="kanban-task-chip kanban-task-chip--recurrence">
+                  {recurrenceLabel}
+                </span>
+              ) : null}
               {task.assignee ? (
                 <span className="kanban-task-chip">{task.assignee.name.split(' ')[0]}</span>
               ) : null}

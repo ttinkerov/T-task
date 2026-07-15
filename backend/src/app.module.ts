@@ -3,7 +3,6 @@ import { SecurityModule } from './common/security/security.module';
 import { AppConfigModule } from './config/config.module';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
-import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { BoardsModule } from './modules/boards/boards.module';
@@ -22,7 +21,6 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
     SecurityModule,
     PrismaModule,
     RedisModule,
-    HealthModule,
     IdentityModule,
     WorkspacesModule,
     BoardsModule,

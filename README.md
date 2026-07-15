@@ -54,7 +54,6 @@ docker compose up --build
 
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:3001/api/v1
-- Health: http://localhost:3001/health/live
 
 ### 3. Локальная разработка (без Docker)
 
@@ -94,7 +93,7 @@ npm run dev:frontend
 
 - Docker Compose: PostgreSQL, Redis, backend, frontend
 - Prisma с пустой схемой и начальной миграцией
-- NestJS: config validation, global filters, response envelope, health checks
+- NestJS: config validation, global filters, response envelope
 - Next.js: App Router, Tailwind, React Query provider
 - ESLint + Prettier + Husky (pre-commit lint-staged)
 

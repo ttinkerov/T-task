@@ -1,10 +1,13 @@
-import { TaskPriority } from '@prisma/client';
+import { TaskPriority, TaskRecurrenceAction, TaskRecurrenceRule } from '@prisma/client';
 import {
   IsDateString,
   IsEnum,
   IsInt,
   IsOptional,
   IsString,
+  IsArray,
+  ArrayMinSize,
+  ArrayMaxSize,
   Max,
   MaxLength,
   Min,
@@ -61,4 +64,26 @@ export class UpdateTaskDto {
   @ValidateIf((_, value) => value !== null)
   @IsEntityId()
   assigneeId?: string | null;
+
+  @IsOptional()
+  @IsEnum(TaskRecurrenceRule)
+  recurrenceRule?: TaskRecurrenceRule;
+
+  @IsOptional()
+  @IsEnum(TaskRecurrenceAction)
+  recurrenceAction?: TaskRecurrenceAction;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(0)
+  @ArrayMaxSize(7)
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  @Max(7, { each: true })
+  recurrenceWeekdays?: number[];
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsEntityId()
+  recurrenceOriginColumnId?: string | null;
 }

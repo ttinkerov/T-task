@@ -37,6 +37,19 @@ enum TaskPriority {
   URGENT
 }
 
+enum TaskRecurrenceRule {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum TaskRecurrenceAction {
+  DUPLICATE
+  RESCHEDULE
+}
+
 enum FormFieldType {
   SHORT_TEXT
   LONG_TEXT
@@ -179,6 +192,10 @@ model Task {
   dueDate     DateTime?     @map("due_date")
   assigneeId  String?       @map("assignee_id")
   position    Int
+  recurrenceRule TaskRecurrenceRule @default(NONE) @map("recurrence_rule")
+  recurrenceAction TaskRecurrenceAction @default(DUPLICATE) @map("recurrence_action")
+  recurrenceWeekdays Int[] @default([]) @map("recurrence_weekdays")
+  recurrenceOriginColumnId String? @map("recurrence_origin_column_id")
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 

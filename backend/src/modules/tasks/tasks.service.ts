@@ -1,11 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, TaskPriority } from '@prisma/client';
+import { Prisma, TaskPriority, TaskRecurrenceAction, TaskRecurrenceRule } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { BoardsService } from '../boards/boards.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { computeNextRecurrenceDate, isDoneColumn } from './utils/recurrence.util';
 
 const taskWithAssignee = {
   assignee: {
@@ -86,6 +87,16 @@ export class TasksService {
           ? { dueDate: dto.dueDate ? new Date(dto.dueDate) : null }
           : {}),
         ...(dto.assigneeId !== undefined ? { assigneeId: dto.assigneeId } : {}),
+        ...(dto.recurrenceRule !== undefined
+          ? this.buildRecurrenceUpdate(task, dto.recurrenceRule, dto)
+          : {}),
+        ...(dto.recurrenceAction !== undefined ? { recurrenceAction: dto.recurrenceAction } : {}),
+        ...(dto.recurrenceWeekdays !== undefined
+          ? { recurrenceWeekdays: dto.recurrenceWeekdays }
+          : {}),
+        ...(dto.recurrenceOriginColumnId !== undefined
+          ? { recurrenceOriginColumnId: dto.recurrenceOriginColumnId }
+          : {}),
       },
       include: taskWithAssignee,
     });
@@ -124,11 +135,138 @@ export class TasksService {
       });
     });
 
+    const board = await this.prisma.board.findFirstOrThrow({
+      where: { workspaceId },
+      include: {
+        columns: {
+          orderBy: { position: 'asc' },
+        },
+      },
+    });
+
+    const doneColumn = board.columns.find((column) => column.id === dto.columnId);
+    const movedTask = await this.prisma.task.findUniqueOrThrow({
+      where: { id: taskId },
+      include: taskWithAssignee,
+    });
+
+    if (
+      doneColumn &&
+      isDoneColumn(doneColumn, board.columns) &&
+      movedTask.recurrenceRule !== TaskRecurrenceRule.NONE
+    ) {
+      await this.handleRecurrenceCompletion(movedTask, board.columns);
+    }
+
     const updated = await this.prisma.task.findUniqueOrThrow({
       where: { id: taskId },
       include: taskWithAssignee,
     });
     return this.toTask(updated);
+  }
+
+  private buildRecurrenceUpdate(
+    task: { columnId: string; recurrenceOriginColumnId: string | null },
+    recurrenceRule: TaskRecurrenceRule,
+    dto: UpdateTaskDto,
+  ) {
+    if (recurrenceRule === TaskRecurrenceRule.NONE) {
+      return {
+        recurrenceRule,
+        recurrenceWeekdays: [],
+        recurrenceOriginColumnId: null,
+      };
+    }
+
+    return {
+      recurrenceRule,
+      recurrenceOriginColumnId:
+        dto.recurrenceOriginColumnId ?? task.recurrenceOriginColumnId ?? task.columnId,
+    };
+  }
+
+  private async handleRecurrenceCompletion(
+    task: {
+      id: string;
+      columnId: string;
+      title: string;
+      description: string | null;
+      priority: TaskPriority | null;
+      complexity: number | null;
+      timeEstimateMinutes: number | null;
+      assigneeId: string | null;
+      position: number;
+      dueDate: Date | null;
+      recurrenceRule: TaskRecurrenceRule;
+      recurrenceAction: TaskRecurrenceAction;
+      recurrenceWeekdays: number[];
+      recurrenceOriginColumnId: string | null;
+    },
+    columns: { id: string; position: number }[],
+  ) {
+    const originColumnId =
+      task.recurrenceOriginColumnId ?? columns.find((column) => column.position === 0)?.id;
+
+    if (!originColumnId) {
+      return;
+    }
+
+    const nextDueDate = computeNextRecurrenceDate(
+      task.dueDate ?? new Date(),
+      task.recurrenceRule,
+      task.recurrenceWeekdays,
+    );
+
+    if (task.recurrenceAction === TaskRecurrenceAction.DUPLICATE) {
+      await this.prisma.$transaction(async (tx) => {
+        const lastTask = await tx.task.findFirst({
+          where: { columnId: originColumnId },
+          orderBy: { position: 'desc' },
+        });
+        const position = (lastTask?.position ?? -1) + 1;
+
+        await tx.task.create({
+          data: {
+            columnId: originColumnId,
+            title: task.title,
+            description: task.description,
+            priority: task.priority,
+            complexity: task.complexity,
+            timeEstimateMinutes: task.timeEstimateMinutes,
+            assigneeId: task.assigneeId,
+            dueDate: nextDueDate,
+            position,
+            recurrenceRule: task.recurrenceRule,
+            recurrenceAction: task.recurrenceAction,
+            recurrenceWeekdays: task.recurrenceWeekdays,
+            recurrenceOriginColumnId: originColumnId,
+          },
+        });
+      });
+      return;
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await this.closeGap(tx, task.columnId, task.position);
+
+      const lastTask = await tx.task.findFirst({
+        where: { columnId: originColumnId },
+        orderBy: { position: 'desc' },
+      });
+      const position = (lastTask?.position ?? -1) + 1;
+      await this.makeSpace(tx, originColumnId, position);
+
+      await tx.task.update({
+        where: { id: task.id },
+        data: {
+          columnId: originColumnId,
+          position,
+          dueDate: nextDueDate,
+          actualMinutes: null,
+          recurrenceOriginColumnId: originColumnId,
+        },
+      });
+    });
   }
 
   async remove(workspaceId: string, taskId: string, userId: string) {
@@ -230,6 +368,10 @@ export class TasksService {
     assigneeId: string | null;
     position: number;
     columnId: string;
+    recurrenceRule: TaskRecurrenceRule;
+    recurrenceAction: TaskRecurrenceAction;
+    recurrenceWeekdays: number[];
+    recurrenceOriginColumnId: string | null;
     createdAt: Date;
     assignee?: {
       id: string;

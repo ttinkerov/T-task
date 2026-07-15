@@ -17,9 +17,7 @@ async function bootstrap(): Promise<void> {
 
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
-  app.setGlobalPrefix('api/v1', {
-    exclude: ['health/live', 'health/ready'],
-  });
+  app.setGlobalPrefix('api/v1');
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },

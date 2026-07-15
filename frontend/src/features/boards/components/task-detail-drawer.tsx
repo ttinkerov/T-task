@@ -13,9 +13,14 @@ import {
 import {
   COMPLEXITY_OPTIONS,
   PRIORITY_OPTIONS,
+  RECURRENCE_ACTION_OPTIONS,
+  RECURRENCE_RULE_OPTIONS,
+  RECURRENCE_WEEKDAY_OPTIONS,
   TIME_ESTIMATE_OPTIONS,
   type BoardTask,
   type TaskPriority,
+  type TaskRecurrenceAction,
+  type TaskRecurrenceRule,
 } from '../types';
 
 interface TaskDetailDrawerProps {
@@ -52,6 +57,13 @@ export function TaskDetailDrawer({
   const [actualMinutes, setActualMinutes] = useState<number | ''>(task.actualMinutes ?? '');
   const [dueDate, setDueDate] = useState(toDateInputValue(task.dueDate));
   const [assigneeId, setAssigneeId] = useState(task.assigneeId ?? '');
+  const [recurrenceRule, setRecurrenceRule] = useState<TaskRecurrenceRule>(task.recurrenceRule);
+  const [recurrenceAction, setRecurrenceAction] = useState<TaskRecurrenceAction>(
+    task.recurrenceAction,
+  );
+  const [recurrenceWeekdays, setRecurrenceWeekdays] = useState<number[]>(
+    task.recurrenceWeekdays ?? [],
+  );
   const [commentBody, setCommentBody] = useState('');
 
   useEffect(() => {
@@ -63,6 +75,9 @@ export function TaskDetailDrawer({
     setActualMinutes(task.actualMinutes ?? '');
     setDueDate(toDateInputValue(task.dueDate));
     setAssigneeId(task.assigneeId ?? '');
+    setRecurrenceRule(task.recurrenceRule);
+    setRecurrenceAction(task.recurrenceAction);
+    setRecurrenceWeekdays(task.recurrenceWeekdays ?? []);
   }, [task]);
 
   useEffect(() => {
@@ -88,9 +103,20 @@ export function TaskDetailDrawer({
         actualMinutes: actualMinutes === '' ? null : Number(actualMinutes),
         dueDate: dueDate ? new Date(`${dueDate}T12:00:00`).toISOString() : null,
         assigneeId: assigneeId || null,
+        recurrenceRule,
+        recurrenceAction,
+        recurrenceWeekdays: recurrenceRule === 'WEEKLY' ? recurrenceWeekdays : [],
+        recurrenceOriginColumnId:
+          recurrenceRule === 'NONE' ? null : (task.recurrenceOriginColumnId ?? task.columnId),
       },
     });
     onClose();
+  };
+
+  const toggleWeekday = (day: number) => {
+    setRecurrenceWeekdays((current) =>
+      current.includes(day) ? current.filter((item) => item !== day) : [...current, day].sort(),
+    );
   };
 
   const handleDelete = async () => {
@@ -251,6 +277,76 @@ export function TaskDetailDrawer({
               className="glass-input"
             />
           </label>
+
+          <div className="task-drawer__recurrence">
+            <h3 className="task-drawer__recurrence-title">Повторение</h3>
+            <p className="task-drawer__recurrence-hint">
+              При переносе в «Готово» задача автоматически создастся снова или перенесётся на
+              следующий срок.
+            </p>
+
+            <label className="task-drawer__field">
+              <span>Частота</span>
+              <select
+                value={recurrenceRule}
+                onChange={(event) => {
+                  const nextRule = event.target.value as TaskRecurrenceRule;
+                  setRecurrenceRule(nextRule);
+                  if (nextRule !== 'WEEKLY') {
+                    setRecurrenceWeekdays([]);
+                  }
+                }}
+                className="glass-input"
+              >
+                {RECURRENCE_RULE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {recurrenceRule === 'WEEKLY' ? (
+              <div className="task-drawer__field">
+                <span>Дни недели</span>
+                <div className="task-drawer__weekdays">
+                  {RECURRENCE_WEEKDAY_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={
+                        recurrenceWeekdays.includes(option.value)
+                          ? 'board-workload__toggle-btn board-workload__toggle-btn--active'
+                          : 'board-workload__toggle-btn'
+                      }
+                      onClick={() => toggleWeekday(option.value)}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {recurrenceRule !== 'NONE' ? (
+              <label className="task-drawer__field">
+                <span>После выполнения</span>
+                <select
+                  value={recurrenceAction}
+                  onChange={(event) =>
+                    setRecurrenceAction(event.target.value as TaskRecurrenceAction)
+                  }
+                  className="glass-input"
+                >
+                  {RECURRENCE_ACTION_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+          </div>
 
           {updateMutation.error ? (
             <p className="text-sm text-red-400">{updateMutation.error.message}</p>
