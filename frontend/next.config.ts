@@ -5,9 +5,13 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 const connectSrc = ["'self'", apiUrl];
 
+// Next.js HMR / React Refresh evaluate and inject inline scripts in development.
+// Keep production strict; use nonces later if production bootstrap scripts require it.
+const scriptSrc = isProduction ? ["'self'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"];
+
 const contentSecurityPolicy = [
   "default-src 'self'",
-  "script-src 'self'",
+  `script-src ${scriptSrc.join(' ')}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self'",

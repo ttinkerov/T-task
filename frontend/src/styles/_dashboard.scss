@@ -1,5 +1,25 @@
 @use 'variables' as *;
 
+.dashboard-skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 100;
+  transform: translateY(-200%);
+  border-radius: $radius-sm;
+  background: var(--tt-brand);
+  padding: 0.6rem 0.8rem;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+
+  &:focus {
+    transform: translateY(0);
+    outline: 2px solid var(--tt-text);
+    outline-offset: 2px;
+  }
+}
+
 .dashboard-header {
   position: sticky;
   top: 0;
@@ -21,6 +41,7 @@
 
 .dashboard-header__left {
   display: flex;
+  flex: 1;
   align-items: center;
   gap: 1.5rem;
   min-width: 0;
@@ -39,8 +60,12 @@
 
 .dashboard-header__nav {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 0.25rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
 }
 
 .dashboard-header__nav-link {
@@ -48,12 +73,18 @@
   padding: 0.375rem 0.75rem;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: $color-text-dim;
+  flex: 0 0 auto;
+  color: $color-text-muted;
   transition: color $transition-fast, background $transition-fast;
 
   &:hover {
     color: $color-text;
     background: var(--tt-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--tt-brand);
+    outline-offset: 2px;
   }
 
   &--active {
@@ -101,6 +132,11 @@
     border-color: $color-border;
     background: var(--tt-hover);
   }
+
+  &:focus-visible {
+    outline: 2px solid var(--tt-brand);
+    outline-offset: 2px;
+  }
 }
 
 .dashboard-main {
@@ -132,15 +168,16 @@
     font-size: 0.8125rem;
     font-weight: 500;
     color: $color-white;
-    outline: none;
     cursor: pointer;
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a1a1a6' d='M3 4.5L6 7.5L9 4.5'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 0.625rem center;
 
-    &:focus {
+    &:focus-visible {
       border-color: $color-brand-blue;
+      outline: 2px solid var(--tt-brand);
+      outline-offset: 2px;
     }
   }
 }

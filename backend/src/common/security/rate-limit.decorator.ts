@@ -27,3 +27,15 @@ export const PUBLIC_FORM_SUBMIT_RATE_LIMIT: RateLimitConfig = {
   windowSeconds: 60,
   maxAttempts: 10,
 };
+
+export const CALENDAR_FEED_GET_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'calendar-feed:get',
+  windowSeconds: 60,
+  maxAttempts: 60,
+};
+
+export const CALENDAR_FEED_MANAGE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'calendar-feed:manage',
+  windowSeconds: 60,
+  maxAttempts: 10,
+};

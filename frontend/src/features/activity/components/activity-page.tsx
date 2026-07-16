@@ -28,6 +28,8 @@ const ACTION_LABELS: Record<string, string> = {
   STAGE_DELETED: 'удалил(а) этап воронки',
   APP_CREATED: 'добавил(а) приложение',
   APP_DELETED: 'удалил(а) приложение',
+  CALENDAR_FEED_ROTATED: 'создал(а) или обновил(а) ссылку календаря',
+  CALENDAR_FEED_REVOKED: 'отключил(а) ссылку календаря',
   TASK_RESTORED: 'восстановил(а) задачу из корзины',
   TASK_PURGED: 'удалил(а) задачу навсегда',
   DEAL_RESTORED: 'восстановил(а) сделку из корзины',
@@ -63,7 +65,7 @@ export function ActivityPage({ workspaceId }: { workspaceId: string }) {
         <h1 id="activity-page-title">Логирование действий</h1>
         <p>
           Неизменяемая история административных событий: участники, настройки, колонки, формы,
-          воронки и приложения.
+          воронки, приложения и календари.
         </p>
       </header>
 

@@ -70,6 +70,9 @@ export function DashboardShell({
 
   return (
     <div className="app-shell min-h-screen">
+      <a className="dashboard-skip-link" href="#dashboard-content">
+        Перейти к содержимому
+      </a>
       <header className="dashboard-header">
         <div className="dashboard-header__inner">
           <div className="dashboard-header__left">
@@ -117,6 +120,13 @@ export function DashboardShell({
               >
                 Приложения
               </Link>
+              <Link
+                href="/dashboard/calendar"
+                className={navLinkClass('/dashboard/calendar')}
+                aria-current={isNavActive('/dashboard/calendar') ? 'page' : undefined}
+              >
+                Календарь
+              </Link>
               {!activityAccessLoading && canViewActivity ? (
                 <Link
                   href="/dashboard/activity"
@@ -163,7 +173,11 @@ export function DashboardShell({
         </div>
       </header>
 
-      <main className={`dashboard-main${boardMode ? ' dashboard-main--board' : ''}`}>
+      <main
+        id="dashboard-content"
+        tabIndex={-1}
+        className={`dashboard-main${boardMode ? ' dashboard-main--board' : ''}`}
+      >
         {children}
       </main>
     </div>
