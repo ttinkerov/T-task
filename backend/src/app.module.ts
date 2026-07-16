@@ -15,6 +15,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { ActivityModule } from './modules/activity/activity.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { AppsModule } from './modules/apps/apps.module';
+import { TrashModule } from './modules/trash/trash.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { AppsModule } from './modules/apps/apps.module';
     ActivityModule,
     RealtimeModule,
     AppsModule,
+    TrashModule,
   ],
 })
 export class AppModule {}

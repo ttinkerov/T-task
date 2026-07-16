@@ -27,7 +27,7 @@ export class AppsService {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
 
     const apps = await this.prisma.workspaceExternalApp.findMany({
-      where: { workspaceId },
+      where: { workspaceId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
       include: {
         createdBy: {
@@ -42,7 +42,9 @@ export class AppsService {
   async create(workspaceId: string, userId: string, dto: CreateExternalAppDto) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
 
-    const appCount = await this.prisma.workspaceExternalApp.count({ where: { workspaceId } });
+    const appCount = await this.prisma.workspaceExternalApp.count({
+      where: { workspaceId, deletedAt: null },
+    });
     if (appCount >= MAX_APPS_PER_WORKSPACE) {
       throw new BadRequestException(
         `В рабочем пространстве можно добавить до ${MAX_APPS_PER_WORKSPACE} приложений`,
@@ -97,7 +99,7 @@ export class AppsService {
   async remove(workspaceId: string, appId: string, userId: string) {
     const membership = await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
     const app = await this.prisma.workspaceExternalApp.findFirst({
-      where: { id: appId, workspaceId },
+      where: { id: appId, workspaceId, deletedAt: null },
     });
 
     if (!app) {
@@ -114,7 +116,10 @@ export class AppsService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.workspaceExternalApp.delete({ where: { id: app.id } });
+      await tx.workspaceExternalApp.update({
+        where: { id: app.id },
+        data: { deletedAt: new Date() },
+      });
       await this.activityService.record({
         workspaceId,
         actorId: userId,

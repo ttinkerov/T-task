@@ -21,6 +21,12 @@ export const ActivityAction = {
   STAGE_DELETED: 'STAGE_DELETED',
   APP_CREATED: 'APP_CREATED',
   APP_DELETED: 'APP_DELETED',
+  TASK_RESTORED: 'TASK_RESTORED',
+  TASK_PURGED: 'TASK_PURGED',
+  DEAL_RESTORED: 'DEAL_RESTORED',
+  DEAL_PURGED: 'DEAL_PURGED',
+  APP_RESTORED: 'APP_RESTORED',
+  APP_PURGED: 'APP_PURGED',
 } as const;
 
 export type ActivityAction = (typeof ActivityAction)[keyof typeof ActivityAction];
@@ -35,6 +41,8 @@ export const ActivityEntityType = {
   FUNNEL: 'FUNNEL',
   STAGE: 'STAGE',
   APP: 'APP',
+  TASK: 'TASK',
+  DEAL: 'DEAL',
 } as const;
 
 export type ActivityEntityType = (typeof ActivityEntityType)[keyof typeof ActivityEntityType];

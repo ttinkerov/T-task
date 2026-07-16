@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
@@ -70,6 +75,7 @@ export class FunnelsService {
           orderBy: { position: 'asc' },
           include: {
             deals: {
+              where: { deletedAt: null },
               orderBy: { position: 'asc' },
               include: dealWithAssignee,
             },
@@ -201,6 +207,16 @@ export class FunnelsService {
     const stageCount = await this.prisma.funnelStage.count({ where: { funnelId } });
     if (stageCount <= 1) {
       throw new BadRequestException('Cannot delete the last stage');
+    }
+
+    const trashedDeals = await this.prisma.deal.count({
+      where: { stageId, deletedAt: { not: null } },
+    });
+
+    if (trashedDeals > 0) {
+      throw new ConflictException(
+        'На этапе есть сделки в корзине. Восстановите или удалите их навсегда перед удалением этапа.',
+      );
     }
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {

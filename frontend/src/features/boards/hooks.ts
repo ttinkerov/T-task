@@ -193,6 +193,7 @@ export function useDeleteTaskMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: ['workspace-trash'] });
     },
   });
 }

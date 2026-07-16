@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ColumnAutomationAction, Prisma } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
@@ -68,6 +73,7 @@ export class BoardsService {
               },
             },
             tasks: {
+              where: { deletedAt: null },
               orderBy: { position: 'asc' },
               include: {
                 assignee: {
@@ -346,6 +352,16 @@ export class BoardsService {
 
     if (columnCount <= 1) {
       throw new BadRequestException('Cannot delete the last column');
+    }
+
+    const trashedTasks = await this.prisma.task.count({
+      where: { columnId, deletedAt: { not: null } },
+    });
+
+    if (trashedTasks > 0) {
+      throw new ConflictException(
+        'В колонке есть задачи в корзине. Восстановите или удалите их навсегда перед удалением колонки.',
+      );
     }
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {

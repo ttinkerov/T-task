@@ -41,6 +41,7 @@ export function useDeleteExternalAppMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: externalAppKeys.list(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: ['workspace-trash'] });
     },
   });
 }

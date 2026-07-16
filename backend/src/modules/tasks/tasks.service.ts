@@ -51,7 +51,7 @@ export class TasksService {
     }
 
     const lastTask = await this.prisma.task.findFirst({
-      where: { columnId: column.id },
+      where: { columnId: column.id, deletedAt: null },
       orderBy: { position: 'desc' },
     });
 
@@ -318,7 +318,7 @@ export class TasksService {
     if (task.recurrenceAction === TaskRecurrenceAction.DUPLICATE) {
       await this.prisma.$transaction(async (tx) => {
         const lastTask = await tx.task.findFirst({
-          where: { columnId: originColumnId },
+          where: { columnId: originColumnId, deletedAt: null },
           orderBy: { position: 'desc' },
         });
         const position = (lastTask?.position ?? -1) + 1;
@@ -348,7 +348,7 @@ export class TasksService {
       await this.closeGap(tx, task.columnId, task.position);
 
       const lastTask = await tx.task.findFirst({
-        where: { columnId: originColumnId },
+        where: { columnId: originColumnId, deletedAt: null },
         orderBy: { position: 'desc' },
       });
       const position = (lastTask?.position ?? -1) + 1;
@@ -373,7 +373,10 @@ export class TasksService {
     const task = await this.assertTaskInWorkspace(workspaceId, taskId, userId);
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.task.delete({ where: { id: taskId } });
+      await tx.task.update({
+        where: { id: taskId },
+        data: { deletedAt: new Date() },
+      });
       await this.closeGap(tx, task.columnId, task.position);
     });
 
@@ -386,6 +389,7 @@ export class TasksService {
     const task = await this.prisma.task.findFirst({
       where: {
         id: taskId,
+        deletedAt: null,
         column: { board: { workspaceId } },
       },
     });
@@ -437,7 +441,7 @@ export class TasksService {
     newPosition: number,
   ) {
     const tasks = await tx.task.findMany({
-      where: { columnId },
+      where: { columnId, deletedAt: null },
       orderBy: { position: 'asc' },
     });
 
@@ -459,7 +463,7 @@ export class TasksService {
 
   private async closeGap(tx: Prisma.TransactionClient, columnId: string, removedPosition: number) {
     const tasks = await tx.task.findMany({
-      where: { columnId, position: { gt: removedPosition } },
+      where: { columnId, deletedAt: null, position: { gt: removedPosition } },
       orderBy: { position: 'asc' },
     });
 
@@ -475,7 +479,7 @@ export class TasksService {
 
   private async makeSpace(tx: Prisma.TransactionClient, columnId: string, position: number) {
     const tasks = await tx.task.findMany({
-      where: { columnId, position: { gte: position } },
+      where: { columnId, deletedAt: null, position: { gte: position } },
       orderBy: { position: 'desc' },
     });
 

@@ -76,6 +76,7 @@ export class CommentsService {
     const task = await this.prisma.task.findFirst({
       where: {
         id: taskId,
+        deletedAt: null,
         column: { board: { workspaceId } },
       },
     });

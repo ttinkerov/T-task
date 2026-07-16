@@ -36,7 +36,7 @@ export class DealsService {
     }
 
     const lastDeal = await this.prisma.deal.findFirst({
-      where: { stageId: stage.id },
+      where: { stageId: stage.id, deletedAt: null },
       orderBy: { position: 'desc' },
     });
 
@@ -129,7 +129,10 @@ export class DealsService {
     const deal = await this.assertDealInWorkspace(workspaceId, dealId, userId);
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.deal.delete({ where: { id: dealId } });
+      await tx.deal.update({
+        where: { id: dealId },
+        data: { deletedAt: new Date() },
+      });
       await this.closeGap(tx, deal.stageId, deal.position);
     });
 
@@ -142,6 +145,7 @@ export class DealsService {
     const deal = await this.prisma.deal.findFirst({
       where: {
         id: dealId,
+        deletedAt: null,
         stage: { funnel: { workspaceId } },
       },
     });
@@ -160,7 +164,7 @@ export class DealsService {
     newPosition: number,
   ) {
     const deals = await tx.deal.findMany({
-      where: { stageId },
+      where: { stageId, deletedAt: null },
       orderBy: { position: 'asc' },
     });
 
@@ -182,7 +186,7 @@ export class DealsService {
 
   private async closeGap(tx: Prisma.TransactionClient, stageId: string, removedPosition: number) {
     const deals = await tx.deal.findMany({
-      where: { stageId, position: { gt: removedPosition } },
+      where: { stageId, deletedAt: null, position: { gt: removedPosition } },
       orderBy: { position: 'asc' },
     });
 
@@ -198,7 +202,7 @@ export class DealsService {
 
   private async makeSpace(tx: Prisma.TransactionClient, stageId: string, position: number) {
     const deals = await tx.deal.findMany({
-      where: { stageId, position: { gte: position } },
+      where: { stageId, deletedAt: null, position: { gte: position } },
       orderBy: { position: 'desc' },
     });
 

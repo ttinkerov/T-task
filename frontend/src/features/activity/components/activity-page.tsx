@@ -28,6 +28,12 @@ const ACTION_LABELS: Record<string, string> = {
   STAGE_DELETED: 'удалил(а) этап воронки',
   APP_CREATED: 'добавил(а) приложение',
   APP_DELETED: 'удалил(а) приложение',
+  TASK_RESTORED: 'восстановил(а) задачу из корзины',
+  TASK_PURGED: 'удалил(а) задачу навсегда',
+  DEAL_RESTORED: 'восстановил(а) сделку из корзины',
+  DEAL_PURGED: 'удалил(а) сделку навсегда',
+  APP_RESTORED: 'восстановил(а) приложение из корзины',
+  APP_PURGED: 'удалил(а) приложение навсегда',
 };
 
 export function ActivityPage({ workspaceId }: { workspaceId: string }) {

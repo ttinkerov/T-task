@@ -193,6 +193,7 @@ export function useDeleteDealMutation(workspaceId: string, funnelId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: crmKeys.funnel(workspaceId, funnelId) });
+      void queryClient.invalidateQueries({ queryKey: ['workspace-trash'] });
     },
   });
 }

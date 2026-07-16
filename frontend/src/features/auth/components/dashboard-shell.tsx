@@ -7,6 +7,7 @@ import { BrandLogo } from '@/components/marketing/brand-logo';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { useCanViewActivity } from '@/features/activity/hooks';
 import { useLogoutMutation, useMeQuery } from '@/features/auth/hooks';
+import { useCanManageTrash } from '@/features/trash/hooks';
 import { WorkspaceSwitcher } from '@/features/workspaces/components/workspace-switcher';
 
 export function DashboardShell({
@@ -21,6 +22,7 @@ export function DashboardShell({
   const { data: session, isLoading, isError } = useMeQuery();
   const logoutMutation = useLogoutMutation();
   const { canView: canViewActivity, isLoading: activityAccessLoading } = useCanViewActivity();
+  const { canManage: canManageTrash, isLoading: trashAccessLoading } = useCanManageTrash();
 
   useEffect(() => {
     if (!isLoading && (isError || !session)) {
@@ -122,6 +124,15 @@ export function DashboardShell({
                   aria-current={isNavActive('/dashboard/activity') ? 'page' : undefined}
                 >
                   Журнал
+                </Link>
+              ) : null}
+              {!trashAccessLoading && canManageTrash ? (
+                <Link
+                  href="/dashboard/trash"
+                  className={navLinkClass('/dashboard/trash')}
+                  aria-current={isNavActive('/dashboard/trash') ? 'page' : undefined}
+                >
+                  Корзина
                 </Link>
               ) : null}
               <Link
