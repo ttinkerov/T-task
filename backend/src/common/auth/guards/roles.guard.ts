@@ -40,9 +40,14 @@ export class RolesGuard implements CanActivate {
       throw new UnauthorizedException('Authentication required');
     }
 
-    const workspaceId =
-      (request.headers[WORKSPACE_ID_HEADER] as string | undefined) ??
-      (request.params.workspaceId as string | undefined);
+    const pathWorkspaceId = request.params.workspaceId as string | undefined;
+    const headerWorkspaceId = request.headers[WORKSPACE_ID_HEADER] as string | undefined;
+
+    if (pathWorkspaceId && headerWorkspaceId && pathWorkspaceId !== headerWorkspaceId) {
+      throw new ForbiddenException('Workspace ID mismatch');
+    }
+
+    const workspaceId = pathWorkspaceId ?? headerWorkspaceId;
 
     if (!workspaceId) {
       throw new ForbiddenException('Workspace context is required');

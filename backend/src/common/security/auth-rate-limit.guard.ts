@@ -9,6 +9,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { RedisService } from '../../infrastructure/redis/redis.service';
+import { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 import { DEFAULT_AUTH_RATE_LIMIT, RATE_LIMIT_KEY, RateLimitConfig } from './rate-limit.decorator';
 
 @Injectable()
@@ -22,26 +23,33 @@ export class AuthRateLimitGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<Request>();
-    const ip = this.resolveClientIp(request);
+    const request = context.switchToHttp().getRequest<Request & { user?: AuthenticatedUser }>();
     const config =
       this.reflector.getAllAndOverride<RateLimitConfig>(RATE_LIMIT_KEY, [
         context.getHandler(),
         context.getClass(),
       ]) ?? DEFAULT_AUTH_RATE_LIMIT;
 
+    // Prefer authenticated user id — JWT subject cannot be spoofed via X-Forwarded-For.
+    // With Express `trust proxy`, request.ip already reflects the first trusted hop.
+    const rateKey = request.user?.id ?? request.ip ?? 'unknown';
+
     try {
-      return await this.checkRedisRateLimit(ip, config);
+      return await this.checkRedisRateLimit(rateKey, config);
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
       this.logger.warn(
         `Redis rate limit unavailable, using in-memory fallback: ${error instanceof Error ? error.message : 'unknown error'}`,
       );
-      return this.checkMemoryRateLimit(ip, config);
+      return this.checkMemoryRateLimit(rateKey, config);
     }
   }
 
-  private async checkRedisRateLimit(ip: string, config: RateLimitConfig): Promise<boolean> {
-    const key = `${config.keyPrefix}:${ip}`;
+  private async checkRedisRateLimit(rateKey: string, config: RateLimitConfig): Promise<boolean> {
+    const key = `${config.keyPrefix}:${rateKey}`;
     const client = this.redis.getClient();
 
     const attempts = await client.incr(key);
@@ -57,9 +65,9 @@ export class AuthRateLimitGuard implements CanActivate {
     return true;
   }
 
-  private checkMemoryRateLimit(ip: string, config: RateLimitConfig): boolean {
+  private checkMemoryRateLimit(rateKey: string, config: RateLimitConfig): boolean {
     const now = Date.now();
-    const storeKey = `${config.keyPrefix}:${ip}`;
+    const storeKey = `${config.keyPrefix}:${rateKey}`;
     const existing = this.memoryStore.get(storeKey);
 
     if (!existing || existing.expiresAt <= now) {
@@ -81,15 +89,5 @@ export class AuthRateLimitGuard implements CanActivate {
     }
 
     return true;
-  }
-
-  private resolveClientIp(request: Request): string {
-    const forwarded = request.headers['x-forwarded-for'];
-
-    if (typeof forwarded === 'string' && forwarded.length > 0) {
-      return forwarded.split(',')[0]?.trim() ?? 'unknown';
-    }
-
-    return request.ip ?? 'unknown';
   }
 }

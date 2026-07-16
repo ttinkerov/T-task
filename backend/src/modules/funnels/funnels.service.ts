@@ -7,6 +7,8 @@ import { CreateStageDto } from './dto/create-stage.dto';
 import { MoveStageDto } from './dto/move-stage.dto';
 import { UpdateStageDto } from './dto/update-stage.dto';
 import { createDefaultFunnel } from './utils/create-default-funnel.util';
+import { ActivityService } from '../activity/activity.service';
+import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
 
 const dealWithAssignee = {
   assignee: {
@@ -19,6 +21,7 @@ export class FunnelsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly workspacesService: WorkspacesService,
+    private readonly activityService: ActivityService,
   ) {}
 
   async listFunnels(workspaceId: string, userId: string) {
@@ -41,9 +44,18 @@ export class FunnelsService {
   async createFunnel(workspaceId: string, userId: string, dto: CreateFunnelDto) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
 
-    const funnel = await this.prisma.$transaction(async (tx) =>
-      createDefaultFunnel(tx, workspaceId, dto.name.trim()),
-    );
+    const funnel = await this.prisma.$transaction(async (tx) => {
+      const created = await createDefaultFunnel(tx, workspaceId, dto.name.trim());
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.FUNNEL_CREATED,
+        entityType: ActivityEntityType.FUNNEL,
+        entityId: created.id,
+        entityName: created.name,
+      });
+      return created;
+    });
 
     return { id: funnel.id, name: funnel.name };
   }
@@ -105,12 +117,23 @@ export class FunnelsService {
       orderBy: { position: 'desc' },
     });
 
-    const stage = await this.prisma.funnelStage.create({
-      data: {
-        funnelId,
-        name: dto.name.trim(),
-        position: (lastStage?.position ?? -1) + 1,
-      },
+    const stage = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.funnelStage.create({
+        data: {
+          funnelId,
+          name: dto.name.trim(),
+          position: (lastStage?.position ?? -1) + 1,
+        },
+      });
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.STAGE_CREATED,
+        entityType: ActivityEntityType.STAGE,
+        entityId: created.id,
+        entityName: created.name,
+      });
+      return created;
     });
 
     return {
@@ -139,9 +162,21 @@ export class FunnelsService {
       throw new NotFoundException('Stage not found');
     }
 
-    const updated = await this.prisma.funnelStage.update({
-      where: { id: stageId },
-      data: { name: dto.name.trim() },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const renamed = await tx.funnelStage.update({
+        where: { id: stageId },
+        data: { name: dto.name.trim() },
+      });
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.STAGE_UPDATED,
+        entityType: ActivityEntityType.STAGE,
+        entityId: renamed.id,
+        entityName: renamed.name,
+        metadata: { previousName: stage.name },
+      });
+      return renamed;
     });
 
     return {
@@ -184,6 +219,14 @@ export class FunnelsService {
           }),
         ),
       );
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.STAGE_DELETED,
+        entityType: ActivityEntityType.STAGE,
+        entityId: stage.id,
+        entityName: stage.name,
+      });
     });
 
     return { success: true };

@@ -1,5 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
+import { ActivityController } from './activity.controller';
+import { ActivityService } from './activity.service';
 
-/** Feature module placeholder — activity feed and audit log. */
-@Module({})
+@Global()
+@Module({
+  controllers: [ActivityController],
+  providers: [ActivityService],
+  exports: [ActivityService],
+})
 export class ActivityModule {}

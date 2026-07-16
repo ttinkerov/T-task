@@ -15,12 +15,17 @@ import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { assertCanAssignRole, createUniqueWorkspaceSlug } from './utils/workspace.util';
 import { createDefaultBoard } from '../boards/utils/create-default-board.util';
 import { createDefaultFunnel } from '../funnels/utils/create-default-funnel.util';
+import { ActivityService } from '../activity/activity.service';
+import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
 
 const INVITATION_TTL_DAYS = 7;
 
 @Injectable()
 export class WorkspacesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly activityService: ActivityService,
+  ) {}
 
   async listForUser(userId: string) {
     const memberships = await this.prisma.workspaceMember.findMany({
@@ -63,6 +68,14 @@ export class WorkspacesService {
 
       await createDefaultBoard(tx, created.id);
       await createDefaultFunnel(tx, created.id);
+      await this.activityService.record({
+        workspaceId: created.id,
+        actorId: userId,
+        action: ActivityAction.WORKSPACE_CREATED,
+        entityType: ActivityEntityType.WORKSPACE,
+        entityId: created.id,
+        entityName: created.name,
+      });
 
       return created;
     });
@@ -80,12 +93,27 @@ export class WorkspacesService {
   async update(workspaceId: string, userId: string, dto: UpdateWorkspaceDto) {
     await this.getMembership(workspaceId, userId);
 
-    const workspace = await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        ...(dto.name ? { name: dto.name.trim() } : {}),
-        ...(dto.autoRollOverdue !== undefined ? { autoRollOverdue: dto.autoRollOverdue } : {}),
-      },
+    const workspace = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.workspace.update({
+        where: { id: workspaceId },
+        data: {
+          ...(dto.name ? { name: dto.name.trim() } : {}),
+          ...(dto.autoRollOverdue !== undefined ? { autoRollOverdue: dto.autoRollOverdue } : {}),
+        },
+      });
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.WORKSPACE_UPDATED,
+        entityType: ActivityEntityType.WORKSPACE,
+        entityId: workspaceId,
+        entityName: updated.name,
+        metadata: {
+          nameChanged: dto.name !== undefined,
+          overdueSettingChanged: dto.autoRollOverdue !== undefined,
+        },
+      });
+      return updated;
     });
 
     const membership = await this.getMembership(workspaceId, userId);
@@ -102,9 +130,19 @@ export class WorkspacesService {
   async archive(workspaceId: string, userId: string) {
     await this.getMembership(workspaceId, userId);
 
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: { archivedAt: new Date() },
+    await this.prisma.$transaction(async (tx) => {
+      const workspace = await tx.workspace.update({
+        where: { id: workspaceId },
+        data: { archivedAt: new Date() },
+      });
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.WORKSPACE_ARCHIVED,
+        entityType: ActivityEntityType.WORKSPACE,
+        entityId: workspaceId,
+        entityName: workspace.name,
+      });
     });
 
     return { success: true };
@@ -117,9 +155,19 @@ export class WorkspacesService {
       throw new ForbiddenException('Only workspace owner can delete workspace');
     }
 
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: { deletedAt: new Date() },
+    await this.prisma.$transaction(async (tx) => {
+      const workspace = await tx.workspace.update({
+        where: { id: workspaceId },
+        data: { deletedAt: new Date() },
+      });
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.WORKSPACE_DELETED,
+        entityType: ActivityEntityType.WORKSPACE,
+        entityId: workspaceId,
+        entityName: workspace.name,
+      });
     });
 
     return { success: true };
@@ -215,6 +263,41 @@ export class WorkspacesService {
       return member;
     });
 
+    await this.activityService.record({
+      workspaceId,
+      actorId: actorUserId,
+      action: ActivityAction.MEMBER_ROLE_UPDATED,
+      entityType: ActivityEntityType.MEMBER,
+      entityId: updated.userId,
+      entityName: updated.user.name,
+      metadata: {
+        previousRole: targetMember.role,
+        nextRole: updated.role,
+      },
+    });
+
+    if (dto.role === WorkspaceRole.OWNER && actorUserId !== updated.userId) {
+      const actorUser = await this.prisma.user.findUnique({
+        where: { id: actorUserId },
+        select: { name: true },
+      });
+
+      await this.activityService.record({
+        workspaceId,
+        actorId: actorUserId,
+        actorName: actorUser?.name,
+        action: ActivityAction.MEMBER_ROLE_UPDATED,
+        entityType: ActivityEntityType.MEMBER,
+        entityId: actorUserId,
+        entityName: actorUser?.name ?? 'Удалённый пользователь',
+        metadata: {
+          previousRole: actorMembership.role,
+          nextRole: WorkspaceRole.ADMIN,
+          reason: 'automatic_owner_transfer',
+        },
+      });
+    }
+
     return {
       id: updated.id,
       userId: updated.userId,
@@ -236,6 +319,11 @@ export class WorkspacesService {
 
     const targetMember = await this.prisma.workspaceMember.findFirst({
       where: { id: memberId, workspaceId },
+      include: {
+        user: {
+          select: { name: true },
+        },
+      },
     });
 
     if (!targetMember) {
@@ -250,7 +338,18 @@ export class WorkspacesService {
       await this.assertNotLastOwner(workspaceId);
     }
 
-    await this.prisma.workspaceMember.delete({ where: { id: memberId } });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.workspaceMember.delete({ where: { id: memberId } });
+      await this.activityService.record({
+        workspaceId,
+        actorId: actorUserId,
+        action: ActivityAction.MEMBER_REMOVED,
+        entityType: ActivityEntityType.MEMBER,
+        entityId: targetMember.userId,
+        entityName: targetMember.user.name,
+        metadata: { previousRole: targetMember.role },
+      });
+    });
 
     return { success: true };
   }
@@ -318,15 +417,27 @@ export class WorkspacesService {
     const tokenHash = hashToken(rawToken);
     const expiresAt = new Date(Date.now() + INVITATION_TTL_DAYS * 24 * 60 * 60 * 1000);
 
-    const invitation = await this.prisma.invitation.create({
-      data: {
+    const invitation = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.invitation.create({
+        data: {
+          workspaceId,
+          invitedById: userId,
+          email,
+          role,
+          tokenHash,
+          expiresAt,
+        },
+      });
+      await this.activityService.record({
         workspaceId,
-        invitedById: userId,
-        email,
-        role,
-        tokenHash,
-        expiresAt,
-      },
+        actorId: userId,
+        action: ActivityAction.INVITATION_CREATED,
+        entityType: ActivityEntityType.INVITATION,
+        entityId: created.id,
+        entityName: email,
+        metadata: { role },
+      });
+      return created;
     });
 
     return {
@@ -349,9 +460,20 @@ export class WorkspacesService {
       throw new NotFoundException('Invitation not found');
     }
 
-    await this.prisma.invitation.update({
-      where: { id: invitationId },
-      data: { revokedAt: new Date() },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.invitation.update({
+        where: { id: invitationId },
+        data: { revokedAt: new Date() },
+      });
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.INVITATION_REVOKED,
+        entityType: ActivityEntityType.INVITATION,
+        entityId: invitation.id,
+        entityName: invitation.email,
+        metadata: { role: invitation.role },
+      });
     });
 
     return { success: true };
@@ -422,6 +544,15 @@ export class WorkspacesService {
 
       const workspace = await tx.workspace.findUniqueOrThrow({
         where: { id: invitation.workspaceId },
+      });
+      await this.activityService.record({
+        workspaceId: invitation.workspaceId,
+        actorId: userId,
+        action: ActivityAction.MEMBER_JOINED,
+        entityType: ActivityEntityType.MEMBER,
+        entityId: userId,
+        entityName: user.name,
+        metadata: { role: invitation.role },
       });
 
       return { membership, workspace };

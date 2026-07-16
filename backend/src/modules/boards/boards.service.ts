@@ -7,12 +7,15 @@ import { MoveColumnDto } from './dto/move-column.dto';
 import { UpdateColumnDto } from './dto/update-column.dto';
 import { UpdateColumnAutomationsDto } from './dto/update-column-automations.dto';
 import { countOverdueDays, isTaskOverdue, nextRolledDueDate } from './utils/overdue.util';
+import { ActivityService } from '../activity/activity.service';
+import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
 
 @Injectable()
 export class BoardsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly workspacesService: WorkspacesService,
+    private readonly activityService: ActivityService,
   ) {}
 
   async getBoard(workspaceId: string, userId: string) {
@@ -143,12 +146,23 @@ export class BoardsService {
       orderBy: { position: 'desc' },
     });
 
-    const column = await this.prisma.boardColumn.create({
-      data: {
-        boardId: board.id,
-        name: dto.name.trim(),
-        position: (lastColumn?.position ?? -1) + 1,
-      },
+    const column = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.boardColumn.create({
+        data: {
+          boardId: board.id,
+          name: dto.name.trim(),
+          position: (lastColumn?.position ?? -1) + 1,
+        },
+      });
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.COLUMN_CREATED,
+        entityType: ActivityEntityType.COLUMN,
+        entityId: created.id,
+        entityName: created.name,
+      });
+      return created;
     });
 
     return {
@@ -172,9 +186,21 @@ export class BoardsService {
       throw new NotFoundException('Column not found');
     }
 
-    const updated = await this.prisma.boardColumn.update({
-      where: { id: columnId },
-      data: { name: dto.name.trim() },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const renamed = await tx.boardColumn.update({
+        where: { id: columnId },
+        data: { name: dto.name.trim() },
+      });
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.COLUMN_UPDATED,
+        entityType: ActivityEntityType.COLUMN,
+        entityId: renamed.id,
+        entityName: renamed.name,
+        metadata: { previousName: column.name },
+      });
+      return renamed;
     });
 
     return {
@@ -256,6 +282,15 @@ export class BoardsService {
       if (automations.length > 0) {
         await tx.columnAutomation.createMany({ data: automations });
       }
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.COLUMN_AUTOMATIONS_UPDATED,
+        entityType: ActivityEntityType.AUTOMATION,
+        entityId: columnId,
+        entityName: column.name,
+        metadata: { automationCount: automations.length },
+      });
     });
 
     return this.getColumnAutomations(workspaceId, columnId, userId);
@@ -329,6 +364,14 @@ export class BoardsService {
           }),
         ),
       );
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.COLUMN_DELETED,
+        entityType: ActivityEntityType.COLUMN,
+        entityId: column.id,
+        entityName: column.name,
+      });
     });
 
     return { success: true };

@@ -6,6 +6,8 @@ import { FormFieldType, Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import { ActivityService } from '../activity/activity.service';
+import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
 import { CreateFormFieldDto } from './dto/create-form-field.dto';
 import { CreateFormDto } from './dto/create-form.dto';
 import { UpdateFormDto } from './dto/update-form.dto';
@@ -16,6 +18,7 @@ export class FormsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly workspacesService: WorkspacesService,
+    private readonly activityService: ActivityService,
   ) {}
 
   async list(workspaceId: string, userId: string) {
@@ -45,14 +48,25 @@ export class FormsService {
   async create(workspaceId: string, userId: string, dto: CreateFormDto) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
 
-    const form = await this.prisma.form.create({
-      data: {
+    const form = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.form.create({
+        data: {
+          workspaceId,
+          title: dto.title.trim(),
+          description: dto.description?.trim() || null,
+          publicToken: randomUUID(),
+          createTaskOnSubmit: dto.createTaskOnSubmit ?? false,
+        },
+      });
+      await this.activityService.record({
         workspaceId,
-        title: dto.title.trim(),
-        description: dto.description?.trim() || null,
-        publicToken: randomUUID(),
-        createTaskOnSubmit: dto.createTaskOnSubmit ?? false,
-      },
+        actorId: userId,
+        action: ActivityAction.FORM_CREATED,
+        entityType: ActivityEntityType.FORM,
+        entityId: created.id,
+        entityName: created.title,
+      });
+      return created;
     });
 
     return this.getForm(workspaceId, form.id, userId);
@@ -67,18 +81,35 @@ export class FormsService {
 
   async update(workspaceId: string, formId: string, userId: string, dto: UpdateFormDto) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
-    await this.findFormInWorkspace(workspaceId, formId);
+    const existing = await this.findFormInWorkspace(workspaceId, formId);
 
-    await this.prisma.form.update({
-      where: { id: formId },
-      data: {
-        ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
-        ...(dto.description !== undefined ? { description: dto.description?.trim() || null } : {}),
-        ...(dto.isPublic !== undefined ? { isPublic: dto.isPublic } : {}),
-        ...(dto.createTaskOnSubmit !== undefined
-          ? { createTaskOnSubmit: dto.createTaskOnSubmit }
-          : {}),
-      },
+    await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.form.update({
+        where: { id: formId },
+        data: {
+          ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
+          ...(dto.description !== undefined
+            ? { description: dto.description?.trim() || null }
+            : {}),
+          ...(dto.isPublic !== undefined ? { isPublic: dto.isPublic } : {}),
+          ...(dto.createTaskOnSubmit !== undefined
+            ? { createTaskOnSubmit: dto.createTaskOnSubmit }
+            : {}),
+        },
+      });
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.FORM_UPDATED,
+        entityType: ActivityEntityType.FORM,
+        entityId: updated.id,
+        entityName: updated.title,
+        metadata: {
+          titleChanged: dto.title !== undefined && dto.title.trim() !== existing.title,
+          accessChanged: dto.isPublic !== undefined,
+          taskCreationChanged: dto.createTaskOnSubmit !== undefined,
+        },
+      });
     });
 
     return this.getForm(workspaceId, formId, userId);
@@ -86,8 +117,18 @@ export class FormsService {
 
   async remove(workspaceId: string, formId: string, userId: string) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
-    await this.findFormInWorkspace(workspaceId, formId);
-    await this.prisma.form.delete({ where: { id: formId } });
+    const form = await this.findFormInWorkspace(workspaceId, formId);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.form.delete({ where: { id: formId } });
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.FORM_DELETED,
+        entityType: ActivityEntityType.FORM,
+        entityId: form.id,
+        entityName: form.title,
+      });
+    });
     return { success: true };
   }
 

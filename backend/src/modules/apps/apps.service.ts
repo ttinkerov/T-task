@@ -8,6 +8,8 @@ import {
 import { Prisma, WorkspaceRole } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import { ActivityService } from '../activity/activity.service';
+import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
 import { CreateExternalAppDto } from './dto/create-external-app.dto';
 import { normalizeExternalAppUrl } from './utils/external-app-url.util';
 
@@ -18,6 +20,7 @@ export class AppsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly workspacesService: WorkspacesService,
+    private readonly activityService: ActivityService,
   ) {}
 
   async list(workspaceId: string, userId: string) {
@@ -54,20 +57,32 @@ export class AppsService {
     }
 
     try {
-      const app = await this.prisma.workspaceExternalApp.create({
-        data: {
-          workspaceId,
-          createdById: userId,
-          provider: normalized.provider,
-          title: dto.title.trim(),
-          sourceUrl: normalized.sourceUrl,
-          embedUrl: normalized.embedUrl,
-        },
-        include: {
-          createdBy: {
-            select: { id: true, name: true },
+      const app = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.workspaceExternalApp.create({
+          data: {
+            workspaceId,
+            createdById: userId,
+            provider: normalized.provider,
+            title: dto.title.trim(),
+            sourceUrl: normalized.sourceUrl,
+            embedUrl: normalized.embedUrl,
           },
-        },
+          include: {
+            createdBy: {
+              select: { id: true, name: true },
+            },
+          },
+        });
+        await this.activityService.record({
+          workspaceId,
+          actorId: userId,
+          action: ActivityAction.APP_CREATED,
+          entityType: ActivityEntityType.APP,
+          entityId: created.id,
+          entityName: created.title,
+          metadata: { provider: created.provider },
+        });
+        return created;
       });
 
       return this.serialize(app);
@@ -98,7 +113,18 @@ export class AppsService {
       throw new ForbiddenException('Удалить приложение может автор или администратор');
     }
 
-    await this.prisma.workspaceExternalApp.delete({ where: { id: app.id } });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.workspaceExternalApp.delete({ where: { id: app.id } });
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.APP_DELETED,
+        entityType: ActivityEntityType.APP,
+        entityId: app.id,
+        entityName: app.title,
+        metadata: { provider: app.provider },
+      });
+    });
     return { success: true };
   }
 

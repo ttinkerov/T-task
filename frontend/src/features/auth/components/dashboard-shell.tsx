@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { BrandLogo } from '@/components/marketing/brand-logo';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
+import { useCanViewActivity } from '@/features/activity/hooks';
 import { useLogoutMutation, useMeQuery } from '@/features/auth/hooks';
 import { WorkspaceSwitcher } from '@/features/workspaces/components/workspace-switcher';
 
@@ -19,6 +20,7 @@ export function DashboardShell({
   const pathname = usePathname();
   const { data: session, isLoading, isError } = useMeQuery();
   const logoutMutation = useLogoutMutation();
+  const { canView: canViewActivity, isLoading: activityAccessLoading } = useCanViewActivity();
 
   useEffect(() => {
     if (!isLoading && (isError || !session)) {
@@ -70,26 +72,63 @@ export function DashboardShell({
         <div className="dashboard-header__inner">
           <div className="dashboard-header__left">
             <BrandLogo href="/dashboard" className="dashboard-header__logo" />
-            <nav className="dashboard-header__nav">
-              <Link href="/dashboard" className={navLinkClass('/dashboard')}>
+            <nav className="dashboard-header__nav" aria-label="Основная навигация">
+              <Link
+                href="/dashboard"
+                className={navLinkClass('/dashboard')}
+                aria-current={isNavActive('/dashboard') ? 'page' : undefined}
+              >
                 Главная
               </Link>
-              <Link href="/dashboard/board" className={navLinkClass('/dashboard/board')}>
+              <Link
+                href="/dashboard/board"
+                className={navLinkClass('/dashboard/board')}
+                aria-current={isNavActive('/dashboard/board') ? 'page' : undefined}
+              >
                 Доска
               </Link>
-              <Link href="/dashboard/analytics" className={navLinkClass('/dashboard/analytics')}>
+              <Link
+                href="/dashboard/analytics"
+                className={navLinkClass('/dashboard/analytics')}
+                aria-current={isNavActive('/dashboard/analytics') ? 'page' : undefined}
+              >
                 Аналитика
               </Link>
-              <Link href="/dashboard/crm" className={navLinkClass('/dashboard/crm')}>
+              <Link
+                href="/dashboard/crm"
+                className={navLinkClass('/dashboard/crm')}
+                aria-current={isNavActive('/dashboard/crm') ? 'page' : undefined}
+              >
                 CRM
               </Link>
-              <Link href="/dashboard/forms" className={navLinkClass('/dashboard/forms')}>
+              <Link
+                href="/dashboard/forms"
+                className={navLinkClass('/dashboard/forms')}
+                aria-current={isNavActive('/dashboard/forms') ? 'page' : undefined}
+              >
                 Формы
               </Link>
-              <Link href="/dashboard/apps" className={navLinkClass('/dashboard/apps')}>
+              <Link
+                href="/dashboard/apps"
+                className={navLinkClass('/dashboard/apps')}
+                aria-current={isNavActive('/dashboard/apps') ? 'page' : undefined}
+              >
                 Приложения
               </Link>
-              <Link href="/dashboard/focus" className={navLinkClass('/dashboard/focus')}>
+              {!activityAccessLoading && canViewActivity ? (
+                <Link
+                  href="/dashboard/activity"
+                  className={navLinkClass('/dashboard/activity')}
+                  aria-current={isNavActive('/dashboard/activity') ? 'page' : undefined}
+                >
+                  Журнал
+                </Link>
+              ) : null}
+              <Link
+                href="/dashboard/focus"
+                className={navLinkClass('/dashboard/focus')}
+                aria-current={isNavActive('/dashboard/focus') ? 'page' : undefined}
+              >
                 Фокус
               </Link>
             </nav>
@@ -107,7 +146,7 @@ export function DashboardShell({
               title="Выйти"
               aria-label="Выйти"
             >
-              ↗
+              <span aria-hidden="true">↗</span>
             </button>
           </div>
         </div>

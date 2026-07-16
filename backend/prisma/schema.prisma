@@ -130,6 +130,7 @@ model Workspace {
   funnels      Funnel[]
   forms        Form[]
   externalApps WorkspaceExternalApp[]
+  activityLogs ActivityLog[]
 
   @@map("workspaces")
 }
@@ -266,6 +267,28 @@ model WorkspaceExternalApp {
   @@index([workspaceId])
   @@index([createdById])
   @@map("workspace_external_apps")
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  // Plain snapshot id — no User FK, so actor deletion cannot erase history.
+  actorId     String?  @map("actor_id")
+  actorName   String   @map("actor_name")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String?  @map("entity_id")
+  entityName  String?  @map("entity_name")
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Restrict: hard-deleting a workspace must not silently wipe the audit trail.
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([actorId])
+  @@index([workspaceId, action])
+  @@map("activity_logs")
 }
 
 model Funnel {
