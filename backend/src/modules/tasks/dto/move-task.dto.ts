@@ -1,4 +1,4 @@
-import { IsInt, Min } from 'class-validator';
+import { IsInt, Max, Min } from 'class-validator';
 import { IsEntityId } from '../../../common/validators/is-entity-id.decorator';
 
 export class MoveTaskDto {
@@ -7,5 +7,6 @@ export class MoveTaskDto {
 
   @IsInt()
   @Min(0)
+  @Max(10_000)
   position!: number;
 }

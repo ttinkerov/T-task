@@ -412,6 +412,18 @@
     background: var(--tt-hover);
   }
 
+  &--timer {
+    color: #f5c542;
+    border-color: rgba(245, 197, 66, 0.25);
+    background: rgba(245, 197, 66, 0.08);
+  }
+
+  &--complete {
+    color: #58d68d;
+    border-color: rgba(88, 214, 141, 0.25);
+    background: rgba(88, 214, 141, 0.08);
+  }
+
   &--recurrence {
     color: var(--tt-brand);
     border-color: var(--tt-brand-muted);

@@ -1,5 +1,11 @@
 import { apiFetch } from '@/shared/api/client';
-import type { BoardView, TaskComment, UpdateTaskPayload } from './types';
+import type {
+  BoardView,
+  ColumnAutomation,
+  TaskComment,
+  UpdateColumnAutomationsPayload,
+  UpdateTaskPayload,
+} from './types';
 
 function withWorkspace(workspaceId: string) {
   return { 'x-workspace-id': workspaceId };
@@ -40,6 +46,21 @@ export async function moveColumn(workspaceId: string, columnId: string, position
     headers: withWorkspace(workspaceId),
     body: JSON.stringify({ position }),
   });
+}
+
+export async function updateColumnAutomations(
+  workspaceId: string,
+  columnId: string,
+  data: UpdateColumnAutomationsPayload,
+) {
+  return apiFetch<ColumnAutomation[]>(
+    `/api/v1/workspaces/${workspaceId}/board/columns/${columnId}/automations`,
+    {
+      method: 'PUT',
+      headers: withWorkspace(workspaceId),
+      body: JSON.stringify(data),
+    },
+  );
 }
 
 export async function createTask(

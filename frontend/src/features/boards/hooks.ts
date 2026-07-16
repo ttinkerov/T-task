@@ -11,9 +11,10 @@ import {
   moveColumn,
   moveTask,
   updateColumn,
+  updateColumnAutomations,
   updateTask,
 } from './api';
-import type { BoardView, UpdateTaskPayload } from './types';
+import type { BoardView, UpdateColumnAutomationsPayload, UpdateTaskPayload } from './types';
 
 export const boardKeys = {
   all: ['boards'] as const,
@@ -52,6 +53,25 @@ export function useUpdateColumnMutation(workspaceId: string) {
   return useMutation({
     mutationFn: async ({ columnId, name }: { columnId: string; name: string }) => {
       await updateColumn(workspaceId, columnId, name);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+    },
+  });
+}
+
+export function useUpdateColumnAutomationsMutation(workspaceId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      columnId,
+      data,
+    }: {
+      columnId: string;
+      data: UpdateColumnAutomationsPayload;
+    }) => {
+      await updateColumnAutomations(workspaceId, columnId, data);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });

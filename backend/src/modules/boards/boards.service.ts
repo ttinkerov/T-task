@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { ColumnAutomationAction, Prisma } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateColumnDto } from './dto/create-column.dto';
 import { MoveColumnDto } from './dto/move-column.dto';
 import { UpdateColumnDto } from './dto/update-column.dto';
+import { UpdateColumnAutomationsDto } from './dto/update-column-automations.dto';
 import { countOverdueDays, isTaskOverdue, nextRolledDueDate } from './utils/overdue.util';
 
 @Injectable()
@@ -37,6 +38,12 @@ export class BoardsService {
         id: column.id,
         name: column.name,
         position: column.position,
+        automations: column.automations.map((automation) => ({
+          id: automation.id,
+          action: automation.action,
+          assigneeId: automation.assigneeId,
+          assignee: automation.assignee,
+        })),
         tasks: column.tasks.map((task) => this.serializeTask(task)),
       })),
     };
@@ -49,6 +56,14 @@ export class BoardsService {
         columns: {
           orderBy: { position: 'asc' },
           include: {
+            automations: {
+              orderBy: { position: 'asc' },
+              include: {
+                assignee: {
+                  select: { id: true, name: true, email: true, avatarUrl: true },
+                },
+              },
+            },
             tasks: {
               orderBy: { position: 'asc' },
               include: {
@@ -140,6 +155,7 @@ export class BoardsService {
       id: column.id,
       name: column.name,
       position: column.position,
+      automations: [],
       tasks: [],
     };
   }
@@ -166,6 +182,115 @@ export class BoardsService {
       name: updated.name,
       position: updated.position,
     };
+  }
+
+  async updateColumnAutomations(
+    workspaceId: string,
+    columnId: string,
+    userId: string,
+    dto: UpdateColumnAutomationsDto,
+  ) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+    const board = await this.getBoardForWorkspace(workspaceId);
+    const column = await this.prisma.boardColumn.findFirst({
+      where: { id: columnId, boardId: board.id },
+    });
+
+    if (!column) {
+      throw new NotFoundException('Column not found');
+    }
+
+    if (dto.startTimer && dto.completeTask) {
+      throw new BadRequestException('A column cannot start a timer and complete a task together');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      if (dto.assignUserId) {
+        const membership = await tx.workspaceMember.findFirst({
+          where: {
+            workspaceId,
+            userId: dto.assignUserId,
+            user: { deletedAt: null },
+          },
+        });
+
+        if (!membership) {
+          throw new BadRequestException('Automation assignee must be a workspace member');
+        }
+      }
+
+      const automations = [
+        ...(dto.assignUserId
+          ? [
+              {
+                columnId,
+                action: ColumnAutomationAction.ASSIGN_USER,
+                assigneeId: dto.assignUserId,
+                position: 0,
+              },
+            ]
+          : []),
+        ...(dto.startTimer
+          ? [
+              {
+                columnId,
+                action: ColumnAutomationAction.START_TIMER,
+                assigneeId: null,
+                position: 1,
+              },
+            ]
+          : []),
+        ...(dto.completeTask
+          ? [
+              {
+                columnId,
+                action: ColumnAutomationAction.COMPLETE_TASK,
+                assigneeId: null,
+                position: 2,
+              },
+            ]
+          : []),
+      ];
+
+      await tx.columnAutomation.deleteMany({ where: { columnId } });
+      if (automations.length > 0) {
+        await tx.columnAutomation.createMany({ data: automations });
+      }
+    });
+
+    return this.getColumnAutomations(workspaceId, columnId, userId);
+  }
+
+  async getColumnAutomations(workspaceId: string, columnId: string, userId: string) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+
+    const column = await this.prisma.boardColumn.findFirst({
+      where: {
+        id: columnId,
+        board: { workspaceId },
+      },
+      include: {
+        automations: {
+          orderBy: { position: 'asc' },
+          include: {
+            assignee: {
+              select: { id: true, name: true, email: true, avatarUrl: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!column) {
+      throw new NotFoundException('Column not found');
+    }
+
+    return column.automations.map((automation) => ({
+      id: automation.id,
+      action: automation.action,
+      assigneeId: automation.assigneeId,
+      assignee: automation.assignee,
+    }));
   }
 
   async deleteColumn(workspaceId: string, columnId: string, userId: string) {
@@ -251,6 +376,8 @@ export class BoardsService {
     recurrenceWeekdays: number[];
     recurrenceOriginColumnId: string | null;
     overdueDays: number;
+    timerStartedAt: Date | null;
+    completedAt: Date | null;
     createdAt: Date;
     assignee?: {
       id: string;
@@ -284,6 +411,8 @@ export class BoardsService {
       recurrenceWeekdays: task.recurrenceWeekdays,
       recurrenceOriginColumnId: task.recurrenceOriginColumnId,
       overdueDays: task.overdueDays,
+      timerStartedAt: task.timerStartedAt?.toISOString() ?? null,
+      completedAt: task.completedAt?.toISOString() ?? null,
       createdAt: task.createdAt.toISOString(),
     };
   }

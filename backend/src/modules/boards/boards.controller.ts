@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put } from '@nestjs/common';
 import { WorkspaceRole } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
@@ -8,6 +8,7 @@ import { BoardsService } from './boards.service';
 import { CreateColumnDto } from './dto/create-column.dto';
 import { MoveColumnDto } from './dto/move-column.dto';
 import { UpdateColumnDto } from './dto/update-column.dto';
+import { UpdateColumnAutomationsDto } from './dto/update-column-automations.dto';
 
 @Controller('workspaces/:workspaceId/board')
 export class BoardsController {
@@ -46,6 +47,38 @@ export class BoardsController {
     return successResponse(column);
   }
 
+  @Get('columns/:columnId/automations')
+  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  async getColumnAutomations(
+    @Param('workspaceId') workspaceId: string,
+    @Param('columnId') columnId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const automations = await this.boardsService.getColumnAutomations(
+      workspaceId,
+      columnId,
+      user.id,
+    );
+    return successResponse(automations);
+  }
+
+  @Put('columns/:columnId/automations')
+  @Roles(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  async updateColumnAutomations(
+    @Param('workspaceId') workspaceId: string,
+    @Param('columnId') columnId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateColumnAutomationsDto,
+  ) {
+    const automations = await this.boardsService.updateColumnAutomations(
+      workspaceId,
+      columnId,
+      user.id,
+      dto,
+    );
+    return successResponse(automations);
+  }
+
   @Patch('columns/:columnId/move')
   @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
   async moveColumn(
@@ -59,7 +92,7 @@ export class BoardsController {
   }
 
   @Delete('columns/:columnId')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
   async deleteColumn(
     @Param('workspaceId') workspaceId: string,
     @Param('columnId') columnId: string,

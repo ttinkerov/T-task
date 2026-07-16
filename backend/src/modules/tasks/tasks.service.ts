@@ -1,11 +1,18 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, TaskPriority, TaskRecurrenceAction, TaskRecurrenceRule } from '@prisma/client';
+import {
+  ColumnAutomationAction,
+  Prisma,
+  TaskPriority,
+  TaskRecurrenceAction,
+  TaskRecurrenceRule,
+} from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { BoardsService } from '../boards/boards.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { buildAutomationTaskUpdate } from './utils/column-automation.util';
 import { computeNextRecurrenceDate, isDoneColumn } from './utils/recurrence.util';
 
 const taskWithAssignee = {
@@ -31,6 +38,12 @@ export class TasksService {
         id: dto.columnId,
         board: { workspaceId },
       },
+      include: {
+        automations: {
+          orderBy: { position: 'asc' },
+          select: { action: true, assigneeId: true },
+        },
+      },
     });
 
     if (!column) {
@@ -43,6 +56,17 @@ export class TasksService {
     });
 
     const position = (lastTask?.position ?? -1) + 1;
+    const executableAutomations = await this.filterExecutableAutomations(
+      workspaceId,
+      column.automations.filter(
+        (automation) => automation.action !== ColumnAutomationAction.COMPLETE_TASK,
+      ),
+    );
+    const automationUpdate = buildAutomationTaskUpdate(
+      executableAutomations,
+      { actualMinutes: null, timerStartedAt: null, completedAt: null },
+      new Date(),
+    );
 
     const task = await this.prisma.task.create({
       data: {
@@ -50,6 +74,7 @@ export class TasksService {
         title: dto.title.trim(),
         description: dto.description?.trim() || null,
         position,
+        ...automationUpdate,
       },
       include: taskWithAssignee,
     });
@@ -70,6 +95,10 @@ export class TasksService {
       if (!membership) {
         throw new BadRequestException('Assignee must be a workspace member');
       }
+    }
+
+    if (dto.recurrenceOriginColumnId) {
+      await this.assertColumnInWorkspace(workspaceId, dto.recurrenceOriginColumnId);
     }
 
     const updated = await this.prisma.task.update({
@@ -115,6 +144,12 @@ export class TasksService {
         id: dto.columnId,
         board: { workspaceId },
       },
+      include: {
+        automations: {
+          orderBy: { position: 'asc' },
+          select: { action: true, assigneeId: true },
+        },
+      },
     });
 
     if (!targetColumn) {
@@ -131,12 +166,23 @@ export class TasksService {
     });
 
     const movingToDone = isDoneColumn(targetColumn, board.columns);
+    const executableAutomations = await this.filterExecutableAutomations(
+      workspaceId,
+      targetColumn.automations,
+    );
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (task.columnId === dto.columnId) {
         await this.reorderWithinColumn(tx, task.columnId, taskId, dto.position);
         return;
       }
+
+      const currentTask = await tx.task.findUniqueOrThrow({ where: { id: taskId } });
+      const automationUpdate = buildAutomationTaskUpdate(
+        executableAutomations,
+        currentTask,
+        new Date(),
+      );
 
       await this.closeGap(tx, task.columnId, task.position);
       await this.makeSpace(tx, dto.columnId, dto.position);
@@ -146,6 +192,7 @@ export class TasksService {
           columnId: dto.columnId,
           position: dto.position,
           ...(movingToDone ? { overdueDays: 0 } : {}),
+          ...automationUpdate,
         },
       });
     });
@@ -161,7 +208,7 @@ export class TasksService {
       isDoneColumn(doneColumn, board.columns) &&
       movedTask.recurrenceRule !== TaskRecurrenceRule.NONE
     ) {
-      await this.handleRecurrenceCompletion(movedTask, board.columns);
+      await this.handleRecurrenceCompletion(workspaceId, movedTask, board.columns);
     }
 
     const updated = await this.prisma.task.findUniqueOrThrow({
@@ -191,7 +238,43 @@ export class TasksService {
     };
   }
 
+  private async filterExecutableAutomations(
+    workspaceId: string,
+    automations: Array<{
+      action: ColumnAutomationAction;
+      assigneeId: string | null;
+    }>,
+  ) {
+    const assignment = automations.find(
+      (automation) => automation.action === ColumnAutomationAction.ASSIGN_USER,
+    );
+
+    if (!assignment?.assigneeId) {
+      return automations.filter(
+        (automation) => automation.action !== ColumnAutomationAction.ASSIGN_USER,
+      );
+    }
+
+    const membership = await this.prisma.workspaceMember.findFirst({
+      where: {
+        workspaceId,
+        userId: assignment.assigneeId,
+        user: { deletedAt: null },
+      },
+      select: { id: true },
+    });
+
+    if (membership) {
+      return automations;
+    }
+
+    return automations.filter(
+      (automation) => automation.action !== ColumnAutomationAction.ASSIGN_USER,
+    );
+  }
+
   private async handleRecurrenceCompletion(
+    workspaceId: string,
     task: {
       id: string;
       columnId: string;
@@ -210,18 +293,27 @@ export class TasksService {
     },
     columns: { id: string; position: number }[],
   ) {
+    const columnIds = new Set(columns.map((column) => column.id));
+    const preferredOrigin =
+      task.recurrenceOriginColumnId && columnIds.has(task.recurrenceOriginColumnId)
+        ? task.recurrenceOriginColumnId
+        : null;
     const originColumnId =
-      task.recurrenceOriginColumnId ?? columns.find((column) => column.position === 0)?.id;
+      preferredOrigin ?? columns.find((column) => column.position === 0)?.id ?? null;
 
-    if (!originColumnId) {
+    if (!originColumnId || !columnIds.has(originColumnId)) {
       return;
     }
+
+    await this.assertColumnInWorkspace(workspaceId, originColumnId);
 
     const nextDueDate = computeNextRecurrenceDate(
       task.dueDate ?? new Date(),
       task.recurrenceRule,
       task.recurrenceWeekdays,
     );
+
+    const assigneeId = await this.resolveWorkspaceAssigneeId(workspaceId, task.assigneeId);
 
     if (task.recurrenceAction === TaskRecurrenceAction.DUPLICATE) {
       await this.prisma.$transaction(async (tx) => {
@@ -239,7 +331,7 @@ export class TasksService {
             priority: task.priority,
             complexity: task.complexity,
             timeEstimateMinutes: task.timeEstimateMinutes,
-            assigneeId: task.assigneeId,
+            assigneeId,
             dueDate: nextDueDate,
             position,
             recurrenceRule: task.recurrenceRule,
@@ -269,6 +361,8 @@ export class TasksService {
           position,
           dueDate: nextDueDate,
           actualMinutes: null,
+          completedAt: null,
+          timerStartedAt: null,
           recurrenceOriginColumnId: originColumnId,
         },
       });
@@ -301,6 +395,39 @@ export class TasksService {
     }
 
     return task;
+  }
+
+  private async assertColumnInWorkspace(workspaceId: string, columnId: string) {
+    const column = await this.prisma.boardColumn.findFirst({
+      where: {
+        id: columnId,
+        board: { workspaceId },
+      },
+      select: { id: true },
+    });
+
+    if (!column) {
+      throw new BadRequestException('Column must belong to this workspace');
+    }
+
+    return column;
+  }
+
+  private async resolveWorkspaceAssigneeId(workspaceId: string, assigneeId: string | null) {
+    if (!assigneeId) {
+      return null;
+    }
+
+    const membership = await this.prisma.workspaceMember.findFirst({
+      where: {
+        workspaceId,
+        userId: assigneeId,
+        user: { deletedAt: null },
+      },
+      select: { id: true },
+    });
+
+    return membership ? assigneeId : null;
   }
 
   private async reorderWithinColumn(
@@ -379,6 +506,8 @@ export class TasksService {
     recurrenceWeekdays: number[];
     recurrenceOriginColumnId: string | null;
     overdueDays: number;
+    timerStartedAt: Date | null;
+    completedAt: Date | null;
     createdAt: Date;
     assignee?: {
       id: string;

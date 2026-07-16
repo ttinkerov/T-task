@@ -20,7 +20,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useMemo, useRef, useState } from 'react';
 import { useMeQuery } from '@/features/auth/hooks';
 import { formatMinutes } from '@/shared/lib/format-duration';
 import { formatRecurrenceLabel } from '@/shared/lib/format-recurrence';
@@ -44,6 +44,7 @@ import {
 } from '../types';
 import { BoardFiltersBar } from './board-filters-bar';
 import { BoardWorkloadPanel } from './board-workload-panel';
+import { ColumnAutomationDialog } from './column-automation-dialog';
 import { TaskDetailDrawer } from './task-detail-drawer';
 
 type DragType = 'column' | 'task';
@@ -135,6 +136,9 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
   const selectedColumnName = selectedTask
     ? (board.columns.find((column) => column.id === selectedTask.columnId)?.name ?? '')
     : '';
+  const workspaceRole = session?.workspaces.find((workspace) => workspace.id === workspaceId)?.role;
+  const canManageAutomations = workspaceRole === 'OWNER' || workspaceRole === 'ADMIN';
+  const canDeleteColumns = canManageAutomations && board.columns.length > 1;
 
   return (
     <>
@@ -155,7 +159,8 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
                 column={column}
                 allColumns={board.columns}
                 workspaceId={workspaceId}
-                canDelete={board.columns.length > 1}
+                canDelete={canDeleteColumns}
+                canManageAutomations={canManageAutomations}
                 onOpenTask={setSelectedTaskId}
               />
             ))}
@@ -257,12 +262,14 @@ function SortableKanbanColumn({
   allColumns,
   workspaceId,
   canDelete,
+  canManageAutomations,
   onOpenTask,
 }: {
   column: BoardColumn;
   allColumns: BoardColumn[];
   workspaceId: string;
   canDelete: boolean;
+  canManageAutomations: boolean;
   onOpenTask: (taskId: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -283,6 +290,7 @@ function SortableKanbanColumn({
         allColumns={allColumns}
         workspaceId={workspaceId}
         canDelete={canDelete}
+        canManageAutomations={canManageAutomations}
         dragHandleProps={{ ...attributes, ...listeners }}
         onOpenTask={onOpenTask}
       />
@@ -295,6 +303,7 @@ function KanbanColumn({
   allColumns,
   workspaceId,
   canDelete,
+  canManageAutomations,
   dragHandleProps,
   onOpenTask,
 }: {
@@ -302,6 +311,7 @@ function KanbanColumn({
   allColumns: BoardColumn[];
   workspaceId: string;
   canDelete: boolean;
+  canManageAutomations: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLElement>;
   onOpenTask: (taskId: string) => void;
 }) {
@@ -312,6 +322,12 @@ function KanbanColumn({
   const [title, setTitle] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [columnName, setColumnName] = useState(column.name);
+  const [automationOpen, setAutomationOpen] = useState(false);
+  const automationBtnRef = useRef<HTMLButtonElement>(null);
+  const handleAutomationClose = useCallback(() => {
+    setAutomationOpen(false);
+    automationBtnRef.current?.focus();
+  }, []);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -387,6 +403,24 @@ function KanbanColumn({
 
         <span className="kanban-column__count">{column.tasks.length}</span>
 
+        {canManageAutomations ? (
+          <button
+            ref={automationBtnRef}
+            type="button"
+            className={`kanban-column__automation ${
+              column.automations.length > 0 ? 'kanban-column__automation--active' : ''
+            }`}
+            onClick={() => setAutomationOpen(true)}
+            aria-label={`Настроить автоматизацию колонки «${column.name}»`}
+            title="Автоматизация"
+          >
+            ⚡
+            {column.automations.length > 0 ? (
+              <span aria-hidden="true">{column.automations.length}</span>
+            ) : null}
+          </button>
+        ) : null}
+
         {canDelete ? (
           <button
             type="button"
@@ -434,6 +468,14 @@ function KanbanColumn({
           +
         </button>
       </form>
+
+      {automationOpen ? (
+        <ColumnAutomationDialog
+          workspaceId={workspaceId}
+          column={column}
+          onClose={handleAutomationClose}
+        />
+      ) : null}
     </div>
   );
 }
@@ -500,6 +542,8 @@ function KanbanTaskCard({
             task.complexity ||
             task.timeEstimateMinutes ||
             task.actualMinutes ||
+            task.timerStartedAt ||
+            task.completedAt ||
             dueLabel ||
             recurrenceLabel ||
             overdueLabel ||
@@ -533,6 +577,12 @@ function KanbanTaskCard({
                 <span className="kanban-task-chip kanban-task-chip--actual">
                   факт {formatMinutes(task.actualMinutes)}
                 </span>
+              ) : null}
+              {task.timerStartedAt ? (
+                <span className="kanban-task-chip kanban-task-chip--timer">таймер запущен</span>
+              ) : null}
+              {task.completedAt ? (
+                <span className="kanban-task-chip kanban-task-chip--complete">выполнено</span>
               ) : null}
               {dueLabel ? (
                 <span

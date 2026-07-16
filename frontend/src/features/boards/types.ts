@@ -8,6 +8,7 @@ export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 export type TaskRecurrenceRule = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
 export type TaskRecurrenceAction = 'DUPLICATE' | 'RESCHEDULE';
+export type ColumnAutomationAction = 'ASSIGN_USER' | 'START_TIMER' | 'COMPLETE_TASK';
 
 export interface TaskAssignee {
   id: string;
@@ -34,14 +35,30 @@ export interface BoardTask {
   recurrenceWeekdays: number[];
   recurrenceOriginColumnId: string | null;
   overdueDays: number;
+  timerStartedAt: string | null;
+  completedAt: string | null;
   createdAt: string;
+}
+
+export interface ColumnAutomation {
+  id: string;
+  action: ColumnAutomationAction;
+  assigneeId: string | null;
+  assignee: TaskAssignee | null;
 }
 
 export interface BoardColumn {
   id: string;
   name: string;
   position: number;
+  automations: ColumnAutomation[];
   tasks: BoardTask[];
+}
+
+export interface UpdateColumnAutomationsPayload {
+  assignUserId: string | null;
+  startTimer: boolean;
+  completeTask: boolean;
 }
 
 export interface BoardView {
