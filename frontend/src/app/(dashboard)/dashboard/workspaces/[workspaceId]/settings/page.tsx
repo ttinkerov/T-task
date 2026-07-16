@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { DashboardShell } from '@/features/auth/components/dashboard-shell';
 import { useMeQuery } from '@/features/auth/hooks';
 import { InviteMemberForm, InvitationsList, MembersTable } from '@/features/workspaces';
+import { WorkspaceOverdueSettings } from '@/features/workspaces/components/workspace-overdue-settings';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
 
 export default function WorkspaceSettingsPage() {
@@ -40,6 +41,7 @@ export default function WorkspaceSettingsPage() {
 
             {canManage ? (
               <>
+                <WorkspaceOverdueSettings workspaceId={workspaceId} canManage={canManage} />
                 <div className="settings-card">
                   <h2 className="settings-card__title">Пригласить участника</h2>
                   <InviteMemberForm workspaceId={workspaceId} />

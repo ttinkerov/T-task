@@ -9,6 +9,7 @@ import {
   fetchInvitations,
   fetchMembers,
   fetchWorkspaces,
+  fetchWorkspace,
   removeMember,
   revokeInvitation,
   updateMemberRole,
@@ -74,17 +75,30 @@ export function useInvitationsQuery(workspaceId: string | null) {
   });
 }
 
+export function useWorkspaceQuery(workspaceId: string | null) {
+  return useQuery({
+    queryKey: [...workspaceKeys.all, workspaceId ?? '', 'detail'] as const,
+    queryFn: async () => {
+      const response = await fetchWorkspace(workspaceId!);
+      return response.data;
+    },
+    enabled: Boolean(workspaceId),
+  });
+}
+
 export function useUpdateWorkspaceMutation(workspaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (name: string) => {
-      const response = await updateWorkspace(workspaceId, name);
+    mutationFn: async (data: { name?: string; autoRollOverdue?: boolean }) => {
+      const response = await updateWorkspace(workspaceId, data);
       return response.data;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: workspaceKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
       void queryClient.invalidateQueries({ queryKey: authKeys.me() });
+      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
     },
   });
 }

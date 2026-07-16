@@ -2,13 +2,16 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import * as cookieParser from 'cookie-parser';
+import { json, urlencoded } from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseEnvelopeInterceptor } from './common/interceptors/response-envelope.interceptor';
 
+const REQUEST_BODY_LIMIT = '100kb';
+
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('BACKEND_PORT', 3001);
@@ -17,11 +20,21 @@ async function bootstrap(): Promise<void> {
 
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
+  app.use(json({ limit: REQUEST_BODY_LIMIT }));
+  app.use(urlencoded({ extended: true, limit: REQUEST_BODY_LIMIT }));
+
   app.setGlobalPrefix('api/v1');
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
-      contentSecurityPolicy: isProduction ? undefined : false,
+      contentSecurityPolicy: isProduction
+        ? {
+            directives: {
+              defaultSrc: ["'none'"],
+              frameAncestors: ["'none'"],
+            },
+          }
+        : false,
     }),
   );
   app.use(cookieParser());

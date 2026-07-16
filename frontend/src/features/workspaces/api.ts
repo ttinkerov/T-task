@@ -33,11 +33,14 @@ export async function fetchWorkspace(workspaceId: string) {
   });
 }
 
-export async function updateWorkspace(workspaceId: string, name: string) {
+export async function updateWorkspace(
+  workspaceId: string,
+  data: { name?: string; autoRollOverdue?: boolean },
+) {
   return apiFetch<WorkspaceSummary>(`/api/v1/workspaces/${workspaceId}`, {
     method: 'PATCH',
     headers: withWorkspace(workspaceId),
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(data),
   });
 }
 

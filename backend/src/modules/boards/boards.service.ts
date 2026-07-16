@@ -5,6 +5,7 @@ import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateColumnDto } from './dto/create-column.dto';
 import { MoveColumnDto } from './dto/move-column.dto';
 import { UpdateColumnDto } from './dto/update-column.dto';
+import { countOverdueDays, isTaskOverdue, nextRolledDueDate } from './utils/overdue.util';
 
 @Injectable()
 export class BoardsService {
@@ -16,6 +17,32 @@ export class BoardsService {
   async getBoard(workspaceId: string, userId: string) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
 
+    const workspace = await this.prisma.workspace.findUniqueOrThrow({
+      where: { id: workspaceId },
+      select: { autoRollOverdue: true },
+    });
+
+    let board = await this.fetchBoard(workspaceId);
+
+    if (workspace.autoRollOverdue) {
+      await this.rollOverdueTasks(board);
+      board = await this.fetchBoard(workspaceId);
+    }
+
+    return {
+      id: board.id,
+      workspaceId: board.workspaceId,
+      name: board.name,
+      columns: board.columns.map((column) => ({
+        id: column.id,
+        name: column.name,
+        position: column.position,
+        tasks: column.tasks.map((task) => this.serializeTask(task)),
+      })),
+    };
+  }
+
+  private async fetchBoard(workspaceId: string) {
     const board = await this.prisma.board.findFirst({
       where: { workspaceId },
       include: {
@@ -39,17 +66,44 @@ export class BoardsService {
       throw new NotFoundException('Board not found');
     }
 
-    return {
-      id: board.id,
-      workspaceId: board.workspaceId,
-      name: board.name,
-      columns: board.columns.map((column) => ({
-        id: column.id,
-        name: column.name,
-        position: column.position,
-        tasks: column.tasks.map((task) => this.serializeTask(task)),
-      })),
-    };
+    return board;
+  }
+
+  private async rollOverdueTasks(board: {
+    columns: Array<{
+      id: string;
+      name: string;
+      position: number;
+      tasks: Array<{
+        id: string;
+        dueDate: Date | null;
+      }>;
+    }>;
+  }) {
+    const columns = board.columns;
+    const updates: Array<ReturnType<typeof this.prisma.task.update>> = [];
+
+    for (const column of columns) {
+      for (const task of column.tasks) {
+        if (!isTaskOverdue(task, column, columns)) {
+          continue;
+        }
+
+        updates.push(
+          this.prisma.task.update({
+            where: { id: task.id },
+            data: {
+              dueDate: nextRolledDueDate(),
+              overdueDays: countOverdueDays(task.dueDate!),
+            },
+          }),
+        );
+      }
+    }
+
+    if (updates.length > 0) {
+      await Promise.all(updates);
+    }
   }
 
   async getBoardForWorkspace(workspaceId: string) {
@@ -196,6 +250,7 @@ export class BoardsService {
     recurrenceAction: import('@prisma/client').TaskRecurrenceAction;
     recurrenceWeekdays: number[];
     recurrenceOriginColumnId: string | null;
+    overdueDays: number;
     createdAt: Date;
     assignee?: {
       id: string;
@@ -228,6 +283,7 @@ export class BoardsService {
       recurrenceAction: task.recurrenceAction,
       recurrenceWeekdays: task.recurrenceWeekdays,
       recurrenceOriginColumnId: task.recurrenceOriginColumnId,
+      overdueDays: task.overdueDays,
       createdAt: task.createdAt.toISOString(),
     };
   }

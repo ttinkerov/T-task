@@ -33,6 +33,7 @@ export interface BoardTask {
   recurrenceAction: TaskRecurrenceAction;
   recurrenceWeekdays: number[];
   recurrenceOriginColumnId: string | null;
+  overdueDays: number;
   createdAt: string;
 }
 
@@ -78,6 +79,7 @@ export interface BoardFilters {
   priority: TaskPriority | '';
   assigneeId: string | '';
   myTasksOnly: boolean;
+  overdueStatus: '' | 'overdue' | 'not_overdue';
 }
 
 export const TEAM_SIZE_OPTIONS: { value: TeamSize; label: string }[] = [
@@ -136,7 +138,17 @@ export const EMPTY_BOARD_FILTERS: BoardFilters = {
   priority: '',
   assigneeId: '',
   myTasksOnly: false,
+  overdueStatus: '',
 };
+
+export const OVERDUE_FILTER_OPTIONS: {
+  value: BoardFilters['overdueStatus'];
+  label: string;
+}[] = [
+  { value: '', label: 'Все задачи' },
+  { value: 'overdue', label: 'Просроченные' },
+  { value: 'not_overdue', label: 'Без просрочки' },
+];
 
 export const RECURRENCE_RULE_OPTIONS: { value: TaskRecurrenceRule; label: string }[] = [
   { value: 'NONE', label: 'Не повторяется' },

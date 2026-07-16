@@ -84,6 +84,7 @@ export class WorkspacesService {
       where: { id: workspaceId },
       data: {
         ...(dto.name ? { name: dto.name.trim() } : {}),
+        ...(dto.autoRollOverdue !== undefined ? { autoRollOverdue: dto.autoRollOverdue } : {}),
       },
     });
 
@@ -94,6 +95,7 @@ export class WorkspacesService {
       name: workspace.name,
       slug: workspace.slug,
       role: membership.role,
+      autoRollOverdue: workspace.autoRollOverdue,
     };
   }
 
@@ -494,6 +496,7 @@ export class WorkspacesService {
       slug: string;
       teamSize: TeamSize | null;
       useCases: WorkspaceUseCase[];
+      autoRollOverdue: boolean;
     };
   }) {
     return {
@@ -503,6 +506,7 @@ export class WorkspacesService {
       role: membership.role,
       teamSize: membership.workspace.teamSize,
       useCases: membership.workspace.useCases,
+      autoRollOverdue: membership.workspace.autoRollOverdue,
     };
   }
 }

@@ -106,6 +106,7 @@ model Workspace {
   updatedAt  DateTime           @updatedAt @map("updated_at")
   archivedAt DateTime?          @map("archived_at")
   deletedAt  DateTime?          @map("deleted_at")
+  autoRollOverdue Boolean       @default(false) @map("auto_roll_overdue")
 
   members     WorkspaceMember[]
   invitations Invitation[]
@@ -196,6 +197,7 @@ model Task {
   recurrenceAction TaskRecurrenceAction @default(DUPLICATE) @map("recurrence_action")
   recurrenceWeekdays Int[] @default([]) @map("recurrence_weekdays")
   recurrenceOriginColumnId String? @map("recurrence_origin_column_id")
+  overdueDays Int             @default(0) @map("overdue_days")
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 

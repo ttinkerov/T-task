@@ -298,6 +298,11 @@
     border-color: $color-brand-blue;
   }
 
+  &--overdue {
+    border-color: rgba(255, 107, 107, 0.35);
+    background: rgba(255, 107, 107, 0.06);
+  }
+
   &__body {
     display: flex;
     align-items: flex-start;

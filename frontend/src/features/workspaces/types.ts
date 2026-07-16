@@ -5,6 +5,7 @@ export interface WorkspaceSummary {
   name: string;
   slug: string;
   role: WorkspaceRole;
+  autoRollOverdue?: boolean;
 }
 
 export interface WorkspaceMember {

@@ -84,7 +84,10 @@ export class TasksService {
           : {}),
         ...(dto.actualMinutes !== undefined ? { actualMinutes: dto.actualMinutes } : {}),
         ...(dto.dueDate !== undefined
-          ? { dueDate: dto.dueDate ? new Date(dto.dueDate) : null }
+          ? {
+              dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+              overdueDays: 0,
+            }
           : {}),
         ...(dto.assigneeId !== undefined ? { assigneeId: dto.assigneeId } : {}),
         ...(dto.recurrenceRule !== undefined
@@ -118,6 +121,17 @@ export class TasksService {
       throw new NotFoundException('Column not found');
     }
 
+    const board = await this.prisma.board.findFirstOrThrow({
+      where: { workspaceId },
+      include: {
+        columns: {
+          orderBy: { position: 'asc' },
+        },
+      },
+    });
+
+    const movingToDone = isDoneColumn(targetColumn, board.columns);
+
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (task.columnId === dto.columnId) {
         await this.reorderWithinColumn(tx, task.columnId, taskId, dto.position);
@@ -131,17 +145,9 @@ export class TasksService {
         data: {
           columnId: dto.columnId,
           position: dto.position,
+          ...(movingToDone ? { overdueDays: 0 } : {}),
         },
       });
-    });
-
-    const board = await this.prisma.board.findFirstOrThrow({
-      where: { workspaceId },
-      include: {
-        columns: {
-          orderBy: { position: 'asc' },
-        },
-      },
     });
 
     const doneColumn = board.columns.find((column) => column.id === dto.columnId);
@@ -372,6 +378,7 @@ export class TasksService {
     recurrenceAction: TaskRecurrenceAction;
     recurrenceWeekdays: number[];
     recurrenceOriginColumnId: string | null;
+    overdueDays: number;
     createdAt: Date;
     assignee?: {
       id: string;

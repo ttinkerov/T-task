@@ -1,6 +1,10 @@
 import { TaskRecurrenceRule } from '@prisma/client';
 
+import { addDays as shiftDays } from '../../boards/utils/date.util';
+
 const ISO_WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
+
+export { isDoneColumn } from '../../boards/utils/overdue.util';
 
 export function getIsoWeekday(date: Date): number {
   const day = date.getDay();
@@ -8,10 +12,7 @@ export function getIsoWeekday(date: Date): number {
 }
 
 export function addDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  result.setHours(12, 0, 0, 0);
-  return result;
+  return shiftDays(date, days);
 }
 
 export function computeNextRecurrenceDate(
@@ -57,21 +58,6 @@ export function computeNextRecurrenceDate(
     default:
       return base;
   }
-}
-
-export function isDoneColumn(
-  column: { name: string; position: number },
-  columns: { position: number }[],
-): boolean {
-  const maxPosition = Math.max(...columns.map((item) => item.position));
-  const normalizedName = column.name.trim().toLowerCase();
-
-  return (
-    column.position === maxPosition ||
-    normalizedName === 'готово' ||
-    normalizedName === 'done' ||
-    normalizedName === 'выполнено'
-  );
 }
 
 export const RECURRENCE_RULE_LABELS: Record<TaskRecurrenceRule, string> = {

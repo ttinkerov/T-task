@@ -3,6 +3,7 @@
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import {
   EMPTY_BOARD_FILTERS,
+  OVERDUE_FILTER_OPTIONS,
   PRIORITY_OPTIONS,
   type BoardFilters,
   type TaskPriority,
@@ -20,7 +21,8 @@ export function BoardFiltersBar({ workspaceId, filters, onChange }: BoardFilters
     Boolean(filters.search) ||
     Boolean(filters.priority) ||
     Boolean(filters.assigneeId) ||
-    filters.myTasksOnly;
+    filters.myTasksOnly ||
+    Boolean(filters.overdueStatus);
 
   return (
     <div className="board-filters">
@@ -57,6 +59,24 @@ export function BoardFiltersBar({ workspaceId, filters, onChange }: BoardFilters
         {members.map((member) => (
           <option key={member.userId} value={member.userId}>
             {member.user.name}
+          </option>
+        ))}
+      </select>
+
+      <select
+        value={filters.overdueStatus}
+        onChange={(event) =>
+          onChange({
+            ...filters,
+            overdueStatus: event.target.value as BoardFilters['overdueStatus'],
+          })
+        }
+        className="board-filters__select"
+        aria-label="Фильтр по просрочке"
+      >
+        {OVERDUE_FILTER_OPTIONS.map((option) => (
+          <option key={option.label} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>

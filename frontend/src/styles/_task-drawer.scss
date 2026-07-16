@@ -293,6 +293,19 @@
   margin-bottom: 0.875rem;
 }
 
+.settings-card__text {
+  margin-bottom: 0.875rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: $color-text-dim;
+}
+
+.settings-card__hint {
+  margin-top: 0.625rem;
+  font-size: 0.75rem;
+  color: $color-text-dim;
+}
+
 .settings-table {
   width: 100%;
   border-collapse: collapse;
@@ -403,6 +416,13 @@
     color: var(--tt-brand);
     border-color: var(--tt-brand-muted);
     background: var(--tt-brand-muted);
+  }
+
+  &--overdue,
+  &--overdue-date {
+    color: #ff6b6b;
+    border-color: rgba(255, 107, 107, 0.3);
+    background: rgba(255, 107, 107, 0.08);
   }
 }
 

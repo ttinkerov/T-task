@@ -1,4 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+
+const MAX_ANSWER_LENGTH = 5000;
+const MAX_MULTIPLE_CHOICE_OPTIONS = 20;
 import { FormFieldType, Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
@@ -318,6 +321,13 @@ export class FormsService {
     answers: Record<string, string | string[]>,
   ) {
     const normalized: Record<string, string | string[]> = {};
+    const allowedFieldIds = new Set(fields.map((field) => field.id));
+
+    for (const key of Object.keys(answers)) {
+      if (!allowedFieldIds.has(key)) {
+        throw new BadRequestException('Unknown form field in answers');
+      }
+    }
 
     for (const field of fields) {
       const value = answers[field.id];
@@ -338,6 +348,9 @@ export class FormsService {
         if (!Array.isArray(value)) {
           throw new BadRequestException(`Поле «${field.label}» должно быть массивом`);
         }
+        if (value.length > MAX_MULTIPLE_CHOICE_OPTIONS) {
+          throw new BadRequestException(`Слишком много вариантов в поле «${field.label}»`);
+        }
         for (const option of value) {
           if (!field.options.includes(option)) {
             throw new BadRequestException(`Недопустимый вариант в поле «${field.label}»`);
@@ -356,7 +369,11 @@ export class FormsService {
         continue;
       }
 
-      normalized[field.id] = String(value).trim();
+      const text = String(value).trim();
+      if (text.length > MAX_ANSWER_LENGTH) {
+        throw new BadRequestException(`Поле «${field.label}» слишком длинное`);
+      }
+      normalized[field.id] = text;
     }
 
     return normalized;

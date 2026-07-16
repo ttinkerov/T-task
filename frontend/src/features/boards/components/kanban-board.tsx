@@ -24,6 +24,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import { useMeQuery } from '@/features/auth/hooks';
 import { formatMinutes } from '@/shared/lib/format-duration';
 import { formatRecurrenceLabel } from '@/shared/lib/format-recurrence';
+import { formatOverdueLabel, isTaskOverdue } from '../lib/overdue';
 import {
   useBoardQuery,
   useCreateColumnMutation,
@@ -66,7 +67,9 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
     if (!board) return [];
     return board.columns.map((column) => ({
       ...column,
-      tasks: column.tasks.filter((task) => matchesFilters(task, filters, session?.user.id)),
+      tasks: column.tasks.filter((task) =>
+        matchesFilters(task, column, board.columns, filters, session?.user.id),
+      ),
     }));
   }, [board, filters, session?.user.id]);
 
@@ -150,6 +153,7 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
               <SortableKanbanColumn
                 key={column.id}
                 column={column}
+                allColumns={board.columns}
                 workspaceId={workspaceId}
                 canDelete={board.columns.length > 1}
                 onOpenTask={setSelectedTaskId}
@@ -188,7 +192,13 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
   );
 }
 
-function matchesFilters(task: BoardTask, filters: BoardFilters, currentUserId?: string) {
+function matchesFilters(
+  task: BoardTask,
+  column: BoardColumn,
+  columns: BoardColumn[],
+  filters: BoardFilters,
+  currentUserId?: string,
+) {
   if (filters.search) {
     const q = filters.search.toLowerCase();
     const haystack = `${task.title} ${task.description ?? ''}`.toLowerCase();
@@ -202,6 +212,10 @@ function matchesFilters(task: BoardTask, filters: BoardFilters, currentUserId?: 
   if (filters.myTasksOnly) {
     if (!currentUserId || task.assigneeId !== currentUserId) return false;
   }
+
+  const overdue = isTaskOverdue(task, column, columns);
+  if (filters.overdueStatus === 'overdue' && !overdue) return false;
+  if (filters.overdueStatus === 'not_overdue' && overdue) return false;
 
   return true;
 }
@@ -240,11 +254,13 @@ function AddColumnPanel({ workspaceId }: { workspaceId: string }) {
 
 function SortableKanbanColumn({
   column,
+  allColumns,
   workspaceId,
   canDelete,
   onOpenTask,
 }: {
   column: BoardColumn;
+  allColumns: BoardColumn[];
   workspaceId: string;
   canDelete: boolean;
   onOpenTask: (taskId: string) => void;
@@ -264,6 +280,7 @@ function SortableKanbanColumn({
     <div ref={setNodeRef} style={style}>
       <KanbanColumn
         column={column}
+        allColumns={allColumns}
         workspaceId={workspaceId}
         canDelete={canDelete}
         dragHandleProps={{ ...attributes, ...listeners }}
@@ -275,12 +292,14 @@ function SortableKanbanColumn({
 
 function KanbanColumn({
   column,
+  allColumns,
   workspaceId,
   canDelete,
   dragHandleProps,
   onOpenTask,
 }: {
   column: BoardColumn;
+  allColumns: BoardColumn[];
   workspaceId: string;
   canDelete: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLElement>;
@@ -388,7 +407,13 @@ function KanbanColumn({
       >
         <div className="kanban-column__tasks">
           {column.tasks.map((task) => (
-            <KanbanTaskCard key={task.id} task={task} onOpen={() => onOpenTask(task.id)} />
+            <KanbanTaskCard
+              key={task.id}
+              task={task}
+              column={column}
+              allColumns={allColumns}
+              onOpen={() => onOpenTask(task.id)}
+            />
           ))}
         </div>
       </SortableContext>
@@ -413,7 +438,17 @@ function KanbanColumn({
   );
 }
 
-function KanbanTaskCard({ task, onOpen }: { task: BoardTask; onOpen: () => void }) {
+function KanbanTaskCard({
+  task,
+  column,
+  allColumns,
+  onOpen,
+}: {
+  task: BoardTask;
+  column: BoardColumn;
+  allColumns: BoardColumn[];
+  onOpen: () => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: 'task' as const, columnId: task.columnId },
@@ -429,12 +464,14 @@ function KanbanTaskCard({ task, onOpen }: { task: BoardTask; onOpen: () => void 
     ? new Date(task.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
     : null;
   const recurrenceLabel = formatRecurrenceLabel(task.recurrenceRule, task.recurrenceWeekdays);
+  const overdueLabel = formatOverdueLabel(task, column, allColumns);
+  const isOverdue = isTaskOverdue(task, column, allColumns);
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="kanban-task-card"
+      className={`kanban-task-card ${isOverdue ? 'kanban-task-card--overdue' : ''}`}
       onClick={onOpen}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -465,8 +502,12 @@ function KanbanTaskCard({ task, onOpen }: { task: BoardTask; onOpen: () => void 
             task.actualMinutes ||
             dueLabel ||
             recurrenceLabel ||
+            overdueLabel ||
             task.assignee) && (
             <div className="kanban-task-meta">
+              {overdueLabel ? (
+                <span className="kanban-task-chip kanban-task-chip--overdue">{overdueLabel}</span>
+              ) : null}
               {recurrenceLabel ? (
                 <span className="kanban-task-chip kanban-task-chip--recurrence">
                   {recurrenceLabel}
@@ -493,7 +534,13 @@ function KanbanTaskCard({ task, onOpen }: { task: BoardTask; onOpen: () => void 
                   факт {formatMinutes(task.actualMinutes)}
                 </span>
               ) : null}
-              {dueLabel ? <span className="kanban-task-chip">{dueLabel}</span> : null}
+              {dueLabel ? (
+                <span
+                  className={`kanban-task-chip ${isOverdue ? 'kanban-task-chip--overdue-date' : ''}`}
+                >
+                  {dueLabel}
+                </span>
+              ) : null}
             </div>
           )}
         </div>

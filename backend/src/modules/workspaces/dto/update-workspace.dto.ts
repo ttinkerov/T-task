@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class UpdateWorkspaceDto {
   @IsOptional()
@@ -6,4 +6,8 @@ export class UpdateWorkspaceDto {
   @MinLength(2)
   @MaxLength(80)
   name?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  autoRollOverdue?: boolean;
 }

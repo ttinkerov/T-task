@@ -1,20 +1,8 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { AppProviders } from '@/providers/app-providers';
 import '@/styles/tailwind.css';
 import '@/styles/globals.scss';
-
-const themeInitScript = `
-try {
-  var stored = localStorage.getItem('ttask-theme');
-  if (stored) {
-    var parsed = JSON.parse(stored);
-    var theme = parsed && parsed.state && parsed.state.theme;
-    if (theme === 'light' || theme === 'dark') {
-      document.documentElement.dataset.theme = theme;
-    }
-  }
-} catch (_) {}
-`;
 
 export const metadata: Metadata = {
   title: 'T-task — управление проектами для команд',
@@ -28,10 +16,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" data-theme="light" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-      </head>
       <body className="antialiased">
+        <Script src="/theme-init.js" strategy="beforeInteractive" />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
