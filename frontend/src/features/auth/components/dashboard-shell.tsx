@@ -86,6 +86,9 @@ export function DashboardShell({
               <Link href="/dashboard/forms" className={navLinkClass('/dashboard/forms')}>
                 Формы
               </Link>
+              <Link href="/dashboard/apps" className={navLinkClass('/dashboard/apps')}>
+                Приложения
+              </Link>
               <Link href="/dashboard/focus" className={navLinkClass('/dashboard/focus')}>
                 Фокус
               </Link>

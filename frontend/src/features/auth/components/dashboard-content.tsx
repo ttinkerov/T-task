@@ -67,6 +67,20 @@ export function DashboardContent() {
       <div className="glass-panel rounded-2xl p-5">
         <div className="flex items-center justify-between gap-4">
           <div>
+            <h2 className="text-sm font-medium text-muted-foreground">Приложения</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Google Docs, Figma, Miro и Airtable внутри пространства
+            </p>
+          </div>
+          <Link href="/dashboard/apps" className="btn-ghost text-sm">
+            Открыть приложения
+          </Link>
+        </div>
+      </div>
+
+      <div className="glass-panel rounded-2xl p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
             <h2 className="text-sm font-medium text-muted-foreground">CRM</h2>
             <p className="mt-1 text-sm text-muted-foreground">Воронки продаж и сделки по этапам</p>
           </div>

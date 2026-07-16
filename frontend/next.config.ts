@@ -12,6 +12,7 @@ const contentSecurityPolicy = [
   "img-src 'self' data: blob:",
   "font-src 'self'",
   `connect-src ${connectSrc.join(' ')}`,
+  'frame-src https://docs.google.com https://drive.google.com https://www.figma.com https://miro.com https://airtable.com',
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

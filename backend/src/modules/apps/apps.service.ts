@@ -1,0 +1,125 @@
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma, WorkspaceRole } from '@prisma/client';
+import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { WorkspacesService } from '../workspaces/workspaces.service';
+import { CreateExternalAppDto } from './dto/create-external-app.dto';
+import { normalizeExternalAppUrl } from './utils/external-app-url.util';
+
+const MAX_APPS_PER_WORKSPACE = 50;
+
+@Injectable()
+export class AppsService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly workspacesService: WorkspacesService,
+  ) {}
+
+  async list(workspaceId: string, userId: string) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+
+    const apps = await this.prisma.workspaceExternalApp.findMany({
+      where: { workspaceId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        createdBy: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
+    return apps.map((app) => this.serialize(app));
+  }
+
+  async create(workspaceId: string, userId: string, dto: CreateExternalAppDto) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+
+    const appCount = await this.prisma.workspaceExternalApp.count({ where: { workspaceId } });
+    if (appCount >= MAX_APPS_PER_WORKSPACE) {
+      throw new BadRequestException(
+        `В рабочем пространстве можно добавить до ${MAX_APPS_PER_WORKSPACE} приложений`,
+      );
+    }
+
+    let normalized: ReturnType<typeof normalizeExternalAppUrl>;
+    try {
+      normalized = normalizeExternalAppUrl(dto.url);
+    } catch (error) {
+      throw new BadRequestException(error instanceof Error ? error.message : 'Некорректная ссылка');
+    }
+
+    try {
+      const app = await this.prisma.workspaceExternalApp.create({
+        data: {
+          workspaceId,
+          createdById: userId,
+          provider: normalized.provider,
+          title: dto.title.trim(),
+          sourceUrl: normalized.sourceUrl,
+          embedUrl: normalized.embedUrl,
+        },
+        include: {
+          createdBy: {
+            select: { id: true, name: true },
+          },
+        },
+      });
+
+      return this.serialize(app);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('Это приложение уже добавлено');
+      }
+      throw error;
+    }
+  }
+
+  async remove(workspaceId: string, appId: string, userId: string) {
+    const membership = await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+    const app = await this.prisma.workspaceExternalApp.findFirst({
+      where: { id: appId, workspaceId },
+    });
+
+    if (!app) {
+      throw new NotFoundException('Приложение не найдено');
+    }
+
+    const canDelete =
+      app.createdById === userId ||
+      membership.role === WorkspaceRole.ADMIN ||
+      membership.role === WorkspaceRole.OWNER;
+
+    if (!canDelete) {
+      throw new ForbiddenException('Удалить приложение может автор или администратор');
+    }
+
+    await this.prisma.workspaceExternalApp.delete({ where: { id: app.id } });
+    return { success: true };
+  }
+
+  private serialize(app: {
+    id: string;
+    provider: import('@prisma/client').ExternalAppProvider;
+    title: string;
+    sourceUrl: string;
+    embedUrl: string;
+    createdAt: Date;
+    createdById: string | null;
+    createdBy: { id: string; name: string } | null;
+  }) {
+    return {
+      id: app.id,
+      provider: app.provider,
+      title: app.title,
+      sourceUrl: app.sourceUrl,
+      embedUrl: app.embedUrl,
+      createdAt: app.createdAt.toISOString(),
+      createdBy: app.createdBy,
+    };
+  }
+}

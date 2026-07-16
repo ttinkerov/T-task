@@ -14,6 +14,7 @@ import { CommentsModule } from './modules/comments/comments.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { ActivityModule } from './modules/activity/activity.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
+import { AppsModule } from './modules/apps/apps.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
     NotificationsModule,
     ActivityModule,
     RealtimeModule,
+    AppsModule,
   ],
 })
 export class AppModule {}

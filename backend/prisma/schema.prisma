@@ -56,6 +56,14 @@ enum ColumnAutomationAction {
   COMPLETE_TASK
 }
 
+enum ExternalAppProvider {
+  GOOGLE_DOCS
+  GOOGLE_SHEETS
+  FIGMA
+  MIRO
+  AIRTABLE
+}
+
 enum FormFieldType {
   SHORT_TEXT
   LONG_TEXT
@@ -73,13 +81,14 @@ model User {
   updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  sessions          RefreshSession[]
-  memberships       WorkspaceMember[]
-  sentInvitations   Invitation[]       @relation("InvitationInviter")
-  assignedTasks     Task[]             @relation("TaskAssignee")
-  assignedDeals     Deal[]             @relation("DealAssignee")
-  columnAutomations ColumnAutomation[] @relation("ColumnAutomationAssignee")
-  comments          Comment[]
+  sessions            RefreshSession[]
+  memberships         WorkspaceMember[]
+  sentInvitations     Invitation[]           @relation("InvitationInviter")
+  assignedTasks       Task[]                 @relation("TaskAssignee")
+  assignedDeals       Deal[]                 @relation("DealAssignee")
+  columnAutomations   ColumnAutomation[]     @relation("ColumnAutomationAssignee")
+  createdExternalApps WorkspaceExternalApp[] @relation("ExternalAppCreator")
+  comments            Comment[]
 
   @@map("users")
 }
@@ -115,11 +124,12 @@ model Workspace {
   deletedAt       DateTime?          @map("deleted_at")
   autoRollOverdue Boolean            @default(false) @map("auto_roll_overdue")
 
-  members     WorkspaceMember[]
-  invitations Invitation[]
-  boards      Board[]
-  funnels     Funnel[]
-  forms       Form[]
+  members      WorkspaceMember[]
+  invitations  Invitation[]
+  boards       Board[]
+  funnels      Funnel[]
+  forms        Form[]
+  externalApps WorkspaceExternalApp[]
 
   @@map("workspaces")
 }
@@ -236,6 +246,26 @@ model ColumnAutomation {
   @@index([columnId])
   @@index([assigneeId])
   @@map("column_automations")
+}
+
+model WorkspaceExternalApp {
+  id          String              @id @default(cuid())
+  workspaceId String              @map("workspace_id")
+  createdById String?             @map("created_by_id")
+  provider    ExternalAppProvider
+  title       String
+  sourceUrl   String              @map("source_url")
+  embedUrl    String              @map("embed_url")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User?     @relation("ExternalAppCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, sourceUrl])
+  @@index([workspaceId])
+  @@index([createdById])
+  @@map("workspace_external_apps")
 }
 
 model Funnel {
