@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useMeQuery } from '@/features/auth/hooks';
+import { MentionText, MentionTextarea } from '@/features/mentions';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import {
   useCommentsQuery,
@@ -177,13 +178,14 @@ export function TaskDetailDrawer({
 
           <label className="task-drawer__field">
             <span>Описание</span>
-            <textarea
+            <MentionTextarea
               value={description}
-              onChange={(event) => setDescription(event.target.value)}
+              onChange={setDescription}
+              members={members}
               className="glass-input task-drawer__textarea"
               rows={4}
               maxLength={2000}
-              placeholder="Подробности задачи..."
+              placeholder="Подробности задачи… Введите @, чтобы упомянуть коллегу"
             />
           </label>
 
@@ -425,20 +427,24 @@ export function TaskDetailDrawer({
                       </button>
                     )}
                   </div>
-                  <p className="task-drawer__comment-body">{comment.body}</p>
+                  <p className="task-drawer__comment-body">
+                    <MentionText text={comment.body} members={members} />
+                  </p>
                 </li>
               ))}
             </ul>
           )}
 
           <form onSubmit={handleAddComment} className="task-drawer__comment-form">
-            <textarea
+            <MentionTextarea
               value={commentBody}
-              onChange={(event) => setCommentBody(event.target.value)}
+              onChange={setCommentBody}
+              members={members}
               className="glass-input task-drawer__textarea"
               rows={2}
               maxLength={2000}
-              placeholder="Написать комментарий..."
+              placeholder="Комментарий… Введите @ для упоминания"
+              aria-label="Новый комментарий"
             />
             <button
               type="submit"

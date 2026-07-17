@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   ColumnAutomationAction,
+  MentionSourceType,
   Prisma,
   TaskPriority,
   TaskRecurrenceAction,
@@ -8,6 +9,8 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { BoardsService } from '../boards/boards.service';
+import { extractMentionUserIds } from '../mentions/mention-parser.util';
+import { MentionsService } from '../mentions/mentions.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
@@ -29,6 +32,7 @@ export class TasksService {
     private readonly workspacesService: WorkspacesService,
     private readonly boardsService: BoardsService,
     private readonly taskRelationsService: TaskRelationsService,
+    private readonly mentionsService: MentionsService,
   ) {}
 
   async create(workspaceId: string, userId: string, dto: CreateTaskDto) {
@@ -69,16 +73,35 @@ export class TasksService {
       { actualMinutes: null, timerStartedAt: null, completedAt: null },
       new Date(),
     );
+    const preparedDescription = dto.description?.trim()
+      ? await this.mentionsService.prepare(workspaceId, userId, dto.description.trim())
+      : { text: null, recipientIds: [] as string[] };
 
-    const task = await this.prisma.task.create({
-      data: {
-        columnId: column.id,
-        title: dto.title.trim(),
-        description: dto.description?.trim() || null,
-        position,
-        ...automationUpdate,
-      },
-      include: taskWithAssignee,
+    const task = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const created = await tx.task.create({
+        data: {
+          columnId: column.id,
+          title: dto.title.trim(),
+          description: preparedDescription.text,
+          position,
+          ...automationUpdate,
+        },
+        include: taskWithAssignee,
+      });
+
+      await this.mentionsService.notify(
+        tx,
+        {
+          workspaceId,
+          actorId: userId,
+          taskId: created.id,
+          sourceType: MentionSourceType.TASK_DESCRIPTION,
+          preview: preparedDescription.text ?? created.title,
+        },
+        preparedDescription.recipientIds,
+      );
+
+      return created;
     });
 
     return this.toTask(task);
@@ -86,6 +109,14 @@ export class TasksService {
 
   async update(workspaceId: string, taskId: string, userId: string, dto: UpdateTaskDto) {
     const task = await this.assertTaskInWorkspace(workspaceId, taskId, userId);
+    const preparedDescription =
+      dto.description !== undefined && dto.description?.trim()
+        ? await this.mentionsService.prepare(workspaceId, userId, dto.description.trim())
+        : { text: dto.description?.trim() || null, recipientIds: [] };
+    const previousMentionIds = new Set(extractMentionUserIds(task.description));
+    const newRecipientIds = preparedDescription.recipientIds.filter(
+      (recipientId) => !previousMentionIds.has(recipientId),
+    );
 
     if (dto.assigneeId !== undefined && dto.assigneeId !== null) {
       const membership = await this.prisma.workspaceMember.findUnique({
@@ -103,36 +134,54 @@ export class TasksService {
       await this.assertColumnInWorkspace(workspaceId, dto.recurrenceOriginColumnId);
     }
 
-    const updated = await this.prisma.task.update({
-      where: { id: task.id },
-      data: {
-        ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
-        ...(dto.description !== undefined ? { description: dto.description?.trim() || null } : {}),
-        ...(dto.priority !== undefined ? { priority: dto.priority } : {}),
-        ...(dto.complexity !== undefined ? { complexity: dto.complexity } : {}),
-        ...(dto.timeEstimateMinutes !== undefined
-          ? { timeEstimateMinutes: dto.timeEstimateMinutes }
-          : {}),
-        ...(dto.actualMinutes !== undefined ? { actualMinutes: dto.actualMinutes } : {}),
-        ...(dto.dueDate !== undefined
-          ? {
-              dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
-              overdueDays: 0,
-            }
-          : {}),
-        ...(dto.assigneeId !== undefined ? { assigneeId: dto.assigneeId } : {}),
-        ...(dto.recurrenceRule !== undefined
-          ? this.buildRecurrenceUpdate(task, dto.recurrenceRule, dto)
-          : {}),
-        ...(dto.recurrenceAction !== undefined ? { recurrenceAction: dto.recurrenceAction } : {}),
-        ...(dto.recurrenceWeekdays !== undefined
-          ? { recurrenceWeekdays: dto.recurrenceWeekdays }
-          : {}),
-        ...(dto.recurrenceOriginColumnId !== undefined
-          ? { recurrenceOriginColumnId: dto.recurrenceOriginColumnId }
-          : {}),
-      },
-      include: taskWithAssignee,
+    const updated = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const saved = await tx.task.update({
+        where: { id: task.id },
+        data: {
+          ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
+          ...(dto.description !== undefined ? { description: preparedDescription.text } : {}),
+          ...(dto.priority !== undefined ? { priority: dto.priority } : {}),
+          ...(dto.complexity !== undefined ? { complexity: dto.complexity } : {}),
+          ...(dto.timeEstimateMinutes !== undefined
+            ? { timeEstimateMinutes: dto.timeEstimateMinutes }
+            : {}),
+          ...(dto.actualMinutes !== undefined ? { actualMinutes: dto.actualMinutes } : {}),
+          ...(dto.dueDate !== undefined
+            ? {
+                dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
+                overdueDays: 0,
+              }
+            : {}),
+          ...(dto.assigneeId !== undefined ? { assigneeId: dto.assigneeId } : {}),
+          ...(dto.recurrenceRule !== undefined
+            ? this.buildRecurrenceUpdate(task, dto.recurrenceRule, dto)
+            : {}),
+          ...(dto.recurrenceAction !== undefined ? { recurrenceAction: dto.recurrenceAction } : {}),
+          ...(dto.recurrenceWeekdays !== undefined
+            ? { recurrenceWeekdays: dto.recurrenceWeekdays }
+            : {}),
+          ...(dto.recurrenceOriginColumnId !== undefined
+            ? { recurrenceOriginColumnId: dto.recurrenceOriginColumnId }
+            : {}),
+        },
+        include: taskWithAssignee,
+      });
+
+      if (dto.description !== undefined) {
+        await this.mentionsService.notify(
+          tx,
+          {
+            workspaceId,
+            actorId: userId,
+            taskId,
+            sourceType: MentionSourceType.TASK_DESCRIPTION,
+            preview: preparedDescription.text ?? saved.title,
+          },
+          newRecipientIds,
+        );
+      }
+
+      return saved;
     });
 
     return this.toTask(updated);

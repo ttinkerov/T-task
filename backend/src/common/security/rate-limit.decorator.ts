@@ -51,3 +51,15 @@ export const CUSTOM_FIELD_MUTATE_RATE_LIMIT: RateLimitConfig = {
   windowSeconds: 60,
   maxAttempts: 60,
 };
+
+export const NOTIFICATION_MUTATE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'notification:mutate',
+  windowSeconds: 60,
+  maxAttempts: 120,
+};
+
+export const MENTION_SOURCE_MUTATE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'mention-source:mutate',
+  windowSeconds: 60,
+  maxAttempts: 60,
+};

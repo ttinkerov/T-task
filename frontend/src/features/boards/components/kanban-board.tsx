@@ -20,10 +20,11 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FormEvent, useCallback, useMemo, useRef, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMeQuery } from '@/features/auth/hooks';
 import { useCustomFieldsQuery } from '@/features/custom-fields/hooks';
 import type { CustomFieldDefinition } from '@/features/custom-fields/types';
+import { tokenizeMentions } from '@/features/mentions/mention-utils';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import { formatMinutes } from '@/shared/lib/format-duration';
 import { formatRecurrenceLabel } from '@/shared/lib/format-recurrence';
@@ -52,7 +53,13 @@ import { TaskDetailDrawer } from './task-detail-drawer';
 
 type DragType = 'column' | 'task';
 
-export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
+export function KanbanBoard({
+  workspaceId,
+  initialTaskId = null,
+}: {
+  workspaceId: string;
+  initialTaskId?: string | null;
+}) {
   const { data: session } = useMeQuery();
   const { data: board, isLoading } = useBoardQuery(workspaceId);
   const { data: customFields = [] } = useCustomFieldsQuery(workspaceId);
@@ -62,6 +69,7 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
   const [activeColumn, setActiveColumn] = useState<BoardColumn | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const openedInitialTaskRef = useRef<string | null>(null);
   const [filters, setFilters] = useState<BoardFilters>(EMPTY_BOARD_FILTERS);
   const [moveError, setMoveError] = useState('');
 
@@ -99,6 +107,17 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
       ) ?? [],
     [board],
   );
+
+  useEffect(() => {
+    if (
+      initialTaskId &&
+      openedInitialTaskRef.current !== initialTaskId &&
+      findTask(board, initialTaskId)
+    ) {
+      openedInitialTaskRef.current = initialTaskId;
+      setSelectedTaskId(initialTaskId);
+    }
+  }, [board, initialTaskId]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setMoveError('');
@@ -575,6 +594,7 @@ function KanbanTaskCard({
       return label ? { id: field.id, label } : null;
     })
     .filter((chip): chip is { id: string; label: string } => chip !== null);
+  const description = task.description ? toPlainMentionText(task.description, memberNames) : null;
 
   return (
     <div
@@ -604,7 +624,7 @@ function KanbanTaskCard({
         </button>
         <div className="min-w-0 flex-1">
           <p className="kanban-task-card__title">{task.title}</p>
-          {task.description ? <p className="kanban-task-card__desc">{task.description}</p> : null}
+          {description ? <p className="kanban-task-card__desc">{description}</p> : null}
           {(task.priority ||
             task.complexity ||
             task.timeEstimateMinutes ||
@@ -699,6 +719,16 @@ function formatCustomFieldValue(
     default:
       return `${field.name}: ${String(value)}`;
   }
+}
+
+function toPlainMentionText(text: string, memberNames: Map<string, string>) {
+  return tokenizeMentions(text)
+    .map((token) =>
+      token.type === 'text'
+        ? token.value
+        : `@${memberNames.get(token.userId) ?? token.value.slice(1)}`,
+    )
+    .join('');
 }
 
 function findTask(board: BoardView | null | undefined, taskId: string) {

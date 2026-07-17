@@ -4,11 +4,20 @@ import { DashboardShell } from '@/features/auth/components/dashboard-shell';
 import { KanbanBoard } from '@/features/boards';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
 
 export default function BoardPage() {
+  return (
+    <Suspense fallback={<BoardPageFallback />}>
+      <BoardPageContent />
+    </Suspense>
+  );
+}
+
+function BoardPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   const { data: workspaces = [], isLoading } = useWorkspacesQuery();
 
@@ -21,10 +30,18 @@ export default function BoardPage() {
   return (
     <DashboardShell boardMode>
       {workspaceId ? (
-        <KanbanBoard workspaceId={workspaceId} />
+        <KanbanBoard workspaceId={workspaceId} initialTaskId={searchParams.get('task')} />
       ) : (
         <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
       )}
+    </DashboardShell>
+  );
+}
+
+function BoardPageFallback() {
+  return (
+    <DashboardShell boardMode>
+      <p className="text-sm text-muted-foreground">Загрузка доски...</p>
     </DashboardShell>
   );
 }

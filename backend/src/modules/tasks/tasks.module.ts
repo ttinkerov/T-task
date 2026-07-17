@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { BoardsModule } from '../boards/boards.module';
+import { MentionsModule } from '../mentions/mentions.module';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
 import { CustomFieldsController, TaskCustomFieldsController } from './custom-fields.controller';
 import { CustomFieldsService } from './custom-fields.service';
@@ -9,7 +10,7 @@ import { TasksController } from './tasks.controller';
 import { TasksService } from './tasks.service';
 
 @Module({
-  imports: [WorkspacesModule, BoardsModule],
+  imports: [WorkspacesModule, BoardsModule, MentionsModule],
   controllers: [
     TasksController,
     TaskRelationsController,

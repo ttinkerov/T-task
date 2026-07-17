@@ -55,6 +55,15 @@ enum TaskRelationType {
   RELATES_TO
 }
 
+enum NotificationType {
+  MENTION
+}
+
+enum MentionSourceType {
+  TASK_DESCRIPTION
+  COMMENT
+}
+
 enum ColumnAutomationAction {
   ASSIGN_USER
   START_TIMER
@@ -95,6 +104,8 @@ model User {
   createdExternalApps WorkspaceExternalApp[] @relation("ExternalAppCreator")
   calendarFeeds       CalendarFeed[]
   comments            Comment[]
+  receivedNotifications Notification[]       @relation("NotificationRecipient")
+  sentNotifications     Notification[]       @relation("NotificationActor")
 
   @@map("users")
 }
@@ -139,6 +150,7 @@ model Workspace {
   calendarFeeds CalendarFeed[]
   customFields CustomFieldDefinition[]
   activityLogs ActivityLog[]
+  notifications Notification[]
 
   @@map("workspaces")
 }
@@ -256,6 +268,7 @@ model Task {
   outgoingRelations TaskRelation[] @relation("TaskRelationSource")
   incomingRelations TaskRelation[] @relation("TaskRelationTarget")
   customFieldValues CustomFieldValue[]
+  notifications Notification[]
 
   @@index([columnId])
   @@index([assigneeId])
@@ -495,8 +508,34 @@ model Comment {
 
   task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  notifications Notification[]
 
   @@index([taskId])
   @@index([authorId])
   @@map("comments")
+}
+
+model Notification {
+  id          String            @id @default(cuid())
+  workspaceId String            @map("workspace_id")
+  recipientId String            @map("recipient_id")
+  actorId     String            @map("actor_id")
+  taskId      String            @map("task_id")
+  commentId   String?           @map("comment_id")
+  type        NotificationType  @default(MENTION)
+  sourceType  MentionSourceType @map("source_type")
+  preview     String
+  readAt      DateTime?         @map("read_at")
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  recipient User      @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor     User      @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  comment   Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, recipientId, readAt, createdAt])
+  @@index([taskId])
+  @@index([recipientId, commentId])
+  @@map("notifications")
 }

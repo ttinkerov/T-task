@@ -7,8 +7,10 @@ import { BrandLogo } from '@/components/marketing/brand-logo';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { useCanViewActivity } from '@/features/activity/hooks';
 import { useLogoutMutation, useMeQuery } from '@/features/auth/hooks';
+import { NotificationBell } from '@/features/notifications';
 import { useCanManageTrash } from '@/features/trash/hooks';
 import { WorkspaceSwitcher } from '@/features/workspaces/components/workspace-switcher';
+import { useWorkspaceStore } from '@/stores/workspace.store';
 
 export function DashboardShell({
   children,
@@ -20,6 +22,7 @@ export function DashboardShell({
   const router = useRouter();
   const pathname = usePathname();
   const { data: session, isLoading, isError } = useMeQuery();
+  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   const logoutMutation = useLogoutMutation();
   const { canView: canViewActivity, isLoading: activityAccessLoading } = useCanViewActivity();
   const { canManage: canManageTrash, isLoading: trashAccessLoading } = useCanManageTrash();
@@ -163,6 +166,7 @@ export function DashboardShell({
           </div>
 
           <div className="dashboard-header__right">
+            <NotificationBell workspaceId={workspaceId} />
             <ThemeToggle />
             <span className="dashboard-header__user">{session.user.name}</span>
             <WorkspaceSwitcher />

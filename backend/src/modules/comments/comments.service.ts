@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { MentionSourceType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { MentionsService } from '../mentions/mentions.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 
@@ -8,6 +10,7 @@ export class CommentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly workspacesService: WorkspacesService,
+    private readonly mentionsService: MentionsService,
   ) {}
 
   async list(workspaceId: string, taskId: string, userId: string) {
@@ -28,18 +31,36 @@ export class CommentsService {
 
   async create(workspaceId: string, taskId: string, userId: string, dto: CreateCommentDto) {
     await this.assertTaskInWorkspace(workspaceId, taskId, userId);
+    const prepared = await this.mentionsService.prepare(workspaceId, userId, dto.body.trim());
 
-    const comment = await this.prisma.comment.create({
-      data: {
-        taskId,
-        authorId: userId,
-        body: dto.body.trim(),
-      },
-      include: {
-        author: {
-          select: { id: true, name: true, email: true, avatarUrl: true },
+    const comment = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const created = await tx.comment.create({
+        data: {
+          taskId,
+          authorId: userId,
+          body: prepared.text,
         },
-      },
+        include: {
+          author: {
+            select: { id: true, name: true, email: true, avatarUrl: true },
+          },
+        },
+      });
+
+      await this.mentionsService.notify(
+        tx,
+        {
+          workspaceId,
+          actorId: userId,
+          taskId,
+          commentId: created.id,
+          sourceType: MentionSourceType.COMMENT,
+          preview: prepared.text,
+        },
+        prepared.recipientIds,
+      );
+
+      return created;
     });
 
     return this.toComment(comment);

@@ -41,6 +41,7 @@ describe('TasksService completion dependencies', () => {
       { getWorkspaceForMember: vi.fn().mockResolvedValue({ id: 'workspace-1' }) } as never,
       {} as never,
       relationsService as never,
+      { prepare: vi.fn(), notify: vi.fn() } as never,
     );
     prisma.task.findFirst.mockResolvedValue({
       id: 'task-b',
@@ -97,5 +98,61 @@ describe('TasksService completion dependencies', () => {
 
     expect(relationsService.assertCanComplete).toHaveBeenCalledWith('task-b', prisma);
     expect(prisma.task.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('TasksService description mentions', () => {
+  it('notifies only newly mentioned members in the task update transaction', async () => {
+    const prisma = makePrisma();
+    const mentions = {
+      prepare: vi.fn().mockResolvedValue({
+        text: '@[Анна](cm12345678901234567890) @[Борис](cm22222222222222222222), проверьте',
+        recipientIds: ['cm12345678901234567890', 'cm22222222222222222222'],
+      }),
+      notify: vi.fn().mockResolvedValue(undefined),
+    };
+    const existingTask = {
+      id: 'task-1',
+      title: 'Запуск',
+      description: '@[Анна](cm12345678901234567890), посмотри',
+      columnId: 'column-1',
+      position: 0,
+      recurrenceOriginColumnId: null,
+    };
+    prisma.task.findFirst.mockResolvedValue(existingTask);
+    prisma.task.update.mockResolvedValue({
+      ...existingTask,
+      description: '@[Анна](cm12345678901234567890) @[Борис](cm22222222222222222222), проверьте',
+    });
+    const service = new TasksService(
+      prisma as never,
+      { getWorkspaceForMember: vi.fn().mockResolvedValue({ id: 'workspace-1' }) } as never,
+      { getBoardForWorkspace: vi.fn(), serializeTask: vi.fn((task) => task) } as never,
+      { assertCanComplete: vi.fn() } as never,
+      mentions as never,
+    );
+
+    await service.update('workspace-1', 'task-1', 'author-1', {
+      description:
+        '@[Старое имя](cm12345678901234567890) @[Борис](cm22222222222222222222), проверьте',
+    });
+
+    expect(prisma.task.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          description:
+            '@[Анна](cm12345678901234567890) @[Борис](cm22222222222222222222), проверьте',
+        }),
+      }),
+    );
+    expect(mentions.notify).toHaveBeenCalledWith(
+      prisma,
+      expect.objectContaining({
+        taskId: 'task-1',
+        sourceType: 'TASK_DESCRIPTION',
+      }),
+      ['cm22222222222222222222'],
+    );
+    expect(prisma.$transaction).toHaveBeenCalledOnce();
   });
 });

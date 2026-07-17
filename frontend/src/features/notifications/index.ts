@@ -1,1 +1,2 @@
-/** Feature placeholder — notification inbox and counters. */
+export { NotificationBell } from './components/notification-bell';
+export * from './types';

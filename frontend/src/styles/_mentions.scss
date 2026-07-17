@@ -1,0 +1,69 @@
+@use 'variables' as *;
+
+.mention-editor {
+  position: relative;
+  display: grid;
+
+  > textarea {
+    width: 100%;
+  }
+
+  &__suggestions {
+    position: absolute;
+    z-index: 80;
+    top: calc(100% + 0.3rem);
+    right: 0;
+    left: 0;
+    display: grid;
+    max-height: 15rem;
+    margin: 0;
+    border: 1px solid var(--tt-border);
+    border-radius: $radius-sm;
+    background: var(--tt-surface-strong);
+    padding: 0.3rem;
+    overflow-y: auto;
+    box-shadow: 0 14px 40px var(--tt-shadow);
+    list-style: none;
+
+    button {
+      display: grid;
+      width: 100%;
+      gap: 0.1rem;
+      border: 0;
+      border-radius: 0.45rem;
+      background: transparent;
+      padding: 0.5rem 0.6rem;
+      color: $color-white;
+      cursor: pointer;
+      text-align: left;
+
+      &:hover,
+      &.mention-editor__option--active {
+        background: var(--tt-hover-strong);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--tt-brand);
+        outline-offset: -2px;
+      }
+
+      span {
+        font-size: 0.8125rem;
+        font-weight: 650;
+      }
+
+      small {
+        color: $color-text-muted;
+        font-size: 0.6875rem;
+      }
+    }
+  }
+}
+
+.mention-text {
+  border-radius: 0.3rem;
+  background: var(--tt-brand-muted);
+  padding: 0.05rem 0.2rem;
+  color: var(--tt-brand);
+  font-weight: 650;
+}
