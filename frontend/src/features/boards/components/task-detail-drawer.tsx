@@ -23,6 +23,7 @@ import {
   type TaskRecurrenceAction,
   type TaskRecurrenceRule,
 } from '../types';
+import { TaskCustomFieldsSection } from './task-custom-fields-section';
 import { TaskRelationsSection } from './task-relations-section';
 
 interface TaskDetailDrawerProps {
@@ -376,6 +377,12 @@ export function TaskDetailDrawer({
             </button>
           </div>
         </form>
+
+        <TaskCustomFieldsSection
+          workspaceId={workspaceId}
+          taskId={task.id}
+          values={task.customFields}
+        />
 
         <TaskRelationsSection
           workspaceId={workspaceId}

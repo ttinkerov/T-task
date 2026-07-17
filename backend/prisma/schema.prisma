@@ -137,6 +137,7 @@ model Workspace {
   forms        Form[]
   externalApps WorkspaceExternalApp[]
   calendarFeeds CalendarFeed[]
+  customFields CustomFieldDefinition[]
   activityLogs ActivityLog[]
 
   @@map("workspaces")
@@ -254,11 +255,56 @@ model Task {
   comments Comment[]
   outgoingRelations TaskRelation[] @relation("TaskRelationSource")
   incomingRelations TaskRelation[] @relation("TaskRelationTarget")
+  customFieldValues CustomFieldValue[]
 
   @@index([columnId])
   @@index([assigneeId])
   @@index([deletedAt])
   @@map("tasks")
+}
+
+enum CustomFieldType {
+  TEXT
+  NUMBER
+  DATE
+  CHECKBOX
+  SELECT
+  MULTI_SELECT
+  URL
+  USER
+}
+
+model CustomFieldDefinition {
+  id          String          @id @default(cuid())
+  workspaceId String          @map("workspace_id")
+  name        String
+  type        CustomFieldType
+  options     String[]        @default([])
+  showOnCard  Boolean         @default(false) @map("show_on_card")
+  position    Int
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  workspace Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  values    CustomFieldValue[]
+
+  @@index([workspaceId])
+  @@map("custom_field_definitions")
+}
+
+model CustomFieldValue {
+  id        String   @id @default(cuid())
+  fieldId   String   @map("field_id")
+  taskId    String   @map("task_id")
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  field CustomFieldDefinition @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  task  Task                  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([fieldId, taskId])
+  @@index([taskId])
+  @@map("custom_field_values")
 }
 
 model TaskRelation {

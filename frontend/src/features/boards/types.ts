@@ -18,6 +18,11 @@ export interface TaskAssignee {
   avatarUrl: string | null;
 }
 
+export interface TaskCustomFieldValue {
+  fieldId: string;
+  value: string | number | boolean | string[] | null;
+}
+
 export interface BoardTask {
   id: string;
   title: string;
@@ -39,6 +44,7 @@ export interface BoardTask {
   timerStartedAt: string | null;
   completedAt: string | null;
   createdAt: string;
+  customFields: TaskCustomFieldValue[];
 }
 
 export interface ColumnAutomation {

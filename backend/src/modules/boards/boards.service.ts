@@ -79,6 +79,9 @@ export class BoardsService {
                 assignee: {
                   select: { id: true, name: true, email: true, avatarUrl: true },
                 },
+                customFieldValues: {
+                  select: { fieldId: true, value: true },
+                },
               },
             },
           },
@@ -444,6 +447,10 @@ export class BoardsService {
       email: string;
       avatarUrl: string | null;
     } | null;
+    customFieldValues?: {
+      fieldId: string;
+      value: import('@prisma/client').Prisma.JsonValue;
+    }[];
   }) {
     return {
       id: task.id,
@@ -473,6 +480,10 @@ export class BoardsService {
       timerStartedAt: task.timerStartedAt?.toISOString() ?? null,
       completedAt: task.completedAt?.toISOString() ?? null,
       createdAt: task.createdAt.toISOString(),
+      customFields: (task.customFieldValues ?? []).map((entry) => ({
+        fieldId: entry.fieldId,
+        value: entry.value,
+      })),
     };
   }
 

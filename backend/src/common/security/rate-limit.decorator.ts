@@ -45,3 +45,9 @@ export const TASK_RELATION_MUTATE_RATE_LIMIT: RateLimitConfig = {
   windowSeconds: 60,
   maxAttempts: 30,
 };
+
+export const CUSTOM_FIELD_MUTATE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'custom-field:mutate',
+  windowSeconds: 60,
+  maxAttempts: 60,
+};

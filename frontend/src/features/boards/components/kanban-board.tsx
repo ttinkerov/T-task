@@ -22,6 +22,9 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { FormEvent, useCallback, useMemo, useRef, useState } from 'react';
 import { useMeQuery } from '@/features/auth/hooks';
+import { useCustomFieldsQuery } from '@/features/custom-fields/hooks';
+import type { CustomFieldDefinition } from '@/features/custom-fields/types';
+import { useMembersQuery } from '@/features/workspaces/hooks';
 import { formatMinutes } from '@/shared/lib/format-duration';
 import { formatRecurrenceLabel } from '@/shared/lib/format-recurrence';
 import { formatOverdueLabel, isDoneColumn, isTaskOverdue } from '../lib/overdue';
@@ -52,6 +55,8 @@ type DragType = 'column' | 'task';
 export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
   const { data: session } = useMeQuery();
   const { data: board, isLoading } = useBoardQuery(workspaceId);
+  const { data: customFields = [] } = useCustomFieldsQuery(workspaceId);
+  const { data: members = [] } = useMembersQuery(workspaceId);
   const moveTaskMutation = useMoveTaskMutation(workspaceId);
   const moveColumnMutation = useMoveColumnMutation(workspaceId);
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
@@ -74,6 +79,14 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
       ),
     }));
   }, [board, filters, session?.user.id]);
+  const cardFields = useMemo(
+    () => customFields.filter((field) => field.showOnCard),
+    [customFields],
+  );
+  const memberNames = useMemo(
+    () => new Map(members.map((member) => [member.userId, member.user.name])),
+    [members],
+  );
   const relationCandidates = useMemo(
     () =>
       board?.columns.flatMap((column) =>
@@ -184,6 +197,8 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
                 workspaceId={workspaceId}
                 canDelete={canDeleteColumns}
                 canManageAutomations={canManageAutomations}
+                cardFields={cardFields}
+                memberNames={memberNames}
                 onOpenTask={setSelectedTaskId}
               />
             ))}
@@ -292,6 +307,8 @@ function SortableKanbanColumn({
   workspaceId,
   canDelete,
   canManageAutomations,
+  cardFields,
+  memberNames,
   onOpenTask,
 }: {
   column: BoardColumn;
@@ -299,6 +316,8 @@ function SortableKanbanColumn({
   workspaceId: string;
   canDelete: boolean;
   canManageAutomations: boolean;
+  cardFields: CustomFieldDefinition[];
+  memberNames: Map<string, string>;
   onOpenTask: (taskId: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -320,6 +339,8 @@ function SortableKanbanColumn({
         workspaceId={workspaceId}
         canDelete={canDelete}
         canManageAutomations={canManageAutomations}
+        cardFields={cardFields}
+        memberNames={memberNames}
         dragHandleProps={{ ...attributes, ...listeners }}
         onOpenTask={onOpenTask}
       />
@@ -333,6 +354,8 @@ function KanbanColumn({
   workspaceId,
   canDelete,
   canManageAutomations,
+  cardFields,
+  memberNames,
   dragHandleProps,
   onOpenTask,
 }: {
@@ -341,6 +364,8 @@ function KanbanColumn({
   workspaceId: string;
   canDelete: boolean;
   canManageAutomations: boolean;
+  cardFields: CustomFieldDefinition[];
+  memberNames: Map<string, string>;
   dragHandleProps?: React.HTMLAttributes<HTMLElement>;
   onOpenTask: (taskId: string) => void;
 }) {
@@ -475,6 +500,8 @@ function KanbanColumn({
               task={task}
               column={column}
               allColumns={allColumns}
+              cardFields={cardFields}
+              memberNames={memberNames}
               onOpen={() => onOpenTask(task.id)}
             />
           ))}
@@ -513,11 +540,15 @@ function KanbanTaskCard({
   task,
   column,
   allColumns,
+  cardFields,
+  memberNames,
   onOpen,
 }: {
   task: BoardTask;
   column: BoardColumn;
   allColumns: BoardColumn[];
+  cardFields: CustomFieldDefinition[];
+  memberNames: Map<string, string>;
   onOpen: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -537,6 +568,13 @@ function KanbanTaskCard({
   const recurrenceLabel = formatRecurrenceLabel(task.recurrenceRule, task.recurrenceWeekdays);
   const overdueLabel = formatOverdueLabel(task, column, allColumns);
   const isOverdue = isTaskOverdue(task, column, allColumns);
+  const customFieldChips = cardFields
+    .map((field) => {
+      const entry = task.customFields.find((item) => item.fieldId === field.id);
+      const label = formatCustomFieldValue(field, entry?.value ?? null, memberNames);
+      return label ? { id: field.id, label } : null;
+    })
+    .filter((chip): chip is { id: string; label: string } => chip !== null);
 
   return (
     <div
@@ -576,6 +614,7 @@ function KanbanTaskCard({
             dueLabel ||
             recurrenceLabel ||
             overdueLabel ||
+            customFieldChips.length > 0 ||
             task.assignee) && (
             <div className="kanban-task-meta">
               {overdueLabel ? (
@@ -620,12 +659,46 @@ function KanbanTaskCard({
                   {dueLabel}
                 </span>
               ) : null}
+              {customFieldChips.map((chip) => (
+                <span key={chip.id} className="kanban-task-chip kanban-task-chip--custom">
+                  {chip.label}
+                </span>
+              ))}
             </div>
           )}
         </div>
       </div>
     </div>
   );
+}
+
+function formatCustomFieldValue(
+  field: CustomFieldDefinition,
+  value: BoardTask['customFields'][number]['value'],
+  memberNames: Map<string, string>,
+): string | null {
+  if (value === null || value === undefined || value === '') return null;
+
+  switch (field.type) {
+    case 'CHECKBOX':
+      return value === true ? `${field.name}: да` : null;
+    case 'MULTI_SELECT': {
+      if (!Array.isArray(value) || value.length === 0) return null;
+      return `${field.name}: ${value.join(', ')}`;
+    }
+    case 'USER': {
+      const name = typeof value === 'string' ? memberNames.get(value) : undefined;
+      return name ? `${field.name}: ${name}` : null;
+    }
+    case 'DATE': {
+      if (typeof value !== 'string') return null;
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return null;
+      return `${field.name}: ${date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`;
+    }
+    default:
+      return `${field.name}: ${String(value)}`;
+  }
 }
 
 function findTask(board: BoardView | null | undefined, taskId: string) {

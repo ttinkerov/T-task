@@ -127,6 +127,13 @@ export function DashboardShell({
               >
                 Календарь
               </Link>
+              <Link
+                href="/dashboard/custom-fields"
+                className={navLinkClass('/dashboard/custom-fields')}
+                aria-current={isNavActive('/dashboard/custom-fields') ? 'page' : undefined}
+              >
+                Поля
+              </Link>
               {!activityAccessLoading && canViewActivity ? (
                 <Link
                   href="/dashboard/activity"
