@@ -1,5 +1,19 @@
 @use 'variables' as *;
 
+.kanban-board__error {
+  margin: 0.5rem 0;
+  border: 1px solid color-mix(in srgb, #c43d4b 28%, transparent);
+  border-radius: $radius-sm;
+  background: color-mix(in srgb, #c43d4b 8%, transparent);
+  padding: 0.65rem 0.75rem;
+  color: #b22736;
+  font-size: 0.75rem;
+}
+
+[data-theme='dark'] .kanban-board__error {
+  color: #fc8181;
+}
+
 .kanban-board {
   display: flex;
   flex: 1;

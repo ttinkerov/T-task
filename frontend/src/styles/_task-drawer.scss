@@ -90,6 +90,194 @@
   }
 }
 
+.task-relations {
+  display: grid;
+  gap: 0.75rem;
+  border-top: 1px solid $color-border-subtle;
+  padding: 1rem 1.25rem;
+
+  &__heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+
+    h3 {
+      color: $color-white;
+      font-size: 0.8125rem;
+      font-weight: 650;
+    }
+
+    p {
+      margin-top: 0.15rem;
+      color: $color-text-muted;
+      font-size: 0.6875rem;
+      line-height: 1.4;
+    }
+
+    > span {
+      display: grid;
+      min-width: 1.35rem;
+      height: 1.35rem;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--tt-hover-strong);
+      color: $color-text-muted;
+      font-size: 0.6875rem;
+      font-weight: 700;
+    }
+  }
+
+  &__list {
+    display: grid;
+    gap: 0.4rem;
+    max-height: 11rem;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+
+    li {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.55rem;
+      border: 1px solid $color-border-subtle;
+      border-radius: $radius-sm;
+      background: var(--tt-hover);
+      padding: 0.5rem;
+    }
+  }
+
+  &__icon {
+    display: grid;
+    width: 1.75rem;
+    height: 1.75rem;
+    place-items: center;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 800;
+
+    &--blocks {
+      background: color-mix(in srgb, #e27a3f 14%, transparent);
+      color: #d7652a;
+    }
+
+    &--waiting_for {
+      background: color-mix(in srgb, #b886e8 14%, transparent);
+      color: #8f55c7;
+    }
+
+    &--relates_to {
+      background: var(--tt-brand-muted);
+      color: var(--tt-brand);
+    }
+  }
+
+  &__task {
+    display: grid;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+
+    > span,
+    small {
+      color: $color-text-muted;
+      font-size: 0.625rem;
+      line-height: 1.35;
+    }
+
+    strong {
+      overflow: hidden;
+      color: $color-white;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &:focus-visible {
+      border-radius: 0.2rem;
+      outline: 2px solid var(--tt-brand);
+      outline-offset: 2px;
+    }
+  }
+
+  &__delete {
+    display: grid;
+    width: 1.75rem;
+    height: 1.75rem;
+    place-items: center;
+    border: 0;
+    border-radius: $radius-sm;
+    background: transparent;
+    color: $color-text-muted;
+    cursor: pointer;
+    font-size: 1rem;
+
+    &:hover,
+    &:focus-visible {
+      background: color-mix(in srgb, #c43d4b 12%, transparent);
+      color: #b22736;
+    }
+
+    &:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 1px;
+    }
+  }
+
+  &__form {
+    display: grid;
+    grid-template-columns: minmax(7rem, 0.7fr) minmax(0, 1.3fr);
+    gap: 0.55rem;
+    border-radius: $radius-sm;
+    background: var(--tt-hover);
+    padding: 0.65rem;
+
+    label {
+      display: grid;
+      gap: 0.3rem;
+
+      > span {
+        color: $color-text-muted;
+        font-size: 0.625rem;
+        font-weight: 600;
+      }
+    }
+
+    > p {
+      align-self: center;
+      color: $color-text-muted;
+      font-size: 0.625rem;
+      line-height: 1.35;
+    }
+
+    > button {
+      justify-self: end;
+    }
+  }
+
+  &__empty,
+  &__error {
+    margin: 0;
+    font-size: 0.6875rem;
+    line-height: 1.45;
+  }
+
+  &__empty {
+    color: $color-text-muted;
+  }
+
+  &__error {
+    color: #b22736;
+  }
+}
+
 .task-drawer__comments {
   border-top: 1px solid $color-border-subtle;
   padding: 1rem 1.25rem 1.25rem;
@@ -98,6 +286,29 @@
   gap: 0.75rem;
   max-height: 40%;
   overflow-y: auto;
+}
+
+@media (max-width: 420px) {
+  .task-relations__form {
+    grid-template-columns: 1fr;
+
+    > button {
+      justify-self: stretch;
+    }
+  }
+}
+
+[data-theme='dark'] {
+  .task-relations__error {
+    color: #fc8181;
+  }
+
+  .task-relations__delete {
+    &:hover,
+    &:focus-visible {
+      color: #fc8181;
+    }
+  }
 }
 
 .task-drawer__comments-title {

@@ -3,6 +3,8 @@ import type {
   BoardView,
   ColumnAutomation,
   TaskComment,
+  TaskRelation,
+  TaskRelationType,
   UpdateColumnAutomationsPayload,
   UpdateTaskPayload,
 } from './types';
@@ -120,4 +122,32 @@ export async function deleteComment(workspaceId: string, taskId: string, comment
     method: 'DELETE',
     headers: withWorkspace(workspaceId),
   });
+}
+
+export async function fetchTaskRelations(workspaceId: string, taskId: string) {
+  return apiFetch<TaskRelation[]>(`/api/v1/workspaces/${workspaceId}/tasks/${taskId}/relations`, {
+    headers: withWorkspace(workspaceId),
+  });
+}
+
+export async function createTaskRelation(
+  workspaceId: string,
+  taskId: string,
+  data: { relatedTaskId: string; type: TaskRelationType },
+) {
+  return apiFetch<TaskRelation>(`/api/v1/workspaces/${workspaceId}/tasks/${taskId}/relations`, {
+    method: 'POST',
+    headers: withWorkspace(workspaceId),
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteTaskRelation(workspaceId: string, taskId: string, relationId: string) {
+  return apiFetch<{ success: true }>(
+    `/api/v1/workspaces/${workspaceId}/tasks/${taskId}/relations/${relationId}`,
+    {
+      method: 'DELETE',
+      headers: withWorkspace(workspaceId),
+    },
+  );
 }

@@ -12,6 +12,7 @@ import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { TaskRelationsService } from './task-relations.service';
 import { buildAutomationTaskUpdate } from './utils/column-automation.util';
 import { computeNextRecurrenceDate, isDoneColumn } from './utils/recurrence.util';
 
@@ -27,6 +28,7 @@ export class TasksService {
     private readonly prisma: PrismaService,
     private readonly workspacesService: WorkspacesService,
     private readonly boardsService: BoardsService,
+    private readonly taskRelationsService: TaskRelationsService,
   ) {}
 
   async create(workspaceId: string, userId: string, dto: CreateTaskDto) {
@@ -165,16 +167,29 @@ export class TasksService {
       },
     });
 
-    const movingToDone = isDoneColumn(targetColumn, board.columns);
+    const currentColumn = board.columns.find((column) => column.id === task.columnId);
+    const targetIsDone = isDoneColumn(targetColumn, board.columns);
+    const movingToDone =
+      targetIsDone && Boolean(currentColumn) && !isDoneColumn(currentColumn!, board.columns);
     const executableAutomations = await this.filterExecutableAutomations(
       workspaceId,
       targetColumn.automations,
     );
+    const completionAttempt =
+      movingToDone ||
+      executableAutomations.some(
+        (automation) => automation.action === ColumnAutomationAction.COMPLETE_TASK,
+      );
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (task.columnId === dto.columnId) {
         await this.reorderWithinColumn(tx, task.columnId, taskId, dto.position);
         return;
+      }
+
+      if (completionAttempt) {
+        await tx.$executeRaw`SELECT id FROM tasks WHERE id = ${taskId} FOR UPDATE`;
+        await this.taskRelationsService.assertCanComplete(taskId, tx);
       }
 
       const currentTask = await tx.task.findUniqueOrThrow({ where: { id: taskId } });
@@ -191,7 +206,7 @@ export class TasksService {
         data: {
           columnId: dto.columnId,
           position: dto.position,
-          ...(movingToDone ? { overdueDays: 0 } : {}),
+          ...(targetIsDone ? { overdueDays: 0 } : {}),
           ...automationUpdate,
         },
       });

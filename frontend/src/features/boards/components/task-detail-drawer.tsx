@@ -18,15 +18,19 @@ import {
   RECURRENCE_WEEKDAY_OPTIONS,
   TIME_ESTIMATE_OPTIONS,
   type BoardTask,
+  type TaskRelationCandidate,
   type TaskPriority,
   type TaskRecurrenceAction,
   type TaskRecurrenceRule,
 } from '../types';
+import { TaskRelationsSection } from './task-relations-section';
 
 interface TaskDetailDrawerProps {
   workspaceId: string;
   task: BoardTask;
   columnName: string;
+  relationCandidates: TaskRelationCandidate[];
+  onOpenTask: (taskId: string) => void;
   onClose: () => void;
 }
 
@@ -34,6 +38,8 @@ export function TaskDetailDrawer({
   workspaceId,
   task,
   columnName,
+  relationCandidates,
+  onOpenTask,
   onClose,
 }: TaskDetailDrawerProps) {
   const { data: session } = useMeQuery();
@@ -370,6 +376,13 @@ export function TaskDetailDrawer({
             </button>
           </div>
         </form>
+
+        <TaskRelationsSection
+          workspaceId={workspaceId}
+          taskId={task.id}
+          candidates={relationCandidates}
+          onOpenTask={onOpenTask}
+        />
 
         <div className="task-drawer__comments">
           <h3 className="task-drawer__comments-title">Комментарии</h3>

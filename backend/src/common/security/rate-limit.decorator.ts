@@ -39,3 +39,9 @@ export const CALENDAR_FEED_MANAGE_RATE_LIMIT: RateLimitConfig = {
   windowSeconds: 60,
   maxAttempts: 10,
 };
+
+export const TASK_RELATION_MUTATE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'task-relation:mutate',
+  windowSeconds: 60,
+  maxAttempts: 30,
+};

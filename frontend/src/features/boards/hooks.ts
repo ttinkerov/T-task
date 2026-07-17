@@ -2,25 +2,35 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createColumn,
   createComment,
+  createTaskRelation,
   createTask,
   deleteColumn,
   deleteComment,
+  deleteTaskRelation,
   deleteTask,
   fetchBoard,
   fetchComments,
+  fetchTaskRelations,
   moveColumn,
   moveTask,
   updateColumn,
   updateColumnAutomations,
   updateTask,
 } from './api';
-import type { BoardView, UpdateColumnAutomationsPayload, UpdateTaskPayload } from './types';
+import type {
+  BoardView,
+  TaskRelationType,
+  UpdateColumnAutomationsPayload,
+  UpdateTaskPayload,
+} from './types';
 
 export const boardKeys = {
   all: ['boards'] as const,
   detail: (workspaceId: string) => [...boardKeys.all, workspaceId, 'board'] as const,
   comments: (workspaceId: string, taskId: string) =>
     [...boardKeys.all, workspaceId, 'comments', taskId] as const,
+  relations: (workspaceId: string, taskId: string) =>
+    [...boardKeys.all, workspaceId, 'relations', taskId] as const,
 };
 
 export function useBoardQuery(workspaceId: string | null) {
@@ -235,6 +245,49 @@ export function useDeleteCommentMutation(workspaceId: string, taskId: string) {
       void queryClient.invalidateQueries({
         queryKey: boardKeys.comments(workspaceId, taskId),
       });
+    },
+  });
+}
+
+export function useTaskRelationsQuery(workspaceId: string, taskId: string) {
+  return useQuery({
+    queryKey: boardKeys.relations(workspaceId, taskId),
+    queryFn: async () => {
+      const response = await fetchTaskRelations(workspaceId, taskId);
+      return response.data ?? [];
+    },
+    enabled: Boolean(workspaceId && taskId),
+  });
+}
+
+export function useCreateTaskRelationMutation(workspaceId: string, taskId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { relatedTaskId: string; type: TaskRelationType }) =>
+      createTaskRelation(workspaceId, taskId, data),
+    onSuccess: (_response, variables) => {
+      for (const relatedTaskId of [taskId, variables.relatedTaskId]) {
+        void queryClient.invalidateQueries({
+          queryKey: boardKeys.relations(workspaceId, relatedTaskId),
+        });
+      }
+    },
+  });
+}
+
+export function useDeleteTaskRelationMutation(workspaceId: string, taskId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ relationId }: { relationId: string; relatedTaskId: string }) =>
+      deleteTaskRelation(workspaceId, taskId, relationId),
+    onSuccess: (_response, variables) => {
+      for (const relatedTaskId of [taskId, variables.relatedTaskId]) {
+        void queryClient.invalidateQueries({
+          queryKey: boardKeys.relations(workspaceId, relatedTaskId),
+        });
+      }
     },
   });
 }

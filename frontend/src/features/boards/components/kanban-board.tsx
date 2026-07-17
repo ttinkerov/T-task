@@ -24,7 +24,7 @@ import { FormEvent, useCallback, useMemo, useRef, useState } from 'react';
 import { useMeQuery } from '@/features/auth/hooks';
 import { formatMinutes } from '@/shared/lib/format-duration';
 import { formatRecurrenceLabel } from '@/shared/lib/format-recurrence';
-import { formatOverdueLabel, isTaskOverdue } from '../lib/overdue';
+import { formatOverdueLabel, isDoneColumn, isTaskOverdue } from '../lib/overdue';
 import {
   useBoardQuery,
   useCreateColumnMutation,
@@ -58,6 +58,7 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
   const [activeColumn, setActiveColumn] = useState<BoardColumn | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [filters, setFilters] = useState<BoardFilters>(EMPTY_BOARD_FILTERS);
+  const [moveError, setMoveError] = useState('');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -73,8 +74,21 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
       ),
     }));
   }, [board, filters, session?.user.id]);
+  const relationCandidates = useMemo(
+    () =>
+      board?.columns.flatMap((column) =>
+        column.tasks.map((task) => ({
+          id: task.id,
+          title: task.title,
+          columnName: column.name,
+          completed: Boolean(task.completedAt) || isDoneColumn(column, board.columns),
+        })),
+      ) ?? [],
+    [board],
+  );
 
   const handleDragStart = (event: DragStartEvent) => {
+    setMoveError('');
     const type = event.active.data.current?.type as DragType | undefined;
 
     if (type === 'column') {
@@ -120,11 +134,15 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
       return;
     }
 
-    await moveTaskMutation.mutateAsync({
-      taskId,
-      columnId: destination.columnId,
-      position: destination.position,
-    });
+    try {
+      await moveTaskMutation.mutateAsync({
+        taskId,
+        columnId: destination.columnId,
+        position: destination.position,
+      });
+    } catch (error) {
+      setMoveError(error instanceof Error ? error.message : 'Не удалось переместить задачу');
+    }
   };
 
   if (isLoading || !board) {
@@ -143,6 +161,11 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
   return (
     <>
       <BoardFiltersBar workspaceId={workspaceId} filters={filters} onChange={setFilters} />
+      {moveError ? (
+        <p className="kanban-board__error" role="alert">
+          {moveError}
+        </p>
+      ) : null}
       <BoardWorkloadPanel board={board} />
 
       <DndContext
@@ -187,9 +210,15 @@ export function KanbanBoard({ workspaceId }: { workspaceId: string }) {
 
       {selectedTask ? (
         <TaskDetailDrawer
+          key={selectedTask.id}
           workspaceId={workspaceId}
           task={selectedTask}
           columnName={selectedColumnName}
+          relationCandidates={relationCandidates}
+          onOpenTask={(taskId) => {
+            setMoveError('');
+            setSelectedTaskId(taskId);
+          }}
           onClose={() => setSelectedTaskId(null)}
         />
       ) : null}

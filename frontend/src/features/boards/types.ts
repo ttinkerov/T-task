@@ -9,6 +9,7 @@ export type TaskRecurrenceRule = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEAR
 
 export type TaskRecurrenceAction = 'DUPLICATE' | 'RESCHEDULE';
 export type ColumnAutomationAction = 'ASSIGN_USER' | 'START_TIMER' | 'COMPLETE_TASK';
+export type TaskRelationType = 'BLOCKS' | 'WAITING_FOR' | 'RELATES_TO';
 
 export interface TaskAssignee {
   id: string;
@@ -89,6 +90,25 @@ export interface TaskComment {
   authorId: string;
   author: TaskAssignee;
   createdAt: string;
+}
+
+export interface TaskRelation {
+  id: string;
+  type: TaskRelationType;
+  task: {
+    id: string;
+    title: string;
+    columnId: string;
+    columnName: string;
+    completed: boolean;
+  };
+}
+
+export interface TaskRelationCandidate {
+  id: string;
+  title: string;
+  columnName: string;
+  completed: boolean;
 }
 
 export interface BoardFilters {

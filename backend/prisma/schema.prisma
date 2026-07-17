@@ -50,6 +50,11 @@ enum TaskRecurrenceAction {
   RESCHEDULE
 }
 
+enum TaskRelationType {
+  BLOCKS
+  RELATES_TO
+}
+
 enum ColumnAutomationAction {
   ASSIGN_USER
   START_TIMER
@@ -247,11 +252,29 @@ model Task {
   column   BoardColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
   assignee User?       @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   comments Comment[]
+  outgoingRelations TaskRelation[] @relation("TaskRelationSource")
+  incomingRelations TaskRelation[] @relation("TaskRelationTarget")
 
   @@index([columnId])
   @@index([assigneeId])
   @@index([deletedAt])
   @@map("tasks")
+}
+
+model TaskRelation {
+  id           String           @id @default(cuid())
+  sourceTaskId String           @map("source_task_id")
+  targetTaskId String           @map("target_task_id")
+  pairKey      String           @unique @map("pair_key")
+  type         TaskRelationType
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  sourceTask Task @relation("TaskRelationSource", fields: [sourceTaskId], references: [id], onDelete: Cascade)
+  targetTask Task @relation("TaskRelationTarget", fields: [targetTaskId], references: [id], onDelete: Cascade)
+
+  @@index([sourceTaskId])
+  @@index([targetTaskId])
+  @@map("task_relations")
 }
 
 model ColumnAutomation {
