@@ -29,6 +29,7 @@ import { useMembersQuery } from '@/features/workspaces/hooks';
 import { formatMinutes } from '@/shared/lib/format-duration';
 import { formatRecurrenceLabel } from '@/shared/lib/format-recurrence';
 import { formatOverdueLabel, isDoneColumn, isTaskOverdue } from '../lib/overdue';
+import type { BoardViewMode } from '../lib/task-view-utils';
 import {
   useBoardQuery,
   useCreateColumnMutation,
@@ -49,9 +50,11 @@ import {
 import { BoardFiltersBar } from './board-filters-bar';
 import { BoardWorkloadPanel } from './board-workload-panel';
 import { ColumnAutomationDialog } from './column-automation-dialog';
+import { TaskDisplayView, TaskViewToolbar } from './task-display-views';
 import { TaskDetailDrawer } from './task-detail-drawer';
 
 type DragType = 'column' | 'task';
+const BOARD_VIEW_MODES: BoardViewMode[] = ['BOARD', 'LIST', 'WEEK', 'MONTH', 'GANTT'];
 
 export function KanbanBoard({
   workspaceId,
@@ -72,6 +75,8 @@ export function KanbanBoard({
   const openedInitialTaskRef = useRef<string | null>(null);
   const [filters, setFilters] = useState<BoardFilters>(EMPTY_BOARD_FILTERS);
   const [moveError, setMoveError] = useState('');
+  const [viewMode, setViewMode] = useState<BoardViewMode>('BOARD');
+  const [viewAnchor, setViewAnchor] = useState(() => new Date());
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -118,6 +123,11 @@ export function KanbanBoard({
       setSelectedTaskId(initialTaskId);
     }
   }, [board, initialTaskId]);
+
+  useEffect(() => {
+    setViewMode(readStoredViewMode(workspaceId));
+    setViewAnchor(new Date());
+  }, [workspaceId]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setMoveError('');
@@ -192,55 +202,74 @@ export function KanbanBoard({
 
   return (
     <>
+      <TaskViewToolbar
+        mode={viewMode}
+        anchor={viewAnchor}
+        onModeChange={(mode) => {
+          setMoveError('');
+          setViewMode(mode);
+          storeViewMode(workspaceId, mode);
+        }}
+        onAnchorChange={setViewAnchor}
+      />
       <BoardFiltersBar workspaceId={workspaceId} filters={filters} onChange={setFilters} />
-      {moveError ? (
+      {viewMode === 'BOARD' && moveError ? (
         <p className="kanban-board__error" role="alert">
           {moveError}
         </p>
       ) : null}
-      <BoardWorkloadPanel board={board} />
+      {viewMode === 'BOARD' ? <BoardWorkloadPanel board={board} /> : null}
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="kanban-board">
-          <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
-            {filteredColumns.map((column) => (
-              <SortableKanbanColumn
-                key={column.id}
-                column={column}
-                allColumns={board.columns}
-                workspaceId={workspaceId}
-                canDelete={canDeleteColumns}
-                canManageAutomations={canManageAutomations}
-                cardFields={cardFields}
-                memberNames={memberNames}
-                onOpenTask={setSelectedTaskId}
-              />
-            ))}
-          </SortableContext>
-          <AddColumnPanel workspaceId={workspaceId} />
-        </div>
+      {viewMode === 'BOARD' ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="kanban-board">
+            <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
+              {filteredColumns.map((column) => (
+                <SortableKanbanColumn
+                  key={column.id}
+                  column={column}
+                  allColumns={board.columns}
+                  workspaceId={workspaceId}
+                  canDelete={canDeleteColumns}
+                  canManageAutomations={canManageAutomations}
+                  cardFields={cardFields}
+                  memberNames={memberNames}
+                  onOpenTask={setSelectedTaskId}
+                />
+              ))}
+            </SortableContext>
+            <AddColumnPanel workspaceId={workspaceId} />
+          </div>
 
-        <DragOverlay>
-          {activeColumn ? (
-            <div className="kanban-column kanban-column--dragging">
-              <div className="kanban-column__header">
-                <h3 className="kanban-column__title">{activeColumn.name}</h3>
-                <span className="kanban-column__count">{activeColumn.tasks.length}</span>
+          <DragOverlay>
+            {activeColumn ? (
+              <div className="kanban-column kanban-column--dragging">
+                <div className="kanban-column__header">
+                  <h3 className="kanban-column__title">{activeColumn.name}</h3>
+                  <span className="kanban-column__count">{activeColumn.tasks.length}</span>
+                </div>
               </div>
-            </div>
-          ) : null}
-          {activeTask ? (
-            <div className="kanban-task-card kanban-task-card--dragging">
-              <p className="kanban-task-card__title">{activeTask.title}</p>
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+            ) : null}
+            {activeTask ? (
+              <div className="kanban-task-card kanban-task-card--dragging">
+                <p className="kanban-task-card__title">{activeTask.title}</p>
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      ) : (
+        <TaskDisplayView
+          mode={viewMode}
+          columns={filteredColumns}
+          anchor={viewAnchor}
+          onOpenTask={setSelectedTaskId}
+        />
+      )}
 
       {selectedTask ? (
         <TaskDetailDrawer
@@ -729,6 +758,24 @@ function toPlainMentionText(text: string, memberNames: Map<string, string>) {
         : `@${memberNames.get(token.userId) ?? token.value.slice(1)}`,
     )
     .join('');
+}
+
+function readStoredViewMode(workspaceId: string): BoardViewMode {
+  try {
+    const stored = window.localStorage.getItem(`ttask:view-mode:${workspaceId}`);
+    return BOARD_VIEW_MODES.includes(stored as BoardViewMode) ? (stored as BoardViewMode) : 'BOARD';
+  } catch (error) {
+    console.warn('Unable to read the saved board view mode', error);
+    return 'BOARD';
+  }
+}
+
+function storeViewMode(workspaceId: string, mode: BoardViewMode) {
+  try {
+    window.localStorage.setItem(`ttask:view-mode:${workspaceId}`, mode);
+  } catch (error) {
+    console.warn('Unable to save the board view mode', error);
+  }
 }
 
 function findTask(board: BoardView | null | undefined, taskId: string) {
