@@ -65,4 +65,15 @@ export class TasksController {
     const result = await this.tasksService.remove(workspaceId, taskId, user.id);
     return successResponse(result);
   }
+
+  @Post(':taskId/duplicate')
+  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  async duplicate(
+    @Param('workspaceId') workspaceId: string,
+    @Param('taskId') taskId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const task = await this.tasksService.duplicate(workspaceId, taskId, user.id);
+    return successResponse(task);
+  }
 }

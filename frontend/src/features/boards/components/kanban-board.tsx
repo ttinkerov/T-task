@@ -306,6 +306,8 @@ function matchesFilters(
 
   if (filters.assigneeId && task.assigneeId !== filters.assigneeId) return false;
 
+  if (filters.tagId && !(task.tags ?? []).some((tag) => tag.id === filters.tagId)) return false;
+
   if (filters.myTasksOnly) {
     if (!currentUserId || task.assigneeId !== currentUserId) return false;
   }
@@ -663,9 +665,27 @@ function KanbanTaskCard({
             dueLabel ||
             recurrenceLabel ||
             overdueLabel ||
+            (task.tags ?? []).length > 0 ||
+            (task.subtasks ?? []).length > 0 ||
             customFieldChips.length > 0 ||
             task.assignee) && (
             <div className="kanban-task-meta">
+              {(task.tags ?? []).slice(0, 3).map((tag) => (
+                <span
+                  key={tag.id}
+                  className="tag-chip"
+                  style={{ background: `${tag.color}22`, color: tag.color, borderColor: tag.color }}
+                >
+                  <i style={{ background: tag.color }} />
+                  {tag.name}
+                </span>
+              ))}
+              {(task.subtasks ?? []).length > 0 ? (
+                <span className="kanban-task-chip">
+                  {(task.subtasks ?? []).filter((item) => item.completed).length}/
+                  {(task.subtasks ?? []).length} шагов
+                </span>
+              ) : null}
               {overdueLabel ? (
                 <span className="kanban-task-chip kanban-task-chip--overdue">{overdueLabel}</span>
               ) : null}

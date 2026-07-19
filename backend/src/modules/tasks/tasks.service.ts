@@ -447,6 +447,108 @@ export class TasksService {
     return { success: true };
   }
 
+  async duplicate(workspaceId: string, taskId: string, userId: string) {
+    const source = await this.assertTaskInWorkspace(workspaceId, taskId, userId);
+    await this.boardsService.getBoardForWorkspace(workspaceId);
+
+    const created = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const lastTask = await tx.task.findFirst({
+        where: { columnId: source.columnId, deletedAt: null },
+        orderBy: { position: 'desc' },
+        select: { position: true },
+      });
+      const position = (lastTask?.position ?? -1) + 1;
+
+      const copy = await tx.task.create({
+        data: {
+          columnId: source.columnId,
+          title: `${source.title} (копия)`.slice(0, 200),
+          description: source.description,
+          priority: source.priority,
+          complexity: source.complexity,
+          timeEstimateMinutes: source.timeEstimateMinutes,
+          actualMinutes: null,
+          dueDate: source.dueDate,
+          assigneeId: source.assigneeId,
+          position,
+          recurrenceRule: source.recurrenceRule,
+          recurrenceAction: source.recurrenceAction,
+          recurrenceWeekdays: source.recurrenceWeekdays,
+          recurrenceOriginColumnId: source.recurrenceOriginColumnId,
+          overdueDays: 0,
+          timerStartedAt: null,
+          completedAt: null,
+        },
+        include: {
+          ...taskWithAssignee,
+          customFieldValues: { select: { fieldId: true, value: true } },
+          taskTags: { include: { tag: { select: { id: true, name: true, color: true } } } },
+          subtasks: {
+            orderBy: { position: 'asc' },
+            select: { id: true, title: true, completed: true, position: true },
+          },
+        },
+      });
+
+      const [tags, subtasks, customFields] = await Promise.all([
+        tx.taskTag.findMany({ where: { taskId: source.id }, select: { tagId: true } }),
+        tx.subtask.findMany({
+          where: { taskId: source.id },
+          orderBy: { position: 'asc' },
+          select: { title: true, position: true },
+        }),
+        tx.customFieldValue.findMany({
+          where: { taskId: source.id },
+          select: { fieldId: true, value: true },
+        }),
+      ]);
+
+      if (tags.length > 0) {
+        await tx.taskTag.createMany({
+          data: tags.map((entry) => ({ taskId: copy.id, tagId: entry.tagId })),
+        });
+      }
+      if (subtasks.length > 0) {
+        await tx.subtask.createMany({
+          data: subtasks.map((entry) => ({
+            taskId: copy.id,
+            title: entry.title,
+            completed: false,
+            position: entry.position,
+          })),
+        });
+      }
+      if (customFields.length > 0) {
+        await tx.customFieldValue.createMany({
+          data: customFields.map((entry) => ({
+            taskId: copy.id,
+            fieldId: entry.fieldId,
+            value: entry.value as Prisma.InputJsonValue,
+          })),
+        });
+      }
+
+      return tx.task.findFirst({
+        where: { id: copy.id },
+        include: {
+          ...taskWithAssignee,
+          customFieldValues: { select: { fieldId: true, value: true } },
+          taskTags: { include: { tag: { select: { id: true, name: true, color: true } } } },
+          subtasks: {
+            orderBy: { position: 'asc' },
+            select: { id: true, title: true, completed: true, position: true },
+          },
+        },
+      });
+    });
+
+    if (!created) {
+      throw new NotFoundException('Task not found');
+    }
+
+    return this.boardsService.serializeTask(created);
+  }
+
   private async assertTaskInWorkspace(workspaceId: string, taskId: string, userId: string) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
 

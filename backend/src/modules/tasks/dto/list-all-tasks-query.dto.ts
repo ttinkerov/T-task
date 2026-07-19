@@ -63,6 +63,10 @@ export class ListAllTasksQueryDto {
   columnId?: string;
 
   @IsOptional()
+  @IsEntityId()
+  tagId?: string;
+
+  @IsOptional()
   @IsEnum(AllTasksStatus)
   status?: AllTasksStatus;
 

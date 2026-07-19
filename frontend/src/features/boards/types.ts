@@ -23,6 +23,19 @@ export interface TaskCustomFieldValue {
   value: string | number | boolean | string[] | null;
 }
 
+export interface TaskTag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface TaskSubtask {
+  id: string;
+  title: string;
+  completed: boolean;
+  position: number;
+}
+
 export interface BoardTask {
   id: string;
   title: string;
@@ -45,6 +58,8 @@ export interface BoardTask {
   completedAt: string | null;
   createdAt: string;
   customFields: TaskCustomFieldValue[];
+  tags: TaskTag[];
+  subtasks: TaskSubtask[];
 }
 
 export interface ColumnAutomation {
@@ -121,6 +136,7 @@ export interface BoardFilters {
   search: string;
   priority: TaskPriority | '';
   assigneeId: string | '';
+  tagId: string | '';
   myTasksOnly: boolean;
   overdueStatus: '' | 'overdue' | 'not_overdue';
 }
@@ -180,6 +196,7 @@ export const EMPTY_BOARD_FILTERS: BoardFilters = {
   search: '',
   priority: '',
   assigneeId: '',
+  tagId: '',
   myTasksOnly: false,
   overdueStatus: '',
 };

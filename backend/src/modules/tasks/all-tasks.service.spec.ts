@@ -11,6 +11,9 @@ function makePrisma() {
     board: {
       findMany: vi.fn(),
     },
+    tag: {
+      findMany: vi.fn(),
+    },
   };
 }
 
@@ -28,6 +31,7 @@ describe('AllTasksService', () => {
         columns: [{ id: 'column-1', name: 'В работе' }],
       },
     ]);
+    prisma.tag.findMany.mockResolvedValue([]);
     prisma.task.findMany.mockResolvedValue([
       {
         id: 'task-1',
@@ -103,6 +107,7 @@ describe('AllTasksService', () => {
           columns: [{ id: 'column-1', name: 'В работе' }],
         },
       ],
+      tags: [],
     });
   });
 

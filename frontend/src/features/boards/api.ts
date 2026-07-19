@@ -1,5 +1,6 @@
 import { apiFetch } from '@/shared/api/client';
 import type {
+  BoardTask,
   BoardView,
   ColumnAutomation,
   TaskComment,
@@ -99,6 +100,13 @@ export async function moveTask(
 export async function deleteTask(workspaceId: string, taskId: string) {
   return apiFetch(`/api/v1/workspaces/${workspaceId}/tasks/${taskId}`, {
     method: 'DELETE',
+    headers: withWorkspace(workspaceId),
+  });
+}
+
+export async function duplicateTask(workspaceId: string, taskId: string) {
+  return apiFetch<BoardTask>(`/api/v1/workspaces/${workspaceId}/tasks/${taskId}/duplicate`, {
+    method: 'POST',
     headers: withWorkspace(workspaceId),
   });
 }

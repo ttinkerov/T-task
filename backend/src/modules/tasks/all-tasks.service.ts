@@ -27,7 +27,7 @@ export class AllTasksService {
     const where = this.buildWhere(workspaceId, query);
     const orderBy = this.buildOrderBy(query);
 
-    const [total, tasks, boards] = await Promise.all([
+    const [total, tasks, boards, tags] = await Promise.all([
       this.prisma.task.count({ where }),
       this.prisma.task.findMany({
         where,
@@ -40,6 +40,14 @@ export class AllTasksService {
           },
           customFieldValues: {
             select: { fieldId: true, value: true },
+          },
+          taskTags: {
+            include: { tag: { select: { id: true, name: true, color: true } } },
+            orderBy: { tag: { name: 'asc' } },
+          },
+          subtasks: {
+            orderBy: { position: 'asc' },
+            select: { id: true, title: true, completed: true, position: true },
           },
           column: {
             select: {
@@ -63,6 +71,11 @@ export class AllTasksService {
           },
         },
       }),
+      this.prisma.tag.findMany({
+        where: { workspaceId },
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, color: true },
+      }),
     ]);
 
     return {
@@ -76,6 +89,7 @@ export class AllTasksService {
       limit,
       totalPages: Math.ceil(total / limit),
       boards,
+      tags,
     };
   }
 
@@ -91,6 +105,7 @@ export class AllTasksService {
       column: { board },
       ...(query.columnId ? { columnId: query.columnId } : {}),
       ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
+      ...(query.tagId ? { taskTags: { some: { tagId: query.tagId } } } : {}),
       ...(query.priority ? { priority: query.priority } : {}),
       ...(query.status === AllTasksStatus.OPEN ? { completedAt: null } : {}),
       ...(query.status === AllTasksStatus.COMPLETED ? { completedAt: { not: null } } : {}),

@@ -149,6 +149,7 @@ model Workspace {
   externalApps WorkspaceExternalApp[]
   calendarFeeds CalendarFeed[]
   customFields CustomFieldDefinition[]
+  tags         Tag[]
   activityLogs ActivityLog[]
   notifications Notification[]
 
@@ -269,11 +270,56 @@ model Task {
   incomingRelations TaskRelation[] @relation("TaskRelationTarget")
   customFieldValues CustomFieldValue[]
   notifications Notification[]
+  taskTags TaskTag[]
+  subtasks Subtask[]
 
   @@index([columnId])
   @@index([assigneeId])
   @@index([deletedAt])
   @@map("tasks")
+}
+
+model Tag {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  name        String
+  color       String   @default("#3B82F6")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks     TaskTag[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+  @@map("tags")
+}
+
+model TaskTag {
+  taskId String @map("task_id")
+  tagId  String @map("tag_id")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+  @@index([tagId])
+  @@map("task_tags")
+}
+
+model Subtask {
+  id        String    @id @default(cuid())
+  taskId    String    @map("task_id")
+  title     String
+  completed Boolean   @default(false)
+  position  Int
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("subtasks")
 }
 
 enum CustomFieldType {

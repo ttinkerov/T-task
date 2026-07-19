@@ -103,6 +103,13 @@ export function DashboardShell({
                 Все задачи
               </Link>
               <Link
+                href="/dashboard/my-tasks"
+                className={navLinkClass('/dashboard/my-tasks')}
+                aria-current={isNavActive('/dashboard/my-tasks') ? 'page' : undefined}
+              >
+                Мои задачи
+              </Link>
+              <Link
                 href="/dashboard/analytics"
                 className={navLinkClass('/dashboard/analytics')}
                 aria-current={isNavActive('/dashboard/analytics') ? 'page' : undefined}
@@ -143,6 +150,13 @@ export function DashboardShell({
                 aria-current={isNavActive('/dashboard/custom-fields') ? 'page' : undefined}
               >
                 Поля
+              </Link>
+              <Link
+                href="/dashboard/tags"
+                className={navLinkClass('/dashboard/tags')}
+                aria-current={isNavActive('/dashboard/tags') ? 'page' : undefined}
+              >
+                Теги
               </Link>
               {!activityAccessLoading && canViewActivity ? (
                 <Link

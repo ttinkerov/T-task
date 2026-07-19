@@ -82,6 +82,14 @@ export class BoardsService {
                 customFieldValues: {
                   select: { fieldId: true, value: true },
                 },
+                taskTags: {
+                  include: { tag: { select: { id: true, name: true, color: true } } },
+                  orderBy: { tag: { name: 'asc' } },
+                },
+                subtasks: {
+                  orderBy: { position: 'asc' },
+                  select: { id: true, title: true, completed: true, position: true },
+                },
               },
             },
           },
@@ -451,6 +459,15 @@ export class BoardsService {
       fieldId: string;
       value: import('@prisma/client').Prisma.JsonValue;
     }[];
+    taskTags?: {
+      tag: { id: string; name: string; color: string };
+    }[];
+    subtasks?: {
+      id: string;
+      title: string;
+      completed: boolean;
+      position: number;
+    }[];
   }) {
     return {
       id: task.id,
@@ -483,6 +500,13 @@ export class BoardsService {
       customFields: (task.customFieldValues ?? []).map((entry) => ({
         fieldId: entry.fieldId,
         value: entry.value,
+      })),
+      tags: (task.taskTags ?? []).map((entry) => entry.tag),
+      subtasks: (task.subtasks ?? []).map((entry) => ({
+        id: entry.id,
+        title: entry.title,
+        completed: entry.completed,
+        position: entry.position,
       })),
     };
   }

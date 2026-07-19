@@ -8,6 +8,7 @@ import {
   deleteComment,
   deleteTaskRelation,
   deleteTask,
+  duplicateTask,
   fetchBoard,
   fetchComments,
   fetchTaskRelations,
@@ -212,6 +213,21 @@ export function useDeleteTaskMutation(workspaceId: string) {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
       void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
       void queryClient.invalidateQueries({ queryKey: ['workspace-trash'] });
+    },
+  });
+}
+
+export function useDuplicateTaskMutation(workspaceId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      const response = await duplicateTask(workspaceId, taskId);
+      return response.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
     },
   });
 }

@@ -11,6 +11,7 @@ export interface AllTasksFilters {
   assigneeId: string;
   boardId: string;
   columnId: string;
+  tagId: string;
   status: AllTasksStatus;
   due: AllTasksDueFilter;
 }
@@ -40,6 +41,7 @@ export interface AllTasksResult {
   limit: number;
   totalPages: number;
   boards: AllTasksBoard[];
+  tags: { id: string; name: string; color: string }[];
 }
 
 export const EMPTY_ALL_TASKS_FILTERS: AllTasksFilters = {
@@ -48,6 +50,7 @@ export const EMPTY_ALL_TASKS_FILTERS: AllTasksFilters = {
   assigneeId: '',
   boardId: '',
   columnId: '',
+  tagId: '',
   status: '',
   due: '',
 };

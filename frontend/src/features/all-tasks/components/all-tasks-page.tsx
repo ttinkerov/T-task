@@ -26,12 +26,23 @@ const PAGE_SIZE = 50;
 export function AllTasksPage({
   workspaceId,
   initialTaskId = null,
+  lockedAssigneeId = null,
+  title = 'Все задачи',
+  description = 'Задачи со всех доступных досок в одном месте.',
+  linkSource = 'all-tasks',
 }: {
   workspaceId: string;
   initialTaskId?: string | null;
+  lockedAssigneeId?: string | null;
+  title?: string;
+  description?: string;
+  linkSource?: 'all-tasks' | 'my-tasks';
 }) {
-  const storageKey = `all-tasks:view:${workspaceId}`;
-  const [filters, setFilters] = useState<AllTasksFilters>(EMPTY_ALL_TASKS_FILTERS);
+  const storageKey = `all-tasks:view:${workspaceId}:${lockedAssigneeId ? 'mine' : 'all'}`;
+  const [filters, setFilters] = useState<AllTasksFilters>({
+    ...EMPTY_ALL_TASKS_FILTERS,
+    ...(lockedAssigneeId ? { assigneeId: lockedAssigneeId } : {}),
+  });
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<AllTasksSort>('CREATED_AT');
@@ -59,6 +70,7 @@ export function AllTasksPage({
 
   const query: AllTasksQuery = {
     ...filters,
+    assigneeId: lockedAssigneeId ?? filters.assigneeId,
     page,
     limit: PAGE_SIZE,
     sortBy,
@@ -109,8 +121,8 @@ export function AllTasksPage({
       <header className="all-tasks__header">
         <div>
           <p className="all-tasks__eyebrow">Рабочее пространство</p>
-          <h1 id="all-tasks-title">Все задачи</h1>
-          <p>Задачи со всех доступных досок в одном месте.</p>
+          <h1 id="all-tasks-title">{title}</h1>
+          <p>{description}</p>
         </div>
         <strong>{data?.total ?? 0} задач</strong>
       </header>
@@ -162,11 +174,24 @@ export function AllTasksPage({
           value={filters.assigneeId}
           onChange={(event) => changeFilters({ ...filters, assigneeId: event.target.value })}
           aria-label="Фильтр по исполнителю"
+          disabled={Boolean(lockedAssigneeId)}
         >
-          <option value="">Все исполнители</option>
+          <option value="">{lockedAssigneeId ? 'Только я' : 'Все исполнители'}</option>
           {members.map((member) => (
             <option key={member.userId} value={member.userId}>
               {member.user.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={filters.tagId}
+          onChange={(event) => changeFilters({ ...filters, tagId: event.target.value })}
+          aria-label="Фильтр по тегу"
+        >
+          <option value="">Все теги</option>
+          {(data?.tags ?? []).map((tag) => (
+            <option key={tag.id} value={tag.id}>
+              {tag.name}
             </option>
           ))}
         </select>
@@ -233,7 +258,10 @@ export function AllTasksPage({
           type="button"
           onClick={() => {
             setSearchInput('');
-            changeFilters(EMPTY_ALL_TASKS_FILTERS);
+            changeFilters({
+              ...EMPTY_ALL_TASKS_FILTERS,
+              ...(lockedAssigneeId ? { assigneeId: lockedAssigneeId } : {}),
+            });
           }}
         >
           Сбросить
@@ -284,6 +312,7 @@ export function AllTasksPage({
           task={selectedTask}
           columnName={`${selectedTask.board.name} · ${selectedTask.column.name}`}
           relationCandidates={relationCandidates}
+          linkSource={linkSource}
           onOpenTask={setSelectedTaskId}
           onClose={() => setSelectedTaskId(null)}
         />

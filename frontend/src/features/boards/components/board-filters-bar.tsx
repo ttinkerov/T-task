@@ -1,5 +1,6 @@
 'use client';
 
+import { useTagsQuery } from '@/features/tags/hooks';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import {
   EMPTY_BOARD_FILTERS,
@@ -17,10 +18,12 @@ interface BoardFiltersBarProps {
 
 export function BoardFiltersBar({ workspaceId, filters, onChange }: BoardFiltersBarProps) {
   const { data: members = [] } = useMembersQuery(workspaceId);
+  const { data: tags = [] } = useTagsQuery(workspaceId);
   const hasActiveFilters =
     Boolean(filters.search) ||
     Boolean(filters.priority) ||
     Boolean(filters.assigneeId) ||
+    Boolean(filters.tagId) ||
     filters.myTasksOnly ||
     Boolean(filters.overdueStatus);
 
@@ -59,6 +62,20 @@ export function BoardFiltersBar({ workspaceId, filters, onChange }: BoardFilters
         {members.map((member) => (
           <option key={member.userId} value={member.userId}>
             {member.user.name}
+          </option>
+        ))}
+      </select>
+
+      <select
+        value={filters.tagId}
+        onChange={(event) => onChange({ ...filters, tagId: event.target.value })}
+        className="board-filters__select"
+        aria-label="Фильтр по тегу"
+      >
+        <option value="">Все теги</option>
+        {tags.map((tag) => (
+          <option key={tag.id} value={tag.id}>
+            {tag.name}
           </option>
         ))}
       </select>

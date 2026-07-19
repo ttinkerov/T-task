@@ -9,8 +9,10 @@ import {
   useCreateCommentMutation,
   useDeleteCommentMutation,
   useDeleteTaskMutation,
+  useDuplicateTaskMutation,
   useUpdateTaskMutation,
 } from '../hooks';
+import { copyTaskLink } from '../lib/task-link';
 import {
   COMPLEXITY_OPTIONS,
   PRIORITY_OPTIONS,
@@ -26,12 +28,15 @@ import {
 } from '../types';
 import { TaskCustomFieldsSection } from './task-custom-fields-section';
 import { TaskRelationsSection } from './task-relations-section';
+import { TaskSubtasksSection } from './task-subtasks-section';
+import { TaskTagsSection } from './task-tags-section';
 
 interface TaskDetailDrawerProps {
   workspaceId: string;
   task: BoardTask;
   columnName: string;
   relationCandidates: TaskRelationCandidate[];
+  linkSource?: 'board' | 'all-tasks' | 'my-tasks';
   onOpenTask: (taskId: string) => void;
   onClose: () => void;
 }
@@ -41,6 +46,7 @@ export function TaskDetailDrawer({
   task,
   columnName,
   relationCandidates,
+  linkSource = 'board',
   onOpenTask,
   onClose,
 }: TaskDetailDrawerProps) {
@@ -48,6 +54,7 @@ export function TaskDetailDrawer({
   const { data: members = [] } = useMembersQuery(workspaceId);
   const updateMutation = useUpdateTaskMutation(workspaceId);
   const deleteMutation = useDeleteTaskMutation(workspaceId);
+  const duplicateMutation = useDuplicateTaskMutation(workspaceId);
   const { data: comments = [], isLoading: commentsLoading } = useCommentsQuery(
     workspaceId,
     task.id,
@@ -73,6 +80,7 @@ export function TaskDetailDrawer({
     task.recurrenceWeekdays ?? [],
   );
   const [commentBody, setCommentBody] = useState('');
+  const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
     setTitle(task.title);
@@ -130,6 +138,19 @@ export function TaskDetailDrawer({
   const handleDelete = async () => {
     await deleteMutation.mutateAsync(task.id);
     onClose();
+  };
+
+  const handleDuplicate = async () => {
+    const copy = await duplicateMutation.mutateAsync(task.id);
+    if (copy?.id) {
+      onOpenTask(copy.id);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    await copyTaskLink(task.id, linkSource);
+    setLinkCopied(true);
+    window.setTimeout(() => setLinkCopied(false), 2000);
   };
 
   const handleAddComment = async (event: FormEvent<HTMLFormElement>) => {
@@ -362,6 +383,17 @@ export function TaskDetailDrawer({
           ) : null}
 
           <div className="task-drawer__actions">
+            <button type="button" onClick={handleCopyLink} className="btn-ghost">
+              {linkCopied ? 'Ссылка скопирована' : 'Копировать ссылку'}
+            </button>
+            <button
+              type="button"
+              onClick={handleDuplicate}
+              disabled={duplicateMutation.isPending}
+              className="btn-ghost"
+            >
+              {duplicateMutation.isPending ? 'Копирование...' : 'Дублировать'}
+            </button>
             <button
               type="button"
               onClick={handleDelete}
@@ -379,6 +411,10 @@ export function TaskDetailDrawer({
             </button>
           </div>
         </form>
+
+        <TaskTagsSection workspaceId={workspaceId} taskId={task.id} selected={task.tags ?? []} />
+
+        <TaskSubtasksSection workspaceId={workspaceId} taskId={task.id} />
 
         <TaskCustomFieldsSection
           workspaceId={workspaceId}
