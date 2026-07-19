@@ -50,6 +50,7 @@ export function useUpdateCustomFieldMutation(workspaceId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: customFieldKeys.list(workspaceId) });
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
     },
   });
 }
@@ -64,6 +65,7 @@ export function useDeleteCustomFieldMutation(workspaceId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: customFieldKeys.list(workspaceId) });
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
     },
   });
 }
@@ -78,6 +80,7 @@ export function useSetTaskCustomFieldMutation(workspaceId: string, taskId: strin
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
     },
   });
 }

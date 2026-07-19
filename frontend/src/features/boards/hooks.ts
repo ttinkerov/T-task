@@ -53,6 +53,7 @@ export function useCreateColumnMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
     },
   });
 }
@@ -66,6 +67,7 @@ export function useUpdateColumnMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
     },
   });
 }
@@ -98,6 +100,7 @@ export function useDeleteColumnMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
     },
   });
 }
@@ -127,6 +130,7 @@ export function useMoveColumnMutation(workspaceId: string) {
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
     },
   });
 }
@@ -140,6 +144,7 @@ export function useCreateTaskMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
     },
   });
 }
@@ -177,6 +182,7 @@ export function useMoveTaskMutation(workspaceId: string) {
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
     },
   });
 }
@@ -190,6 +196,7 @@ export function useUpdateTaskMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
     },
   });
 }
@@ -203,6 +210,7 @@ export function useDeleteTaskMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
       void queryClient.invalidateQueries({ queryKey: ['workspace-trash'] });
     },
   });

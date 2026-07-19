@@ -96,6 +96,13 @@ export function DashboardShell({
                 Доска
               </Link>
               <Link
+                href="/dashboard/all-tasks"
+                className={navLinkClass('/dashboard/all-tasks')}
+                aria-current={isNavActive('/dashboard/all-tasks') ? 'page' : undefined}
+              >
+                Все задачи
+              </Link>
+              <Link
                 href="/dashboard/analytics"
                 className={navLinkClass('/dashboard/analytics')}
                 aria-current={isNavActive('/dashboard/analytics') ? 'page' : undefined}

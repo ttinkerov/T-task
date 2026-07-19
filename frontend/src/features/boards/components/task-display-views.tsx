@@ -22,11 +22,18 @@ const VIEW_OPTIONS: { value: BoardViewMode; label: string; icon: string }[] = [
 interface ViewToolbarProps {
   mode: BoardViewMode;
   anchor: Date;
+  modes?: BoardViewMode[];
   onModeChange: (mode: BoardViewMode) => void;
   onAnchorChange: (date: Date) => void;
 }
 
-export function TaskViewToolbar({ mode, anchor, onModeChange, onAnchorChange }: ViewToolbarProps) {
+export function TaskViewToolbar({
+  mode,
+  anchor,
+  modes,
+  onModeChange,
+  onAnchorChange,
+}: ViewToolbarProps) {
   const hasDateNavigation = mode === 'WEEK' || mode === 'MONTH' || mode === 'GANTT';
   const step = mode === 'MONTH' ? 1 : mode === 'WEEK' ? 7 : 14;
   const label =
@@ -43,7 +50,7 @@ export function TaskViewToolbar({ mode, anchor, onModeChange, onAnchorChange }: 
   return (
     <div className="task-view-toolbar">
       <div className="task-view-toolbar__modes" role="group" aria-label="Режим отображения">
-        {VIEW_OPTIONS.map((option) => (
+        {VIEW_OPTIONS.filter((option) => !modes || modes.includes(option.value)).map((option) => (
           <button
             key={option.value}
             type="button"
