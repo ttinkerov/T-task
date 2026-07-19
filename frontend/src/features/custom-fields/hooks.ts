@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { boardKeys } from '@/features/boards/hooks';
+import { invalidateWorkspaceBoards } from '@/features/boards/hooks';
 import {
   createCustomField,
   deleteCustomField,
@@ -49,7 +49,7 @@ export function useUpdateCustomFieldMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: customFieldKeys.list(workspaceId) });
-      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      invalidateWorkspaceBoards(queryClient, workspaceId);
       void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
     },
   });
@@ -64,7 +64,7 @@ export function useDeleteCustomFieldMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: customFieldKeys.list(workspaceId) });
-      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      invalidateWorkspaceBoards(queryClient, workspaceId);
       void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
     },
   });
@@ -79,7 +79,7 @@ export function useSetTaskCustomFieldMutation(workspaceId: string, taskId: strin
       return response.data;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      invalidateWorkspaceBoards(queryClient, workspaceId);
       void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
     },
   });

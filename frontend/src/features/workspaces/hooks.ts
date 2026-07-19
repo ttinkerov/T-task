@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authKeys } from '@/features/auth/hooks';
-import { boardKeys } from '@/features/boards/hooks';
+import { invalidateWorkspaceBoards } from '@/features/boards/hooks';
 import {
   acceptInvitation,
   createInvitation,
@@ -47,7 +47,7 @@ export function useCreateWorkspaceMutation() {
       void queryClient.invalidateQueries({ queryKey: workspaceKeys.list() });
       void queryClient.invalidateQueries({ queryKey: authKeys.me() });
       if (workspace?.id) {
-        void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspace.id) });
+        invalidateWorkspaceBoards(queryClient, workspace.id);
       }
     },
   });
@@ -98,7 +98,7 @@ export function useUpdateWorkspaceMutation(workspaceId: string) {
       void queryClient.invalidateQueries({ queryKey: workspaceKeys.list() });
       void queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
       void queryClient.invalidateQueries({ queryKey: authKeys.me() });
-      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      invalidateWorkspaceBoards(queryClient, workspaceId);
     },
   });
 }

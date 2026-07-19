@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { boardKeys } from '@/features/boards/hooks';
+import { invalidateWorkspaceBoards } from '@/features/boards/hooks';
 import { crmKeys } from '@/features/crm/hooks';
 import { externalAppKeys } from '@/features/apps/hooks';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
@@ -43,7 +43,7 @@ function invalidateRelatedQueries(
   workspaceId: string,
 ) {
   void queryClient.invalidateQueries({ queryKey: trashKeys.all });
-  void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+  invalidateWorkspaceBoards(queryClient, workspaceId);
   void queryClient.invalidateQueries({ queryKey: crmKeys.all });
   void queryClient.invalidateQueries({ queryKey: externalAppKeys.list(workspaceId) });
 }

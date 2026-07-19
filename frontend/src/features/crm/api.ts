@@ -1,4 +1,5 @@
 import { apiFetch } from '@/shared/api/client';
+import type { DealTaskLink, TaskDealLink } from './deal-task-types';
 import type { FunnelSummary, FunnelView, UpdateDealPayload } from './types';
 
 function withWorkspace(workspaceId: string) {
@@ -102,4 +103,52 @@ export async function deleteDeal(workspaceId: string, dealId: string) {
     method: 'DELETE',
     headers: withWorkspace(workspaceId),
   });
+}
+
+export async function fetchTaskDeals(workspaceId: string, taskId: string) {
+  return apiFetch<TaskDealLink[]>(`/api/v1/workspaces/${workspaceId}/tasks/${taskId}/deals`, {
+    headers: withWorkspace(workspaceId),
+  });
+}
+
+export async function linkTaskDeal(workspaceId: string, taskId: string, dealId: string) {
+  return apiFetch<TaskDealLink>(`/api/v1/workspaces/${workspaceId}/tasks/${taskId}/deals`, {
+    method: 'POST',
+    headers: withWorkspace(workspaceId),
+    body: JSON.stringify({ dealId }),
+  });
+}
+
+export async function unlinkTaskDeal(workspaceId: string, taskId: string, dealId: string) {
+  return apiFetch<{ success: true }>(
+    `/api/v1/workspaces/${workspaceId}/tasks/${taskId}/deals/${dealId}`,
+    {
+      method: 'DELETE',
+      headers: withWorkspace(workspaceId),
+    },
+  );
+}
+
+export async function fetchDealTasks(workspaceId: string, dealId: string) {
+  return apiFetch<DealTaskLink[]>(`/api/v1/workspaces/${workspaceId}/deals/${dealId}/tasks`, {
+    headers: withWorkspace(workspaceId),
+  });
+}
+
+export async function linkDealTask(workspaceId: string, dealId: string, taskId: string) {
+  return apiFetch<DealTaskLink>(`/api/v1/workspaces/${workspaceId}/deals/${dealId}/tasks`, {
+    method: 'POST',
+    headers: withWorkspace(workspaceId),
+    body: JSON.stringify({ taskId }),
+  });
+}
+
+export async function unlinkDealTask(workspaceId: string, dealId: string, taskId: string) {
+  return apiFetch<{ success: true }>(
+    `/api/v1/workspaces/${workspaceId}/deals/${dealId}/tasks/${taskId}`,
+    {
+      method: 'DELETE',
+      headers: withWorkspace(workspaceId),
+    },
+  );
 }

@@ -5,11 +5,14 @@ import { Roles } from '../../common/auth/decorators/roles.decorator';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { BoardsService } from './boards.service';
+import { CreateBoardDto } from './dto/create-board.dto';
 import { CreateColumnDto } from './dto/create-column.dto';
 import { MoveColumnDto } from './dto/move-column.dto';
+import { UpdateBoardDto } from './dto/update-board.dto';
 import { UpdateColumnDto } from './dto/update-column.dto';
 import { UpdateColumnAutomationsDto } from './dto/update-column-automations.dto';
 
+/** Legacy singular board routes — default/first board + column mutations. */
 @Controller('workspaces/:workspaceId/board')
 export class BoardsController {
   constructor(private readonly boardsService: BoardsService) {}
@@ -99,6 +102,67 @@ export class BoardsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const result = await this.boardsService.deleteColumn(workspaceId, columnId, user.id);
+    return successResponse(result);
+  }
+}
+
+/** Multi-board routes under `/boards`. */
+@Controller('workspaces/:workspaceId/boards')
+export class WorkspaceBoardsController {
+  constructor(private readonly boardsService: BoardsService) {}
+
+  @Get()
+  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  async listBoards(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const boards = await this.boardsService.listBoards(workspaceId, user.id);
+    return successResponse(boards);
+  }
+
+  @Post()
+  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  async createBoard(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CreateBoardDto,
+  ) {
+    const board = await this.boardsService.createBoard(workspaceId, user.id, dto);
+    return successResponse(board);
+  }
+
+  @Get(':boardId')
+  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  async getBoardById(
+    @Param('workspaceId') workspaceId: string,
+    @Param('boardId') boardId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const board = await this.boardsService.getBoard(workspaceId, user.id, boardId);
+    return successResponse(board);
+  }
+
+  @Patch(':boardId')
+  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  async updateBoard(
+    @Param('workspaceId') workspaceId: string,
+    @Param('boardId') boardId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateBoardDto,
+  ) {
+    const board = await this.boardsService.updateBoard(workspaceId, boardId, user.id, dto);
+    return successResponse(board);
+  }
+
+  @Delete(':boardId')
+  @Roles(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  async deleteBoard(
+    @Param('workspaceId') workspaceId: string,
+    @Param('boardId') boardId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.boardsService.deleteBoard(workspaceId, boardId, user.id);
     return successResponse(result);
   }
 }

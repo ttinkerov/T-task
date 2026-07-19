@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { WorkspaceRole } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
@@ -17,6 +17,17 @@ import { TasksService } from './tasks.service';
 @Controller('workspaces/:workspaceId/tasks')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
+
+  @Get(':taskId')
+  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  async getById(
+    @Param('workspaceId') workspaceId: string,
+    @Param('taskId') taskId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const task = await this.tasksService.getById(workspaceId, taskId, user.id);
+    return successResponse(task);
+  }
 
   @Post()
   @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)

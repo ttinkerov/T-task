@@ -1,5 +1,11 @@
 import { TaskPriority } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  AllTasksDueFilter,
+  AllTasksSort,
+  AllTasksStatus,
+  SortOrder,
+} from './dto/list-all-tasks-query.dto';
 import { AllTasksService } from './all-tasks.service';
 
 function makePrisma() {
@@ -73,8 +79,8 @@ describe('AllTasksService', () => {
     const result = await service.list('workspace-1', 'user-1', {
       page: 2,
       limit: 20,
-      sortBy: 'DUE_DATE',
-      sortOrder: 'ASC',
+      sortBy: AllTasksSort.DUE_DATE,
+      sortOrder: SortOrder.ASC,
     });
 
     expect(prisma.task.findMany).toHaveBeenCalledWith(
@@ -118,12 +124,12 @@ describe('AllTasksService', () => {
       search: 'релиз',
       assigneeId: 'user-2',
       priority: TaskPriority.URGENT,
-      status: 'OPEN',
-      due: 'OVERDUE',
+      status: AllTasksStatus.OPEN,
+      due: AllTasksDueFilter.OVERDUE,
       boardId: 'board-1',
       columnId: 'column-1',
-      sortBy: 'CREATED_AT',
-      sortOrder: 'DESC',
+      sortBy: AllTasksSort.CREATED_AT,
+      sortOrder: SortOrder.DESC,
     });
 
     expect(prisma.task.count).toHaveBeenCalledWith({
@@ -146,10 +152,10 @@ describe('AllTasksService', () => {
     await service.list('workspace-1', 'user-1', {
       page: 1,
       limit: 50,
-      status: 'COMPLETED',
-      due: 'OVERDUE',
-      sortBy: 'CREATED_AT',
-      sortOrder: 'DESC',
+      status: AllTasksStatus.COMPLETED,
+      due: AllTasksDueFilter.OVERDUE,
+      sortBy: AllTasksSort.CREATED_AT,
+      sortOrder: SortOrder.DESC,
     });
 
     expect(prisma.task.count).toHaveBeenCalledWith({

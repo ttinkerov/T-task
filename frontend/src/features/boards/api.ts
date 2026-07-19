@@ -1,5 +1,6 @@
 import { apiFetch } from '@/shared/api/client';
 import type {
+  BoardSummary,
   BoardTask,
   BoardView,
   ColumnAutomation,
@@ -14,17 +15,59 @@ function withWorkspace(workspaceId: string) {
   return { 'x-workspace-id': workspaceId };
 }
 
-export async function fetchBoard(workspaceId: string) {
+export async function fetchBoards(workspaceId: string) {
+  return apiFetch<BoardSummary[]>(`/api/v1/workspaces/${workspaceId}/boards`, {
+    headers: withWorkspace(workspaceId),
+  });
+}
+
+export async function fetchBoard(workspaceId: string, boardId: string) {
+  return apiFetch<BoardView>(`/api/v1/workspaces/${workspaceId}/boards/${boardId}`, {
+    headers: withWorkspace(workspaceId),
+  });
+}
+
+/** Legacy: first board in workspace (used when boardId is unknown). */
+export async function fetchDefaultBoard(workspaceId: string) {
   return apiFetch<BoardView>(`/api/v1/workspaces/${workspaceId}/board`, {
     headers: withWorkspace(workspaceId),
   });
 }
 
-export async function createColumn(workspaceId: string, name: string) {
-  return apiFetch(`/api/v1/workspaces/${workspaceId}/board/columns`, {
+export async function fetchTask(workspaceId: string, taskId: string) {
+  return apiFetch<BoardTask>(`/api/v1/workspaces/${workspaceId}/tasks/${taskId}`, {
+    headers: withWorkspace(workspaceId),
+  });
+}
+
+export async function createBoard(workspaceId: string, name: string) {
+  return apiFetch<BoardSummary>(`/api/v1/workspaces/${workspaceId}/boards`, {
     method: 'POST',
     headers: withWorkspace(workspaceId),
     body: JSON.stringify({ name }),
+  });
+}
+
+export async function updateBoard(workspaceId: string, boardId: string, name: string) {
+  return apiFetch<BoardSummary>(`/api/v1/workspaces/${workspaceId}/boards/${boardId}`, {
+    method: 'PATCH',
+    headers: withWorkspace(workspaceId),
+    body: JSON.stringify({ name }),
+  });
+}
+
+export async function deleteBoard(workspaceId: string, boardId: string) {
+  return apiFetch<{ success: true }>(`/api/v1/workspaces/${workspaceId}/boards/${boardId}`, {
+    method: 'DELETE',
+    headers: withWorkspace(workspaceId),
+  });
+}
+
+export async function createColumn(workspaceId: string, name: string, boardId?: string) {
+  return apiFetch(`/api/v1/workspaces/${workspaceId}/board/columns`, {
+    method: 'POST',
+    headers: withWorkspace(workspaceId),
+    body: JSON.stringify({ name, ...(boardId ? { boardId } : {}) }),
   });
 }
 

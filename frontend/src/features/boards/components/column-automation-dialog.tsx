@@ -11,10 +11,12 @@ const FOCUSABLE_SELECTOR =
 
 export function ColumnAutomationDialog({
   workspaceId,
+  boardId,
   column,
   onClose,
 }: {
   workspaceId: string;
+  boardId: string;
   column: BoardColumn;
   onClose: () => void;
 }) {
@@ -22,7 +24,7 @@ export function ColumnAutomationDialog({
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const { data: members = [] } = useMembersQuery(workspaceId);
-  const updateMutation = useUpdateColumnAutomationsMutation(workspaceId);
+  const updateMutation = useUpdateColumnAutomationsMutation(workspaceId, boardId);
   const assignAutomation = column.automations.find((item) => item.action === 'ASSIGN_USER');
   const [assignUserId, setAssignUserId] = useState(assignAutomation?.assigneeId ?? '');
   const [startTimer, setStartTimer] = useState(

@@ -7,7 +7,7 @@ import {
   useMarkNotificationReadMutation,
   useNotificationsQuery,
 } from '../hooks';
-import type { MentionNotification } from '../types';
+import type { AppNotification } from '../types';
 
 export function NotificationBell({ workspaceId }: { workspaceId: string | null }) {
   const router = useRouter();
@@ -35,7 +35,7 @@ export function NotificationBell({ workspaceId }: { workspaceId: string | null }
     };
   }, [open]);
 
-  const openNotification = async (notification: MentionNotification) => {
+  const openNotification = async (notification: AppNotification) => {
     if (!workspaceId) return;
     if (!notification.read) {
       await markReadMutation.mutateAsync(notification.id);
@@ -104,13 +104,10 @@ export function NotificationBell({ workspaceId }: { workspaceId: string | null }
                     onClick={() => void openNotification(notification)}
                   >
                     <span className="notification-bell__avatar" aria-hidden="true">
-                      {notification.actor.name.slice(0, 1).toUpperCase()}
+                      {actorInitial(notification)}
                     </span>
                     <span>
-                      <strong>{notification.actor.name}</strong> упоминает вас{' '}
-                      {notification.sourceType === 'COMMENT'
-                        ? 'в комментарии'
-                        : 'в описании задачи'}
+                      <NotificationCopy notification={notification} />
                       <small>{notification.task.title}</small>
                       <em>{notification.preview}</em>
                       <time dateTime={notification.createdAt}>
@@ -130,5 +127,36 @@ export function NotificationBell({ workspaceId }: { workspaceId: string | null }
         </section>
       ) : null}
     </div>
+  );
+}
+
+function actorInitial(notification: AppNotification) {
+  if (notification.type === 'DUE_REMINDER' || !notification.actor) {
+    return '⏱';
+  }
+  return notification.actor.name.slice(0, 1).toUpperCase() || '?';
+}
+
+function NotificationCopy({ notification }: { notification: AppNotification }) {
+  if (notification.type === 'DUE_REMINDER') {
+    return (
+      <>
+        <strong>Система</strong> напоминает о сроке
+      </>
+    );
+  }
+
+  const actorName = notification.actor?.name ?? 'Система';
+  const sourceLabel =
+    notification.sourceType === 'COMMENT'
+      ? 'в комментарии'
+      : notification.sourceType === 'TASK_DESCRIPTION'
+        ? 'в описании задачи'
+        : '';
+
+  return (
+    <>
+      <strong>{actorName}</strong> упоминает вас{sourceLabel ? ` ${sourceLabel}` : ''}
+    </>
   );
 }

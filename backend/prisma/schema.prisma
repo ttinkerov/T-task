@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 enum WorkspaceRole {
@@ -57,6 +58,13 @@ enum TaskRelationType {
 
 enum NotificationType {
   MENTION
+  DUE_REMINDER
+}
+
+enum SavedFilterView {
+  BOARD
+  ALL_TASKS
+  MY_TASKS
 }
 
 enum MentionSourceType {
@@ -106,6 +114,7 @@ model User {
   comments            Comment[]
   receivedNotifications Notification[]       @relation("NotificationRecipient")
   sentNotifications     Notification[]       @relation("NotificationActor")
+  savedFilters          SavedFilter[]
 
   @@map("users")
 }
@@ -150,6 +159,7 @@ model Workspace {
   calendarFeeds CalendarFeed[]
   customFields CustomFieldDefinition[]
   tags         Tag[]
+  savedFilters SavedFilter[]
   activityLogs ActivityLog[]
   notifications Notification[]
 
@@ -259,6 +269,7 @@ model Task {
   overdueDays              Int                  @default(0) @map("overdue_days")
   timerStartedAt           DateTime?            @map("timer_started_at")
   completedAt              DateTime?            @map("completed_at")
+  dueReminderSentAt        DateTime?            @map("due_reminder_sent_at")
   createdAt                DateTime             @default(now()) @map("created_at")
   updatedAt                DateTime             @updatedAt @map("updated_at")
   deletedAt                DateTime?            @map("deleted_at")
@@ -272,6 +283,8 @@ model Task {
   notifications Notification[]
   taskTags TaskTag[]
   subtasks Subtask[]
+  attachments TaskAttachment[]
+  dealLinks DealTask[]
 
   @@index([columnId])
   @@index([assigneeId])
@@ -489,11 +502,59 @@ model Deal {
 
   stage    FunnelStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
   assignee User?       @relation("DealAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  taskLinks DealTask[]
 
   @@index([stageId])
   @@index([assigneeId])
   @@index([deletedAt])
   @@map("deals")
+}
+
+model DealTask {
+  dealId    String   @map("deal_id")
+  taskId    String   @map("task_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@id([dealId, taskId])
+  @@index([taskId])
+  @@map("deal_tasks")
+}
+
+model SavedFilter {
+  id          String          @id @default(cuid())
+  workspaceId String          @map("workspace_id")
+  userId      String          @map("user_id")
+  view        SavedFilterView
+  name        String
+  filters     Json
+  isDefault   Boolean         @default(false) @map("is_default")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, userId, view])
+  @@map("saved_filters")
+}
+
+model TaskAttachment {
+  id           String   @id @default(cuid())
+  taskId       String   @map("task_id")
+  uploadedById String?  @map("uploaded_by_id")
+  originalName String   @map("original_name")
+  mimeType     String   @map("mime_type")
+  sizeBytes    Int      @map("size_bytes")
+  storagePath  String   @map("storage_path")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("task_attachments")
 }
 
 model Form {
@@ -562,21 +623,21 @@ model Comment {
 }
 
 model Notification {
-  id          String            @id @default(cuid())
-  workspaceId String            @map("workspace_id")
-  recipientId String            @map("recipient_id")
-  actorId     String            @map("actor_id")
-  taskId      String            @map("task_id")
-  commentId   String?           @map("comment_id")
-  type        NotificationType  @default(MENTION)
-  sourceType  MentionSourceType @map("source_type")
+  id          String             @id @default(cuid())
+  workspaceId String             @map("workspace_id")
+  recipientId String             @map("recipient_id")
+  actorId     String?            @map("actor_id")
+  taskId      String             @map("task_id")
+  commentId   String?            @map("comment_id")
+  type        NotificationType   @default(MENTION)
+  sourceType  MentionSourceType? @map("source_type")
   preview     String
-  readAt      DateTime?         @map("read_at")
-  createdAt   DateTime          @default(now()) @map("created_at")
+  readAt      DateTime?          @map("read_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   recipient User      @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
-  actor     User      @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  actor     User?     @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
   task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
   comment   Comment?  @relation(fields: [commentId], references: [id], onDelete: Cascade)
 

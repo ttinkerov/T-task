@@ -458,6 +458,141 @@
   }
 }
 
+.saved-filters,
+.board-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.saved-filters__form,
+.board-switcher__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.saved-filters__default {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: $color-text-muted;
+  font-size: 0.75rem;
+}
+
+.saved-filters__error,
+.board-switcher__error {
+  width: 100%;
+  margin: 0;
+  color: #f87171;
+  font-size: 0.75rem;
+}
+
+.task-attachments__list {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0 0 0.65rem;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  button:last-child {
+    border: 0;
+    background: transparent;
+    color: $color-text-dim;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+
+    &:hover {
+      color: $color-white;
+    }
+  }
+}
+
+.task-attachments__thumb {
+  border: 1px solid $color-border-subtle;
+  border-radius: 0.5rem;
+  padding: 0;
+  overflow: hidden;
+  background: $color-bg-elevated;
+  cursor: pointer;
+
+  img {
+    display: block;
+    width: 64px;
+    height: 48px;
+    object-fit: cover;
+  }
+}
+
+.task-attachments__file {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: $color-white;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-align: left;
+
+  span:first-child {
+    flex-shrink: 0;
+    color: $color-text-muted;
+    font-size: 0.68rem;
+    font-weight: 600;
+  }
+
+  span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.task-attachments__upload {
+  display: inline-flex;
+  align-items: center;
+  border-radius: $radius-pill;
+  border: 1px solid $color-border-subtle;
+  padding: 0.35rem 0.75rem;
+  color: $color-text-muted;
+  font-size: 0.75rem;
+  cursor: pointer;
+
+  &:hover {
+    color: $color-white;
+  }
+}
+
+.task-attachments__hint,
+.task-deals__meta {
+  color: $color-text-dim;
+  font-size: 0.7rem;
+}
+
+.task-deals__form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.4rem;
+
+  select {
+    min-width: 0;
+  }
+}
+
 .settings-page {
   display: flex;
   flex-direction: column;

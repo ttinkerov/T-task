@@ -35,6 +35,36 @@ export class TasksService {
     private readonly mentionsService: MentionsService,
   ) {}
 
+  async getById(workspaceId: string, taskId: string, userId: string) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+
+    const task = await this.prisma.task.findFirst({
+      where: {
+        id: taskId,
+        deletedAt: null,
+        column: { board: { workspaceId } },
+      },
+      include: {
+        ...taskWithAssignee,
+        customFieldValues: { select: { fieldId: true, value: true } },
+        taskTags: {
+          include: { tag: { select: { id: true, name: true, color: true } } },
+          orderBy: { tag: { name: 'asc' } },
+        },
+        subtasks: {
+          orderBy: { position: 'asc' },
+          select: { id: true, title: true, completed: true, position: true },
+        },
+      },
+    });
+
+    if (!task) {
+      throw new NotFoundException('Task not found');
+    }
+
+    return this.boardsService.serializeTask(task);
+  }
+
   async create(workspaceId: string, userId: string, dto: CreateTaskDto) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
     await this.boardsService.getBoardForWorkspace(workspaceId);
@@ -150,6 +180,7 @@ export class TasksService {
             ? {
                 dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
                 overdueDays: 0,
+                dueReminderSentAt: null,
               }
             : {}),
           ...(dto.assigneeId !== undefined ? { assigneeId: dto.assigneeId } : {}),
@@ -207,8 +238,21 @@ export class TasksService {
       throw new NotFoundException('Column not found');
     }
 
+    const sourceColumn = await this.prisma.boardColumn.findFirst({
+      where: { id: task.columnId, board: { workspaceId } },
+      select: { id: true, boardId: true },
+    });
+
+    if (!sourceColumn) {
+      throw new NotFoundException('Column not found');
+    }
+
+    if (sourceColumn.boardId !== targetColumn.boardId) {
+      throw new BadRequestException('Нельзя переносить задачу на другую доску');
+    }
+
     const board = await this.prisma.board.findFirstOrThrow({
-      where: { workspaceId },
+      where: { id: targetColumn.boardId, workspaceId },
       include: {
         columns: {
           orderBy: { position: 'asc' },

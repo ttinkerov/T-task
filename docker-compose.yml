@@ -6,6 +6,12 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-ttask}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ttask_secret}
       POSTGRES_DB: ${POSTGRES_DB:-ttask}
+    command:
+      - postgres
+      - -c
+      - max_connections=200
+      - -c
+      - shared_buffers=256MB
     ports:
       - '5432:5432'
     volumes:
@@ -16,9 +22,30 @@ services:
       timeout: 5s
       retries: 10
 
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.22.1-p1
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_USER: ${POSTGRES_USER:-ttask}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-ttask_secret}
+      DB_NAME: ${POSTGRES_DB:-ttask}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 20
+      MIN_POOL_SIZE: 5
+      RESERVE_POOL_SIZE: 5
+      AUTH_TYPE: scram-sha-256
+    ports:
+      - '6432:5432'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    command: ['redis-server', '--maxmemory', '256mb', '--maxmemory-policy', 'allkeys-lru']
     ports:
       - '6379:6379'
     healthcheck:
@@ -35,15 +62,21 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-ttask}:${POSTGRES_PASSWORD:-ttask_secret}@postgres:5432/${POSTGRES_DB:-ttask}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ttask}:${POSTGRES_PASSWORD:-ttask_secret}@pgbouncer:5432/${POSTGRES_DB:-ttask}?schema=public&pgbouncer=true&connection_limit=10
+      DIRECT_DATABASE_URL: postgresql://${POSTGRES_USER:-ttask}:${POSTGRES_PASSWORD:-ttask_secret}@postgres:5432/${POSTGRES_DB:-ttask}?schema=public
       REDIS_URL: redis://redis:6379
       BACKEND_PORT: 3001
       CORS_ORIGIN: http://localhost:${FRONTEND_PORT:-3000}
+      UPLOAD_DIR: /app/uploads
     ports:
       - '3001:3001'
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
+      pgbouncer:
+        condition: service_started
       redis:
         condition: service_healthy
 
@@ -64,3 +97,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:

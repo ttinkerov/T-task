@@ -17,6 +17,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
 import { AppsModule } from './modules/apps/apps.module';
 import { TrashModule } from './modules/trash/trash.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
+import { FiltersModule } from './modules/filters/filters.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { CalendarModule } from './modules/calendar/calendar.module';
     AppsModule,
     TrashModule,
     CalendarModule,
+    FiltersModule,
   ],
 })
 export class AppModule {}

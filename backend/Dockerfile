@@ -21,4 +21,4 @@ COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/prisma ./prisma
 
 EXPOSE 3001
-CMD ["sh", "-c", "npm run prisma:migrate:deploy && npm run start:prod"]
+CMD ["sh", "-c", "DATABASE_URL=\"${DIRECT_DATABASE_URL:-$DATABASE_URL}\" npm run prisma:migrate:deploy && npm run start:prod"]

@@ -90,6 +90,14 @@ export interface BoardView {
   columns: BoardColumn[];
 }
 
+export interface BoardSummary {
+  id: string;
+  workspaceId: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface UpdateTaskPayload {
   title?: string;
   description?: string | null;

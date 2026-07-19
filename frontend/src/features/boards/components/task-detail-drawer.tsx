@@ -1,5 +1,6 @@
 'use client';
 
+import { TaskAttachmentsSection } from '@/features/attachments';
 import { FormEvent, useEffect, useState } from 'react';
 import { useMeQuery } from '@/features/auth/hooks';
 import { MentionText, MentionTextarea } from '@/features/mentions';
@@ -10,6 +11,7 @@ import {
   useDeleteCommentMutation,
   useDeleteTaskMutation,
   useDuplicateTaskMutation,
+  useTaskDetailQuery,
   useUpdateTaskMutation,
 } from '../hooks';
 import { copyTaskLink } from '../lib/task-link';
@@ -27,6 +29,7 @@ import {
   type TaskRecurrenceRule,
 } from '../types';
 import { TaskCustomFieldsSection } from './task-custom-fields-section';
+import { TaskDealsSection } from './task-deals-section';
 import { TaskRelationsSection } from './task-relations-section';
 import { TaskSubtasksSection } from './task-subtasks-section';
 import { TaskTagsSection } from './task-tags-section';
@@ -55,6 +58,8 @@ export function TaskDetailDrawer({
   const updateMutation = useUpdateTaskMutation(workspaceId);
   const deleteMutation = useDeleteTaskMutation(workspaceId);
   const duplicateMutation = useDuplicateTaskMutation(workspaceId);
+  const { data: fullTask } = useTaskDetailQuery(workspaceId, task.id);
+  const detailTask = fullTask ?? task;
   const { data: comments = [], isLoading: commentsLoading } = useCommentsQuery(
     workspaceId,
     task.id,
@@ -83,18 +88,18 @@ export function TaskDetailDrawer({
   const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
-    setTitle(task.title);
-    setDescription(task.description ?? '');
-    setPriority(task.priority ?? '');
-    setComplexity(task.complexity ?? '');
-    setTimeEstimateMinutes(task.timeEstimateMinutes ?? '');
-    setActualMinutes(task.actualMinutes ?? '');
-    setDueDate(toDateInputValue(task.dueDate));
-    setAssigneeId(task.assigneeId ?? '');
-    setRecurrenceRule(task.recurrenceRule);
-    setRecurrenceAction(task.recurrenceAction);
-    setRecurrenceWeekdays(task.recurrenceWeekdays ?? []);
-  }, [task]);
+    setTitle(detailTask.title);
+    setDescription(detailTask.description ?? '');
+    setPriority(detailTask.priority ?? '');
+    setComplexity(detailTask.complexity ?? '');
+    setTimeEstimateMinutes(detailTask.timeEstimateMinutes ?? '');
+    setActualMinutes(detailTask.actualMinutes ?? '');
+    setDueDate(toDateInputValue(detailTask.dueDate));
+    setAssigneeId(detailTask.assigneeId ?? '');
+    setRecurrenceRule(detailTask.recurrenceRule);
+    setRecurrenceAction(detailTask.recurrenceAction);
+    setRecurrenceWeekdays(detailTask.recurrenceWeekdays ?? []);
+  }, [detailTask]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -416,6 +421,8 @@ export function TaskDetailDrawer({
 
         <TaskSubtasksSection workspaceId={workspaceId} taskId={task.id} />
 
+        <TaskAttachmentsSection workspaceId={workspaceId} taskId={task.id} />
+
         <TaskCustomFieldsSection
           workspaceId={workspaceId}
           taskId={task.id}
@@ -428,6 +435,8 @@ export function TaskDetailDrawer({
           candidates={relationCandidates}
           onOpenTask={onOpenTask}
         />
+
+        <TaskDealsSection workspaceId={workspaceId} taskId={task.id} />
 
         <div className="task-drawer__comments">
           <h3 className="task-drawer__comments-title">Комментарии</h3>

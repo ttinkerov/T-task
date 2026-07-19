@@ -7,11 +7,13 @@ import {
 import { ColumnAutomationAction, Prisma } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import { CreateBoardDto } from './dto/create-board.dto';
 import { CreateColumnDto } from './dto/create-column.dto';
 import { MoveColumnDto } from './dto/move-column.dto';
+import { UpdateBoardDto } from './dto/update-board.dto';
 import { UpdateColumnDto } from './dto/update-column.dto';
 import { UpdateColumnAutomationsDto } from './dto/update-column-automations.dto';
-import { countOverdueDays, isTaskOverdue, nextRolledDueDate } from './utils/overdue.util';
+import { createDefaultBoard } from './utils/create-default-board.util';
 import { ActivityService } from '../activity/activity.service';
 import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
 
@@ -23,21 +25,102 @@ export class BoardsService {
     private readonly activityService: ActivityService,
   ) {}
 
-  async getBoard(workspaceId: string, userId: string) {
+  async listBoards(workspaceId: string, userId: string) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
 
-    const workspace = await this.prisma.workspace.findUniqueOrThrow({
-      where: { id: workspaceId },
-      select: { autoRollOverdue: true },
+    const boards = await this.prisma.board.findMany({
+      where: { workspaceId },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, workspaceId: true, name: true, createdAt: true, updatedAt: true },
     });
 
-    let board = await this.fetchBoard(workspaceId);
+    return boards.map((board) => ({
+      id: board.id,
+      workspaceId: board.workspaceId,
+      name: board.name,
+      createdAt: board.createdAt.toISOString(),
+      updatedAt: board.updatedAt.toISOString(),
+    }));
+  }
 
-    if (workspace.autoRollOverdue) {
-      await this.rollOverdueTasks(board);
-      board = await this.fetchBoard(workspaceId);
+  async createBoard(workspaceId: string, userId: string, dto: CreateBoardDto) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+
+    const board = await this.prisma.$transaction(async (tx) => {
+      return createDefaultBoard(tx, workspaceId, dto.name.trim());
+    });
+
+    return {
+      id: board.id,
+      workspaceId: board.workspaceId,
+      name: board.name,
+      createdAt: board.createdAt.toISOString(),
+      updatedAt: board.updatedAt.toISOString(),
+    };
+  }
+
+  async getBoard(workspaceId: string, userId: string, boardId?: string) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+    // Board GET is read-only: overdue rolling runs in DueRemindersService background tick.
+    const board = await this.fetchBoard(workspaceId, boardId);
+    return this.serializeBoard(board);
+  }
+
+  async updateBoard(workspaceId: string, boardId: string, userId: string, dto: UpdateBoardDto) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+    await this.resolveBoardForWorkspace(workspaceId, boardId);
+
+    const updated = await this.prisma.board.update({
+      where: { id: boardId },
+      data: { name: dto.name.trim() },
+      select: { id: true, workspaceId: true, name: true, createdAt: true, updatedAt: true },
+    });
+
+    return {
+      id: updated.id,
+      workspaceId: updated.workspaceId,
+      name: updated.name,
+      createdAt: updated.createdAt.toISOString(),
+      updatedAt: updated.updatedAt.toISOString(),
+    };
+  }
+
+  async deleteBoard(workspaceId: string, boardId: string, userId: string) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+    await this.resolveBoardForWorkspace(workspaceId, boardId);
+
+    const boardCount = await this.prisma.board.count({ where: { workspaceId } });
+    if (boardCount <= 1) {
+      throw new BadRequestException('Нельзя удалить последнюю доску в пространстве');
     }
 
+    await this.prisma.board.delete({ where: { id: boardId } });
+
+    return { success: true };
+  }
+
+  private serializeBoard(board: {
+    id: string;
+    workspaceId: string;
+    name: string;
+    columns: Array<{
+      id: string;
+      name: string;
+      position: number;
+      automations: Array<{
+        id: string;
+        action: ColumnAutomationAction;
+        assigneeId: string | null;
+        assignee: {
+          id: string;
+          name: string;
+          email: string;
+          avatarUrl: string | null;
+        } | null;
+      }>;
+      tasks: Array<Parameters<BoardsService['serializeTask']>[0]>;
+    }>;
+  }) {
     return {
       id: board.id,
       workspaceId: board.workspaceId,
@@ -57,9 +140,10 @@ export class BoardsService {
     };
   }
 
-  private async fetchBoard(workspaceId: string) {
+  private async fetchBoard(workspaceId: string, boardId?: string) {
     const board = await this.prisma.board.findFirst({
-      where: { workspaceId },
+      where: boardId ? { id: boardId, workspaceId } : { workspaceId },
+      orderBy: { createdAt: 'asc' },
       include: {
         columns: {
           orderBy: { position: 'asc' },
@@ -75,7 +159,26 @@ export class BoardsService {
             tasks: {
               where: { deletedAt: null },
               orderBy: { position: 'asc' },
-              include: {
+              select: {
+                id: true,
+                title: true,
+                // description omitted — load via GET /tasks/:id when drawer opens
+                priority: true,
+                complexity: true,
+                timeEstimateMinutes: true,
+                actualMinutes: true,
+                dueDate: true,
+                assigneeId: true,
+                position: true,
+                columnId: true,
+                recurrenceRule: true,
+                recurrenceAction: true,
+                recurrenceWeekdays: true,
+                recurrenceOriginColumnId: true,
+                overdueDays: true,
+                timerStartedAt: true,
+                completedAt: true,
+                createdAt: true,
                 assignee: {
                   select: { id: true, name: true, email: true, avatarUrl: true },
                 },
@@ -104,46 +207,15 @@ export class BoardsService {
     return board;
   }
 
-  private async rollOverdueTasks(board: {
-    columns: Array<{
-      id: string;
-      name: string;
-      position: number;
-      tasks: Array<{
-        id: string;
-        dueDate: Date | null;
-      }>;
-    }>;
-  }) {
-    const columns = board.columns;
-    const updates: Array<ReturnType<typeof this.prisma.task.update>> = [];
-
-    for (const column of columns) {
-      for (const task of column.tasks) {
-        if (!isTaskOverdue(task, column, columns)) {
-          continue;
-        }
-
-        updates.push(
-          this.prisma.task.update({
-            where: { id: task.id },
-            data: {
-              dueDate: nextRolledDueDate(),
-              overdueDays: countOverdueDays(task.dueDate!),
-            },
-          }),
-        );
-      }
-    }
-
-    if (updates.length > 0) {
-      await Promise.all(updates);
-    }
+  /** Default/first board in the workspace (oldest by createdAt). */
+  async getBoardForWorkspace(workspaceId: string) {
+    return this.resolveBoardForWorkspace(workspaceId);
   }
 
-  async getBoardForWorkspace(workspaceId: string) {
+  private async resolveBoardForWorkspace(workspaceId: string, boardId?: string) {
     const board = await this.prisma.board.findFirst({
-      where: { workspaceId },
+      where: boardId ? { id: boardId, workspaceId } : { workspaceId },
+      orderBy: { createdAt: 'asc' },
       select: { id: true },
     });
 
@@ -154,9 +226,21 @@ export class BoardsService {
     return board;
   }
 
+  private async findColumnInWorkspace(workspaceId: string, columnId: string) {
+    const column = await this.prisma.boardColumn.findFirst({
+      where: { id: columnId, board: { workspaceId } },
+    });
+
+    if (!column) {
+      throw new NotFoundException('Column not found');
+    }
+
+    return column;
+  }
+
   async createColumn(workspaceId: string, userId: string, dto: CreateColumnDto) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
-    const board = await this.getBoardForWorkspace(workspaceId);
+    const board = await this.resolveBoardForWorkspace(workspaceId, dto.boardId);
 
     const lastColumn = await this.prisma.boardColumn.findFirst({
       where: { boardId: board.id },
@@ -193,15 +277,7 @@ export class BoardsService {
 
   async updateColumn(workspaceId: string, columnId: string, userId: string, dto: UpdateColumnDto) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
-    const board = await this.getBoardForWorkspace(workspaceId);
-
-    const column = await this.prisma.boardColumn.findFirst({
-      where: { id: columnId, boardId: board.id },
-    });
-
-    if (!column) {
-      throw new NotFoundException('Column not found');
-    }
+    const column = await this.findColumnInWorkspace(workspaceId, columnId);
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const renamed = await tx.boardColumn.update({
@@ -234,14 +310,7 @@ export class BoardsService {
     dto: UpdateColumnAutomationsDto,
   ) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
-    const board = await this.getBoardForWorkspace(workspaceId);
-    const column = await this.prisma.boardColumn.findFirst({
-      where: { id: columnId, boardId: board.id },
-    });
-
-    if (!column) {
-      throw new NotFoundException('Column not found');
-    }
+    const column = await this.findColumnInWorkspace(workspaceId, columnId);
 
     if (dto.startTimer && dto.completeTask) {
       throw new BadRequestException('A column cannot start a timer and complete a task together');
@@ -347,18 +416,10 @@ export class BoardsService {
 
   async deleteColumn(workspaceId: string, columnId: string, userId: string) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
-    const board = await this.getBoardForWorkspace(workspaceId);
-
-    const column = await this.prisma.boardColumn.findFirst({
-      where: { id: columnId, boardId: board.id },
-    });
-
-    if (!column) {
-      throw new NotFoundException('Column not found');
-    }
+    const column = await this.findColumnInWorkspace(workspaceId, columnId);
 
     const columnCount = await this.prisma.boardColumn.count({
-      where: { boardId: board.id },
+      where: { boardId: column.boardId },
     });
 
     if (columnCount <= 1) {
@@ -379,7 +440,7 @@ export class BoardsService {
       await tx.boardColumn.delete({ where: { id: columnId } });
 
       const remaining = await tx.boardColumn.findMany({
-        where: { boardId: board.id },
+        where: { boardId: column.boardId },
         orderBy: { position: 'asc' },
       });
 
@@ -406,18 +467,10 @@ export class BoardsService {
 
   async moveColumn(workspaceId: string, columnId: string, userId: string, dto: MoveColumnDto) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
-    const board = await this.getBoardForWorkspace(workspaceId);
-
-    const column = await this.prisma.boardColumn.findFirst({
-      where: { id: columnId, boardId: board.id },
-    });
-
-    if (!column) {
-      throw new NotFoundException('Column not found');
-    }
+    const column = await this.findColumnInWorkspace(workspaceId, columnId);
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await this.reorderColumns(tx, board.id, columnId, dto.position);
+      await this.reorderColumns(tx, column.boardId, columnId, dto.position);
     });
 
     const updated = await this.prisma.boardColumn.findUniqueOrThrow({ where: { id: columnId } });
@@ -432,7 +485,7 @@ export class BoardsService {
   serializeTask(task: {
     id: string;
     title: string;
-    description: string | null;
+    description?: string | null;
     priority: import('@prisma/client').TaskPriority | null;
     complexity: number | null;
     timeEstimateMinutes: number | null;
@@ -472,7 +525,7 @@ export class BoardsService {
     return {
       id: task.id,
       title: task.title,
-      description: task.description,
+      description: task.description ?? null,
       priority: task.priority,
       complexity: task.complexity,
       timeEstimateMinutes: task.timeEstimateMinutes,

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { boardKeys } from '@/features/boards/hooks';
+import { invalidateWorkspaceBoards } from '@/features/boards/hooks';
 import { createSubtask, deleteSubtask, fetchSubtasks, updateSubtask } from './api';
 
 export const subtaskKeys = {
@@ -24,7 +24,7 @@ function invalidate(
   taskId: string,
 ) {
   void queryClient.invalidateQueries({ queryKey: subtaskKeys.list(workspaceId, taskId) });
-  void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+  invalidateWorkspaceBoards(queryClient, workspaceId);
   void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
 }
 

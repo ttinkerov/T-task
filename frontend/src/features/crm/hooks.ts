@@ -5,10 +5,16 @@ import {
   createStage,
   deleteDeal,
   deleteStage,
+  fetchDealTasks,
   fetchFunnel,
   fetchFunnels,
+  fetchTaskDeals,
+  linkDealTask,
+  linkTaskDeal,
   moveDeal,
   moveStage,
+  unlinkDealTask,
+  unlinkTaskDeal,
   updateDeal,
   updateStage,
 } from './api';
@@ -19,6 +25,10 @@ export const crmKeys = {
   funnels: (workspaceId: string) => [...crmKeys.all, workspaceId, 'funnels'] as const,
   funnel: (workspaceId: string, funnelId: string) =>
     [...crmKeys.all, workspaceId, 'funnel', funnelId] as const,
+  taskDeals: (workspaceId: string, taskId: string) =>
+    [...crmKeys.all, workspaceId, 'task-deals', taskId] as const,
+  dealTasks: (workspaceId: string, dealId: string) =>
+    [...crmKeys.all, workspaceId, 'deal-tasks', dealId] as const,
 };
 
 export function useFunnelsQuery(workspaceId: string | null) {
@@ -194,6 +204,84 @@ export function useDeleteDealMutation(workspaceId: string, funnelId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: crmKeys.funnel(workspaceId, funnelId) });
       void queryClient.invalidateQueries({ queryKey: ['workspace-trash'] });
+    },
+  });
+}
+
+export function useTaskDealsQuery(workspaceId: string, taskId: string) {
+  return useQuery({
+    queryKey: crmKeys.taskDeals(workspaceId, taskId),
+    queryFn: async () => {
+      const response = await fetchTaskDeals(workspaceId, taskId);
+      return response.data ?? [];
+    },
+    enabled: Boolean(workspaceId && taskId),
+  });
+}
+
+export function useLinkTaskDealMutation(workspaceId: string, taskId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (dealId: string) => {
+      await linkTaskDeal(workspaceId, taskId, dealId);
+    },
+    onSuccess: (_data, dealId) => {
+      void queryClient.invalidateQueries({ queryKey: crmKeys.taskDeals(workspaceId, taskId) });
+      void queryClient.invalidateQueries({ queryKey: crmKeys.dealTasks(workspaceId, dealId) });
+    },
+  });
+}
+
+export function useUnlinkTaskDealMutation(workspaceId: string, taskId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (dealId: string) => {
+      await unlinkTaskDeal(workspaceId, taskId, dealId);
+    },
+    onSuccess: (_data, dealId) => {
+      void queryClient.invalidateQueries({ queryKey: crmKeys.taskDeals(workspaceId, taskId) });
+      void queryClient.invalidateQueries({ queryKey: crmKeys.dealTasks(workspaceId, dealId) });
+    },
+  });
+}
+
+export function useDealTasksQuery(workspaceId: string, dealId: string) {
+  return useQuery({
+    queryKey: crmKeys.dealTasks(workspaceId, dealId),
+    queryFn: async () => {
+      const response = await fetchDealTasks(workspaceId, dealId);
+      return response.data ?? [];
+    },
+    enabled: Boolean(workspaceId && dealId),
+  });
+}
+
+export function useLinkDealTaskMutation(workspaceId: string, dealId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      await linkDealTask(workspaceId, dealId, taskId);
+    },
+    onSuccess: (_data, taskId) => {
+      void queryClient.invalidateQueries({ queryKey: crmKeys.dealTasks(workspaceId, dealId) });
+      void queryClient.invalidateQueries({ queryKey: crmKeys.taskDeals(workspaceId, taskId) });
+    },
+  });
+}
+
+export function useUnlinkDealTaskMutation(workspaceId: string, dealId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      await unlinkDealTask(workspaceId, dealId, taskId);
+    },
+    onSuccess: (_data, taskId) => {
+      void queryClient.invalidateQueries({ queryKey: crmKeys.dealTasks(workspaceId, dealId) });
+      void queryClient.invalidateQueries({ queryKey: crmKeys.taskDeals(workspaceId, taskId) });
     },
   });
 }

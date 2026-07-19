@@ -12,6 +12,8 @@ import { TagsController, TaskTagsController } from './tags.controller';
 import { TagsService } from './tags.service';
 import { TaskRelationsController } from './task-relations.controller';
 import { TaskRelationsService } from './task-relations.service';
+import { TaskAttachmentsController } from './task-attachments.controller';
+import { TaskAttachmentsService } from './task-attachments.service';
 import { TasksController } from './tasks.controller';
 import { TasksService } from './tasks.service';
 
@@ -26,6 +28,7 @@ import { TasksService } from './tasks.service';
     TagsController,
     TaskTagsController,
     SubtasksController,
+    TaskAttachmentsController,
   ],
   providers: [
     TasksService,
@@ -34,7 +37,15 @@ import { TasksService } from './tasks.service';
     AllTasksService,
     TagsService,
     SubtasksService,
+    TaskAttachmentsService,
   ],
-  exports: [TasksService, TaskRelationsService, CustomFieldsService, TagsService, SubtasksService],
+  exports: [
+    TasksService,
+    TaskRelationsService,
+    CustomFieldsService,
+    TagsService,
+    SubtasksService,
+    TaskAttachmentsService,
+  ],
 })
 export class TasksModule {}

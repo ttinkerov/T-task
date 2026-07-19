@@ -1,19 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { scheduleInvalidateQueries } from '@/shared/query/schedule-invalidate';
 import {
+  createBoard,
   createColumn,
   createComment,
   createTaskRelation,
   createTask,
+  deleteBoard,
   deleteColumn,
   deleteComment,
   deleteTaskRelation,
   deleteTask,
   duplicateTask,
   fetchBoard,
+  fetchBoards,
   fetchComments,
+  fetchDefaultBoard,
+  fetchTask,
   fetchTaskRelations,
   moveColumn,
   moveTask,
+  updateBoard,
   updateColumn,
   updateColumnAutomations,
   updateTask,
@@ -27,39 +34,134 @@ import type {
 
 export const boardKeys = {
   all: ['boards'] as const,
-  detail: (workspaceId: string) => [...boardKeys.all, workspaceId, 'board'] as const,
+  workspace: (workspaceId: string) => [...boardKeys.all, workspaceId] as const,
+  list: (workspaceId: string) => [...boardKeys.workspace(workspaceId), 'list'] as const,
+  detail: (workspaceId: string, boardId: string) =>
+    [...boardKeys.workspace(workspaceId), 'board', boardId] as const,
+  task: (workspaceId: string, taskId: string) =>
+    [...boardKeys.all, workspaceId, 'task', taskId] as const,
   comments: (workspaceId: string, taskId: string) =>
     [...boardKeys.all, workspaceId, 'comments', taskId] as const,
   relations: (workspaceId: string, taskId: string) =>
     [...boardKeys.all, workspaceId, 'relations', taskId] as const,
 };
 
-export function useBoardQuery(workspaceId: string | null) {
+export function invalidateWorkspaceBoards(
+  queryClient: ReturnType<typeof useQueryClient>,
+  workspaceId: string,
+) {
+  scheduleInvalidateQueries(queryClient, boardKeys.workspace(workspaceId));
+}
+
+function invalidateBoardAndLists(
+  queryClient: ReturnType<typeof useQueryClient>,
+  workspaceId: string,
+  boardId?: string | null,
+) {
+  if (boardId) {
+    scheduleInvalidateQueries(queryClient, boardKeys.detail(workspaceId, boardId));
+  } else {
+    invalidateWorkspaceBoards(queryClient, workspaceId);
+  }
+  scheduleInvalidateQueries(queryClient, ['all-tasks', workspaceId]);
+}
+
+export function useBoardsQuery(workspaceId: string | null) {
   return useQuery({
-    queryKey: boardKeys.detail(workspaceId ?? ''),
+    queryKey: boardKeys.list(workspaceId ?? ''),
     queryFn: async () => {
-      const response = await fetchBoard(workspaceId!);
-      return response.data;
+      const response = await fetchBoards(workspaceId!);
+      return response.data ?? [];
     },
     enabled: Boolean(workspaceId),
   });
 }
 
-export function useCreateColumnMutation(workspaceId: string) {
+export function useBoardQuery(workspaceId: string | null, boardId?: string | null) {
+  return useQuery({
+    queryKey: boardKeys.detail(workspaceId ?? '', boardId ?? 'default'),
+    queryFn: async () => {
+      if (boardId) {
+        const response = await fetchBoard(workspaceId!, boardId);
+        return response.data;
+      }
+      const response = await fetchDefaultBoard(workspaceId!);
+      return response.data;
+    },
+    enabled: Boolean(workspaceId) && (boardId === undefined || Boolean(boardId)),
+    staleTime: 60_000,
+  });
+}
+
+export function useTaskDetailQuery(workspaceId: string | null, taskId: string | null) {
+  return useQuery({
+    queryKey: boardKeys.task(workspaceId ?? '', taskId ?? ''),
+    queryFn: async () => {
+      const response = await fetchTask(workspaceId!, taskId!);
+      return response.data;
+    },
+    enabled: Boolean(workspaceId && taskId),
+    staleTime: 30_000,
+  });
+}
+
+export function useCreateBoardMutation(workspaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (name: string) => {
-      await createColumn(workspaceId, name);
+      const response = await createBoard(workspaceId, name);
+      return response.data;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
-      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
+      scheduleInvalidateQueries(queryClient, boardKeys.list(workspaceId));
+      scheduleInvalidateQueries(queryClient, ['all-tasks', workspaceId]);
     },
   });
 }
 
-export function useUpdateColumnMutation(workspaceId: string) {
+export function useUpdateBoardMutation(workspaceId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ boardId, name }: { boardId: string; name: string }) => {
+      const response = await updateBoard(workspaceId, boardId, name);
+      return response.data;
+    },
+    onSuccess: (_data, variables) => {
+      scheduleInvalidateQueries(queryClient, boardKeys.list(workspaceId));
+      scheduleInvalidateQueries(queryClient, boardKeys.detail(workspaceId, variables.boardId));
+    },
+  });
+}
+
+export function useDeleteBoardMutation(workspaceId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (boardId: string) => {
+      await deleteBoard(workspaceId, boardId);
+    },
+    onSuccess: () => {
+      invalidateBoardAndLists(queryClient, workspaceId);
+    },
+  });
+}
+
+export function useCreateColumnMutation(workspaceId: string, boardId?: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (name: string) => {
+      await createColumn(workspaceId, name, boardId ?? undefined);
+    },
+    onSuccess: () => {
+      invalidateBoardAndLists(queryClient, workspaceId, boardId);
+    },
+  });
+}
+
+export function useUpdateColumnMutation(workspaceId: string, boardId?: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -67,13 +169,12 @@ export function useUpdateColumnMutation(workspaceId: string) {
       await updateColumn(workspaceId, columnId, name);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
-      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
+      invalidateBoardAndLists(queryClient, workspaceId, boardId);
     },
   });
 }
 
-export function useUpdateColumnAutomationsMutation(workspaceId: string) {
+export function useUpdateColumnAutomationsMutation(workspaceId: string, boardId?: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -87,12 +188,16 @@ export function useUpdateColumnAutomationsMutation(workspaceId: string) {
       await updateColumnAutomations(workspaceId, columnId, data);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+      if (boardId) {
+        scheduleInvalidateQueries(queryClient, boardKeys.detail(workspaceId, boardId));
+      } else {
+        invalidateWorkspaceBoards(queryClient, workspaceId);
+      }
     },
   });
 }
 
-export function useDeleteColumnMutation(workspaceId: string) {
+export function useDeleteColumnMutation(workspaceId: string, boardId?: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -100,13 +205,12 @@ export function useDeleteColumnMutation(workspaceId: string) {
       await deleteColumn(workspaceId, columnId);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
-      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
+      invalidateBoardAndLists(queryClient, workspaceId, boardId);
     },
   });
 }
 
-export function useMoveColumnMutation(workspaceId: string) {
+export function useMoveColumnMutation(workspaceId: string, boardId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -114,7 +218,7 @@ export function useMoveColumnMutation(workspaceId: string) {
       await moveColumn(workspaceId, columnId, position);
     },
     onMutate: async ({ columnId, position }) => {
-      const key = boardKeys.detail(workspaceId);
+      const key = boardKeys.detail(workspaceId, boardId);
       await queryClient.cancelQueries({ queryKey: key });
 
       const previous = queryClient.getQueryData<BoardView>(key);
@@ -126,17 +230,16 @@ export function useMoveColumnMutation(workspaceId: string) {
     },
     onError: (_error, _variables, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(boardKeys.detail(workspaceId), context.previous);
+        queryClient.setQueryData(boardKeys.detail(workspaceId, boardId), context.previous);
       }
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
-      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
+      invalidateBoardAndLists(queryClient, workspaceId, boardId);
     },
   });
 }
 
-export function useCreateTaskMutation(workspaceId: string) {
+export function useCreateTaskMutation(workspaceId: string, boardId?: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -144,13 +247,12 @@ export function useCreateTaskMutation(workspaceId: string) {
       await createTask(workspaceId, data);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
-      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
+      invalidateBoardAndLists(queryClient, workspaceId, boardId);
     },
   });
 }
 
-export function useMoveTaskMutation(workspaceId: string) {
+export function useMoveTaskMutation(workspaceId: string, boardId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -166,7 +268,7 @@ export function useMoveTaskMutation(workspaceId: string) {
       await moveTask(workspaceId, taskId, { columnId, position });
     },
     onMutate: async ({ taskId, columnId, position }) => {
-      const key = boardKeys.detail(workspaceId);
+      const key = boardKeys.detail(workspaceId, boardId);
       await queryClient.cancelQueries({ queryKey: key });
 
       const previous = queryClient.getQueryData<BoardView>(key);
@@ -178,17 +280,16 @@ export function useMoveTaskMutation(workspaceId: string) {
     },
     onError: (_error, _variables, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(boardKeys.detail(workspaceId), context.previous);
+        queryClient.setQueryData(boardKeys.detail(workspaceId, boardId), context.previous);
       }
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
-      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
+      invalidateBoardAndLists(queryClient, workspaceId, boardId);
     },
   });
 }
 
-export function useUpdateTaskMutation(workspaceId: string) {
+export function useUpdateTaskMutation(workspaceId: string, boardId?: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -196,13 +297,12 @@ export function useUpdateTaskMutation(workspaceId: string) {
       await updateTask(workspaceId, taskId, data);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
-      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
+      invalidateBoardAndLists(queryClient, workspaceId, boardId);
     },
   });
 }
 
-export function useDeleteTaskMutation(workspaceId: string) {
+export function useDeleteTaskMutation(workspaceId: string, boardId?: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -210,14 +310,13 @@ export function useDeleteTaskMutation(workspaceId: string) {
       await deleteTask(workspaceId, taskId);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
-      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
-      void queryClient.invalidateQueries({ queryKey: ['workspace-trash'] });
+      invalidateBoardAndLists(queryClient, workspaceId, boardId);
+      scheduleInvalidateQueries(queryClient, ['workspace-trash']);
     },
   });
 }
 
-export function useDuplicateTaskMutation(workspaceId: string) {
+export function useDuplicateTaskMutation(workspaceId: string, boardId?: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -226,8 +325,7 @@ export function useDuplicateTaskMutation(workspaceId: string) {
       return response.data;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
-      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
+      invalidateBoardAndLists(queryClient, workspaceId, boardId);
     },
   });
 }

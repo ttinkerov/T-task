@@ -6,10 +6,12 @@ import {
   TaskDisplayView,
   TaskViewToolbar,
   type BoardColumn,
+  type BoardFilters,
   type BoardViewMode,
 } from '@/features/boards';
+import { SavedFiltersControl } from '@/features/saved-filters';
 import { useMembersQuery } from '@/features/workspaces/hooks';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAllTasksQuery } from '../hooks';
 import {
   EMPTY_ALL_TASKS_FILTERS,
@@ -106,6 +108,21 @@ export function AllTasksPage({
     setPage(1);
   };
 
+  const savedFilterView = lockedAssigneeId ? 'MY_TASKS' : 'ALL_TASKS';
+  const boardFiltersForSave = useMemo(
+    () => allTasksFiltersToBoardFilters(filters, Boolean(lockedAssigneeId)),
+    [filters, lockedAssigneeId],
+  );
+
+  const applySavedBoardFiltersSafe = useCallback(
+    (next: BoardFilters) => {
+      setSearchInput(next.search);
+      setPage(1);
+      setFilters((current) => applyBoardFiltersToAllTasks(current, next, lockedAssigneeId));
+    },
+    [lockedAssigneeId],
+  );
+
   const changeViewMode = (mode: BoardViewMode) => {
     if (!VIEW_MODES.includes(mode)) return;
     setViewMode(mode);
@@ -137,6 +154,12 @@ export function AllTasksPage({
 
       <fieldset className="all-tasks__filters">
         <legend className="sr-only">Фильтры и сортировка задач</legend>
+        <SavedFiltersControl
+          workspaceId={workspaceId}
+          view={savedFilterView}
+          filters={boardFiltersForSave}
+          onApply={applySavedBoardFiltersSafe}
+        />
         <input
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
@@ -337,4 +360,33 @@ function buildDisplayColumns(tasks: AllTask[]): BoardColumn[] {
   });
 
   return Array.from(grouped.values());
+}
+
+function allTasksFiltersToBoardFilters(
+  filters: AllTasksFilters,
+  myTasksOnly: boolean,
+): BoardFilters {
+  return {
+    search: filters.search,
+    priority: filters.priority,
+    assigneeId: filters.assigneeId,
+    tagId: filters.tagId,
+    myTasksOnly,
+    overdueStatus: filters.due === 'OVERDUE' ? 'overdue' : '',
+  };
+}
+
+function applyBoardFiltersToAllTasks(
+  current: AllTasksFilters,
+  boardFilters: BoardFilters,
+  lockedAssigneeId: string | null,
+): AllTasksFilters {
+  return {
+    ...current,
+    search: boardFilters.search,
+    priority: boardFilters.priority,
+    assigneeId: lockedAssigneeId ?? boardFilters.assigneeId,
+    tagId: boardFilters.tagId,
+    due: boardFilters.overdueStatus === 'overdue' ? 'OVERDUE' : '',
+  };
 }

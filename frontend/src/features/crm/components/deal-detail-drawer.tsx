@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import { useDeleteDealMutation, useUpdateDealMutation } from '../hooks';
 import type { FunnelDeal } from '../types';
+import { DealTasksSection } from './deal-tasks-section';
 
 interface DealDetailDrawerProps {
   workspaceId: string;
@@ -198,6 +199,8 @@ export function DealDetailDrawer({
             </button>
           </div>
         </form>
+
+        <DealTasksSection workspaceId={workspaceId} dealId={deal.id} />
       </aside>
     </div>
   );

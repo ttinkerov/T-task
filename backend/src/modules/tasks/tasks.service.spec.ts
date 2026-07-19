@@ -49,6 +49,7 @@ describe('TasksService completion dependencies', () => {
       position: 0,
     });
     prisma.board.findFirstOrThrow.mockResolvedValue({
+      id: 'board-1',
       columns: [
         { id: 'column-todo', name: 'К работе', position: 0 },
         { id: 'column-progress', name: 'В работе', position: 1 },
@@ -58,12 +59,15 @@ describe('TasksService completion dependencies', () => {
   });
 
   it('prevents moving a blocked task into the done column', async () => {
-    prisma.boardColumn.findFirst.mockResolvedValue({
-      id: 'column-done',
-      name: 'Готово',
-      position: 2,
-      automations: [],
-    });
+    prisma.boardColumn.findFirst
+      .mockResolvedValueOnce({
+        id: 'column-done',
+        boardId: 'board-1',
+        name: 'Готово',
+        position: 2,
+        automations: [],
+      })
+      .mockResolvedValueOnce({ id: 'column-todo', boardId: 'board-1' });
 
     await expect(
       service.move('workspace-1', 'task-b', 'user-1', {
@@ -74,20 +78,26 @@ describe('TasksService completion dependencies', () => {
 
     expect(relationsService.assertCanComplete).toHaveBeenCalledWith('task-b', prisma);
     expect(prisma.task.update).not.toHaveBeenCalled();
+    expect(prisma.board.findFirstOrThrow).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'board-1', workspaceId: 'workspace-1' } }),
+    );
   });
 
   it('prevents COMPLETE_TASK automation from bypassing blockers', async () => {
-    prisma.boardColumn.findFirst.mockResolvedValue({
-      id: 'column-progress',
-      name: 'В работе',
-      position: 1,
-      automations: [
-        {
-          action: ColumnAutomationAction.COMPLETE_TASK,
-          assigneeId: null,
-        },
-      ],
-    });
+    prisma.boardColumn.findFirst
+      .mockResolvedValueOnce({
+        id: 'column-progress',
+        boardId: 'board-1',
+        name: 'В работе',
+        position: 1,
+        automations: [
+          {
+            action: ColumnAutomationAction.COMPLETE_TASK,
+            assigneeId: null,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ id: 'column-todo', boardId: 'board-1' });
 
     await expect(
       service.move('workspace-1', 'task-b', 'user-1', {
@@ -97,6 +107,28 @@ describe('TasksService completion dependencies', () => {
     ).rejects.toBeInstanceOf(ConflictException);
 
     expect(relationsService.assertCanComplete).toHaveBeenCalledWith('task-b', prisma);
+    expect(prisma.task.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects moving a task onto a column from another board', async () => {
+    prisma.boardColumn.findFirst
+      .mockResolvedValueOnce({
+        id: 'column-other',
+        boardId: 'board-2',
+        name: 'Бэклог',
+        position: 0,
+        automations: [],
+      })
+      .mockResolvedValueOnce({ id: 'column-todo', boardId: 'board-1' });
+
+    await expect(
+      service.move('workspace-1', 'task-b', 'user-1', {
+        columnId: 'column-other',
+        position: 0,
+      }),
+    ).rejects.toMatchObject({ message: 'Нельзя переносить задачу на другую доску' });
+
+    expect(prisma.board.findFirstOrThrow).not.toHaveBeenCalled();
     expect(prisma.task.update).not.toHaveBeenCalled();
   });
 });

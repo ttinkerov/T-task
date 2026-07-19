@@ -15,12 +15,6 @@ import { createDefaultFunnel } from './utils/create-default-funnel.util';
 import { ActivityService } from '../activity/activity.service';
 import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
 
-const dealWithAssignee = {
-  assignee: {
-    select: { id: true, name: true, email: true, avatarUrl: true },
-  },
-} as const;
-
 @Injectable()
 export class FunnelsService {
   constructor(
@@ -77,7 +71,20 @@ export class FunnelsService {
             deals: {
               where: { deletedAt: null },
               orderBy: { position: 'asc' },
-              include: dealWithAssignee,
+              select: {
+                id: true,
+                title: true,
+                amount: true,
+                contactName: true,
+                companyName: true,
+                assigneeId: true,
+                position: true,
+                stageId: true,
+                createdAt: true,
+                assignee: {
+                  select: { id: true, name: true, email: true, avatarUrl: true },
+                },
+              },
             },
           },
         },
@@ -282,7 +289,7 @@ export class FunnelsService {
   serializeDeal(deal: {
     id: string;
     title: string;
-    description: string | null;
+    description?: string | null;
     amount: number | null;
     contactName: string | null;
     companyName: string | null;
@@ -300,7 +307,7 @@ export class FunnelsService {
     return {
       id: deal.id,
       title: deal.title,
-      description: deal.description,
+      description: deal.description ?? null,
       amount: deal.amount,
       contactName: deal.contactName,
       companyName: deal.companyName,

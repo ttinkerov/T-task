@@ -48,6 +48,7 @@ import {
   type BoardView,
 } from '../types';
 import { BoardFiltersBar } from './board-filters-bar';
+import { BoardSwitcher, storeSelectedBoardId } from './board-switcher';
 import { BoardWorkloadPanel } from './board-workload-panel';
 import { ColumnAutomationDialog } from './column-automation-dialog';
 import { TaskDisplayView, TaskViewToolbar } from './task-display-views';
@@ -64,11 +65,19 @@ export function KanbanBoard({
   initialTaskId?: string | null;
 }) {
   const { data: session } = useMeQuery();
-  const { data: board, isLoading } = useBoardQuery(workspaceId);
+  const [boardId, setBoardId] = useState<string | null>(null);
+  const handleBoardChange = useCallback(
+    (nextId: string) => {
+      setBoardId(nextId);
+      storeSelectedBoardId(workspaceId, nextId);
+    },
+    [workspaceId],
+  );
+  const { data: board, isLoading } = useBoardQuery(workspaceId, boardId);
   const { data: customFields = [] } = useCustomFieldsQuery(workspaceId);
   const { data: members = [] } = useMembersQuery(workspaceId);
-  const moveTaskMutation = useMoveTaskMutation(workspaceId);
-  const moveColumnMutation = useMoveColumnMutation(workspaceId);
+  const moveTaskMutation = useMoveTaskMutation(workspaceId, boardId ?? '');
+  const moveColumnMutation = useMoveColumnMutation(workspaceId, boardId ?? '');
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
   const [activeColumn, setActiveColumn] = useState<BoardColumn | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -127,6 +136,8 @@ export function KanbanBoard({
   useEffect(() => {
     setViewMode(readStoredViewMode(workspaceId));
     setViewAnchor(new Date());
+    setBoardId(null);
+    setFilters(EMPTY_BOARD_FILTERS);
   }, [workspaceId]);
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -150,7 +161,7 @@ export function KanbanBoard({
     setActiveColumn(null);
 
     const { active, over } = event;
-    if (!over || !board) return;
+    if (!over || !board || !boardId) return;
 
     if (type === 'column') {
       const columnId = String(active.id);
@@ -187,8 +198,17 @@ export function KanbanBoard({
     }
   };
 
-  if (isLoading || !board) {
-    return <p className="text-sm text-muted-foreground">Загрузка доски...</p>;
+  if (isLoading || !board || !boardId) {
+    return (
+      <>
+        <BoardSwitcher
+          workspaceId={workspaceId}
+          boardId={boardId}
+          onBoardChange={handleBoardChange}
+        />
+        <p className="text-sm text-muted-foreground">Загрузка доски...</p>
+      </>
+    );
   }
 
   const columnIds = board.columns.map((column) => column.id);
@@ -211,6 +231,11 @@ export function KanbanBoard({
           storeViewMode(workspaceId, mode);
         }}
         onAnchorChange={setViewAnchor}
+      />
+      <BoardSwitcher
+        workspaceId={workspaceId}
+        boardId={boardId}
+        onBoardChange={handleBoardChange}
       />
       <BoardFiltersBar workspaceId={workspaceId} filters={filters} onChange={setFilters} />
       {viewMode === 'BOARD' && moveError ? (
@@ -235,6 +260,7 @@ export function KanbanBoard({
                   column={column}
                   allColumns={board.columns}
                   workspaceId={workspaceId}
+                  boardId={boardId}
                   canDelete={canDeleteColumns}
                   canManageAutomations={canManageAutomations}
                   cardFields={cardFields}
@@ -243,16 +269,15 @@ export function KanbanBoard({
                 />
               ))}
             </SortableContext>
-            <AddColumnPanel workspaceId={workspaceId} />
+            <AddColumnPanel workspaceId={workspaceId} boardId={boardId} />
           </div>
 
           <DragOverlay>
             {activeColumn ? (
-              <div className="kanban-column kanban-column--dragging">
-                <div className="kanban-column__header">
-                  <h3 className="kanban-column__title">{activeColumn.name}</h3>
-                  <span className="kanban-column__count">{activeColumn.tasks.length}</span>
-                </div>
+              <div className="kanban-column kanban-column--overlay">
+                <header className="kanban-column__header">
+                  <h3>{activeColumn.name}</h3>
+                </header>
               </div>
             ) : null}
             {activeTask ? (
@@ -264,7 +289,7 @@ export function KanbanBoard({
         </DndContext>
       ) : (
         <TaskDisplayView
-          mode={viewMode}
+          mode={viewMode as Exclude<BoardViewMode, 'BOARD'>}
           columns={filteredColumns}
           anchor={viewAnchor}
           onOpenTask={setSelectedTaskId}
@@ -278,10 +303,7 @@ export function KanbanBoard({
           task={selectedTask}
           columnName={selectedColumnName}
           relationCandidates={relationCandidates}
-          onOpenTask={(taskId) => {
-            setMoveError('');
-            setSelectedTaskId(taskId);
-          }}
+          onOpenTask={setSelectedTaskId}
           onClose={() => setSelectedTaskId(null)}
         />
       ) : null}
@@ -319,8 +341,8 @@ function matchesFilters(
   return true;
 }
 
-function AddColumnPanel({ workspaceId }: { workspaceId: string }) {
-  const createColumnMutation = useCreateColumnMutation(workspaceId);
+function AddColumnPanel({ workspaceId, boardId }: { workspaceId: string; boardId: string }) {
+  const createColumnMutation = useCreateColumnMutation(workspaceId, boardId);
   const [name, setName] = useState('');
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -355,6 +377,7 @@ function SortableKanbanColumn({
   column,
   allColumns,
   workspaceId,
+  boardId,
   canDelete,
   canManageAutomations,
   cardFields,
@@ -364,6 +387,7 @@ function SortableKanbanColumn({
   column: BoardColumn;
   allColumns: BoardColumn[];
   workspaceId: string;
+  boardId: string;
   canDelete: boolean;
   canManageAutomations: boolean;
   cardFields: CustomFieldDefinition[];
@@ -387,6 +411,7 @@ function SortableKanbanColumn({
         column={column}
         allColumns={allColumns}
         workspaceId={workspaceId}
+        boardId={boardId}
         canDelete={canDelete}
         canManageAutomations={canManageAutomations}
         cardFields={cardFields}
@@ -402,6 +427,7 @@ function KanbanColumn({
   column,
   allColumns,
   workspaceId,
+  boardId,
   canDelete,
   canManageAutomations,
   cardFields,
@@ -412,6 +438,7 @@ function KanbanColumn({
   column: BoardColumn;
   allColumns: BoardColumn[];
   workspaceId: string;
+  boardId: string;
   canDelete: boolean;
   canManageAutomations: boolean;
   cardFields: CustomFieldDefinition[];
@@ -420,9 +447,9 @@ function KanbanColumn({
   onOpenTask: (taskId: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
-  const createMutation = useCreateTaskMutation(workspaceId);
-  const updateColumnMutation = useUpdateColumnMutation(workspaceId);
-  const deleteColumnMutation = useDeleteColumnMutation(workspaceId);
+  const createMutation = useCreateTaskMutation(workspaceId, boardId);
+  const updateColumnMutation = useUpdateColumnMutation(workspaceId, boardId);
+  const deleteColumnMutation = useDeleteColumnMutation(workspaceId, boardId);
   const [title, setTitle] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [columnName, setColumnName] = useState(column.name);
@@ -578,6 +605,7 @@ function KanbanColumn({
       {automationOpen ? (
         <ColumnAutomationDialog
           workspaceId={workspaceId}
+          boardId={boardId}
           column={column}
           onClose={handleAutomationClose}
         />

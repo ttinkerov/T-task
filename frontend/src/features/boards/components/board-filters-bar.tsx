@@ -1,5 +1,6 @@
 'use client';
 
+import { SavedFiltersControl } from '@/features/saved-filters';
 import { useTagsQuery } from '@/features/tags/hooks';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import {
@@ -29,6 +30,13 @@ export function BoardFiltersBar({ workspaceId, filters, onChange }: BoardFilters
 
   return (
     <div className="board-filters">
+      <SavedFiltersControl
+        workspaceId={workspaceId}
+        view="BOARD"
+        filters={filters}
+        onApply={onChange}
+      />
+
       <input
         value={filters.search}
         onChange={(event) => onChange({ ...filters, search: event.target.value })}

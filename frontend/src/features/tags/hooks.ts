@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { boardKeys } from '@/features/boards/hooks';
+import { invalidateWorkspaceBoards } from '@/features/boards/hooks';
 import { createTag, deleteTag, fetchTags, setTaskTags, updateTag } from './api';
 
 export const tagKeys = {
@@ -20,7 +20,7 @@ export function useTagsQuery(workspaceId: string | null) {
 
 function invalidateTaskViews(queryClient: ReturnType<typeof useQueryClient>, workspaceId: string) {
   void queryClient.invalidateQueries({ queryKey: tagKeys.list(workspaceId) });
-  void queryClient.invalidateQueries({ queryKey: boardKeys.detail(workspaceId) });
+  invalidateWorkspaceBoards(queryClient, workspaceId);
   void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
 }
 

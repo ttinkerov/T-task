@@ -42,3 +42,32 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<Api
 
   return body;
 }
+
+/** Multipart upload — omits Content-Type so the browser sets the boundary. */
+export async function apiUpload<T>(
+  path: string,
+  formData: FormData,
+  init?: Omit<RequestInit, 'body' | 'method'>,
+): Promise<ApiResponse<T>> {
+  const baseUrl = getApiBaseUrl();
+  const { headers: initHeaders, ...restInit } = init ?? {};
+
+  const headers = new Headers(initHeaders);
+  headers.delete('Content-Type');
+
+  const response = await fetch(`${baseUrl}${path}`, {
+    credentials: 'include',
+    method: 'POST',
+    ...restInit,
+    headers,
+    body: formData,
+  });
+
+  const body = (await response.json()) as ApiResponse<T>;
+
+  if (!response.ok || !body.success) {
+    throw new ApiError(body.error ?? 'Request failed', response.status);
+  }
+
+  return body;
+}
