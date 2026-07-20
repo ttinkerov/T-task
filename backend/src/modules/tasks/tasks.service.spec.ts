@@ -42,6 +42,7 @@ describe('TasksService completion dependencies', () => {
       {} as never,
       relationsService as never,
       { prepare: vi.fn(), notify: vi.fn() } as never,
+      { emit: vi.fn() } as never,
     );
     prisma.task.findFirst.mockResolvedValue({
       id: 'task-b',
@@ -162,6 +163,7 @@ describe('TasksService description mentions', () => {
       { getBoardForWorkspace: vi.fn(), serializeTask: vi.fn((task) => task) } as never,
       { assertCanComplete: vi.fn() } as never,
       mentions as never,
+      { emit: vi.fn() } as never,
     );
 
     await service.update('workspace-1', 'task-1', 'author-1', {

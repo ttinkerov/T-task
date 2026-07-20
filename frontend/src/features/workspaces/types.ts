@@ -8,10 +8,13 @@ export interface WorkspaceSummary {
   autoRollOverdue?: boolean;
 }
 
+export type WorkspaceScope = 'CRM_WRITE' | 'FORMS_WRITE' | 'TASK_DELETE' | 'DEAL_DELETE';
+
 export interface WorkspaceMember {
   id: string;
   userId: string;
   role: WorkspaceRole;
+  scopes?: WorkspaceScope[];
   joinedAt: string;
   user: {
     id: string;

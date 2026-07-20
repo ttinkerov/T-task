@@ -1,6 +1,8 @@
 import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
+import { Scopes } from '../../common/auth/decorators/scopes.decorator';
+import { WorkspaceScope } from '../../common/auth/scopes';
 import { MEMBER_PLUS_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
@@ -15,6 +17,7 @@ export class DealsController {
 
   @Post()
   @Roles(...MEMBER_PLUS_ROLES)
+  @Scopes(WorkspaceScope.CRM_WRITE)
   async create(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -26,6 +29,7 @@ export class DealsController {
 
   @Patch(':dealId')
   @Roles(...MEMBER_PLUS_ROLES)
+  @Scopes(WorkspaceScope.CRM_WRITE)
   async update(
     @Param('workspaceId') workspaceId: string,
     @Param('dealId') dealId: string,
@@ -38,6 +42,7 @@ export class DealsController {
 
   @Patch(':dealId/move')
   @Roles(...MEMBER_PLUS_ROLES)
+  @Scopes(WorkspaceScope.CRM_WRITE)
   async move(
     @Param('workspaceId') workspaceId: string,
     @Param('dealId') dealId: string,
@@ -50,6 +55,7 @@ export class DealsController {
 
   @Delete(':dealId')
   @Roles(...MEMBER_PLUS_ROLES)
+  @Scopes(WorkspaceScope.DEAL_DELETE)
   async remove(
     @Param('workspaceId') workspaceId: string,
     @Param('dealId') dealId: string,

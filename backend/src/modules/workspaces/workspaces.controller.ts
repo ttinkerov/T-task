@@ -10,6 +10,7 @@ import { successResponse } from '../../common/interfaces/api-response.interface'
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { InviteMemberDto } from './dto/invite-member.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
+import { UpdateMemberScopesDto } from './dto/update-member-scopes.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
 import { WorkspacesService } from './workspaces.service';
 
@@ -84,6 +85,23 @@ export class WorkspacesController {
       user.id,
       memberId,
       dto,
+    );
+    return successResponse(member);
+  }
+
+  @Patch(':workspaceId/members/:memberId/scopes')
+  @Roles(...ADMIN_PLUS_ROLES)
+  async updateMemberScopes(
+    @Param('workspaceId') workspaceId: string,
+    @Param('memberId') memberId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateMemberScopesDto,
+  ) {
+    const member = await this.workspacesService.updateMemberScopes(
+      workspaceId,
+      user.id,
+      memberId,
+      dto.scopes,
     );
     return successResponse(member);
   }

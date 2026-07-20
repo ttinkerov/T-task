@@ -35,6 +35,29 @@ export const envSchema = z.object({
       },
     ),
   UPLOAD_DIR: z.string().min(1).optional(),
+  APP_URL: z.string().url().optional(),
+  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_PORT: z.coerce.number().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
+  // Base64-encoded 32-byte key for AES-256-GCM encryption of workspace AI tokens.
+  // Generate: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+  AI_TOKEN_ENC_KEY: z
+    .string()
+    .min(1)
+    .optional()
+    .refine(
+      (value) => {
+        if (!value) return true;
+        try {
+          return Buffer.from(value, 'base64').length === 32;
+        } catch {
+          return false;
+        }
+      },
+      { message: 'AI_TOKEN_ENC_KEY must be base64-encoded 32 bytes' },
+    ),
 });
 
 export type Env = z.infer<typeof envSchema>;

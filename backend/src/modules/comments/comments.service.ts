@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MentionSourceType, Prisma } from '@prisma/client';
+import { DomainEvents } from '../../common/events/domain-events';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { MentionsService } from '../mentions/mentions.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
@@ -11,6 +13,7 @@ export class CommentsService {
     private readonly prisma: PrismaService,
     private readonly workspacesService: WorkspacesService,
     private readonly mentionsService: MentionsService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async list(workspaceId: string, taskId: string, userId: string) {
@@ -30,7 +33,7 @@ export class CommentsService {
   }
 
   async create(workspaceId: string, taskId: string, userId: string, dto: CreateCommentDto) {
-    await this.assertTaskInWorkspace(workspaceId, taskId, userId);
+    const task = await this.assertTaskInWorkspace(workspaceId, taskId, userId);
     const prepared = await this.mentionsService.prepare(workspaceId, userId, dto.body.trim());
 
     const comment = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -61,6 +64,14 @@ export class CommentsService {
       );
 
       return created;
+    });
+
+    this.eventEmitter.emit(DomainEvents.COMMENT_CREATED, {
+      workspaceId,
+      boardId: task.column.boardId,
+      taskId,
+      commentId: comment.id,
+      actorId: userId,
     });
 
     return this.toComment(comment);
@@ -99,6 +110,10 @@ export class CommentsService {
         id: taskId,
         deletedAt: null,
         column: { board: { workspaceId } },
+      },
+      select: {
+        id: true,
+        column: { select: { boardId: true } },
       },
     });
 

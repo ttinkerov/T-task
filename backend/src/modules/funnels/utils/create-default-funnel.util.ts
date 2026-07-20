@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { getFunnelTemplate } from '../templates/funnel-templates';
 
 export const DEFAULT_FUNNEL_STAGES = [
   'Новая',
@@ -12,16 +13,20 @@ export async function createDefaultFunnel(
   tx: Prisma.TransactionClient,
   workspaceId: string,
   name = 'Продажи',
+  templateId?: string | null,
 ) {
+  const template = getFunnelTemplate(templateId);
+  const stages = template.stages.length > 0 ? template.stages : [...DEFAULT_FUNNEL_STAGES];
+
   const funnel = await tx.funnel.create({
     data: {
       workspaceId,
-      name,
+      name: name || template.name,
     },
   });
 
   await Promise.all(
-    DEFAULT_FUNNEL_STAGES.map((stageName, index) =>
+    stages.map((stageName, index) =>
       tx.funnelStage.create({
         data: {
           funnelId: funnel.id,

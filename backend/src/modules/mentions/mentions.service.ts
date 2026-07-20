@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MentionSourceType, NotificationType, Prisma } from '@prisma/client';
+import { DomainEvents } from '../../common/events/domain-events';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { extractMentionUserIds, sanitizeMentionLabels } from './mention-parser.util';
 
@@ -23,7 +25,10 @@ interface MentionNotificationContext {
 
 @Injectable()
 export class MentionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   async prepare(workspaceId: string, actorId: string, text: string) {
     const extractedIds = extractMentionUserIds(text);
@@ -84,6 +89,28 @@ export class MentionsService {
         preview,
       })),
     });
+
+    const [actor, recipients] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: context.actorId },
+        select: { name: true },
+      }),
+      this.prisma.user.findMany({
+        where: { id: { in: targets } },
+        select: { email: true, name: true },
+      }),
+    ]);
+
+    for (const recipient of recipients) {
+      this.eventEmitter.emit(DomainEvents.MENTION_CREATED, {
+        workspaceId: context.workspaceId,
+        taskId: context.taskId,
+        recipientEmail: recipient.email,
+        recipientName: recipient.name,
+        actorName: actor?.name ?? 'Коллега',
+        preview,
+      });
+    }
   }
 
   private toPreview(text: string) {

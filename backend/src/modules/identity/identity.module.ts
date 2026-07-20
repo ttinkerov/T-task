@@ -5,6 +5,7 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthContextMiddleware } from '../../common/auth/middleware/auth-context.middleware';
 import { JwtAuthGuard } from '../../common/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/auth/guards/roles.guard';
+import { ScopesGuard } from '../../common/auth/guards/scopes.guard';
 import { TokenExtractorService } from '../../common/auth/services/token-extractor.service';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
 import { IdentityController } from './identity.controller';
@@ -30,6 +31,10 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ScopesGuard,
     },
   ],
   exports: [IdentityService, TokenExtractorService],

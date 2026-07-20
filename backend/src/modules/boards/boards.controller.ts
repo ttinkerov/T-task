@@ -115,6 +115,13 @@ export class BoardsController {
 export class WorkspaceBoardsController {
   constructor(private readonly boardsService: BoardsService) {}
 
+  @Get('templates')
+  @Roles(...ALL_WORKSPACE_ROLES)
+  async listTemplates() {
+    const { BOARD_TEMPLATES } = await import('./templates/board-templates');
+    return successResponse(BOARD_TEMPLATES);
+  }
+
   @Get()
   @Roles(...ALL_WORKSPACE_ROLES)
   async listBoards(

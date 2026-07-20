@@ -1,15 +1,5 @@
 @use 'variables' as *;
 
-.task-drawer-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  justify-content: flex-end;
-  background: var(--tt-overlay);
-  backdrop-filter: blur(4px);
-}
-
 .task-drawer {
   width: min(420px, 100%);
   height: 100%;
@@ -18,6 +8,31 @@
   background: $color-bg-elevated;
   border-left: 1px solid $color-border-subtle;
   box-shadow: var(--tt-shadow);
+
+  @media (max-width: 767px) {
+    width: 100%;
+    max-height: min(88vh, 100dvh);
+    align-self: flex-end;
+    border-left: none;
+    border-top: 1px solid $color-border-subtle;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+.task-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: flex-end;
+  background: var(--tt-overlay);
+  backdrop-filter: blur(4px);
+
+  @media (max-width: 767px) {
+    align-items: flex-end;
+    justify-content: stretch;
+  }
 }
 
 .task-drawer__header {

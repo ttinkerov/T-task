@@ -2,7 +2,7 @@
 
 Канбан и CRM для небольших команд. Workspaces, доски, сделки, формы, уведомления.
 
-**Стек:** Next.js · NestJS · Prisma · PostgreSQL · Redis
+**Стек:** Next.js, NestJS, Prisma, PostgreSQL, Redis
 
 ## Запуск
 
@@ -52,3 +52,4 @@ npm run prisma:migrate -w backend
 - Auth через httpOnly cookies (`access_token`, `refresh_token`).
 - На workspace-роутах нужен заголовок `x-workspace-id`.
 - В `.env` обязательно свой `JWT_ACCESS_SECRET` (≥32 символа, не placeholder).
+- Для ИИ (чат и помощник в задаче): задайте `AI_TOKEN_ENC_KEY` (base64, 32 байта) и вставьте API-токен в настройках команды.

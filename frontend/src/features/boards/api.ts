@@ -40,11 +40,11 @@ export async function fetchTask(workspaceId: string, taskId: string) {
   });
 }
 
-export async function createBoard(workspaceId: string, name: string) {
+export async function createBoard(workspaceId: string, name: string, templateId?: string) {
   return apiFetch<BoardSummary>(`/api/v1/workspaces/${workspaceId}/boards`, {
     method: 'POST',
     headers: withWorkspace(workspaceId),
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, ...(templateId ? { templateId } : {}) }),
   });
 }
 

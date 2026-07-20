@@ -30,7 +30,7 @@ export class AuthRateLimitGuard implements CanActivate {
         context.getClass(),
       ]) ?? DEFAULT_AUTH_RATE_LIMIT;
 
-    const keys = this.resolveRateKeys(request);
+    const keys = this.resolveRateKeys(request, config);
 
     for (const rateKey of keys) {
       try {
@@ -53,10 +53,21 @@ export class AuthRateLimitGuard implements CanActivate {
   /**
    * Prefer user id; for anonymous auth endpoints also key by email so
    * X-Forwarded-For spoofing cannot bypass per-account brute-force limits.
+   * Optional workspaceId adds a shared workspace budget key.
    */
-  private resolveRateKeys(request: Request & { user?: AuthenticatedUser }): string[] {
+  private resolveRateKeys(
+    request: Request & { user?: AuthenticatedUser },
+    config: RateLimitConfig,
+  ): string[] {
+    const workspaceId =
+      typeof request.params?.workspaceId === 'string' ? request.params.workspaceId.trim() : '';
+
     if (request.user?.id) {
-      return [request.user.id];
+      const keys = [request.user.id];
+      if (config.includeWorkspaceId && workspaceId) {
+        keys.push(`ws:${workspaceId}`);
+      }
+      return keys;
     }
 
     const body = request.body as { email?: unknown } | undefined;

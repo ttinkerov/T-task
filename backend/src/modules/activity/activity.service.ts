@@ -71,7 +71,17 @@ export class ActivityService {
 
     const page = query.page;
     const limit = query.limit;
-    const where = { workspaceId };
+    const where = {
+      workspaceId,
+      ...(query.action ? { action: query.action } : {}),
+      ...(query.actorId ? { actorId: query.actorId } : {}),
+      ...((query.from || query.to) && {
+        createdAt: {
+          ...(query.from ? { gte: new Date(query.from) } : {}),
+          ...(query.to ? { lte: new Date(query.to) } : {}),
+        },
+      }),
+    };
     const [items, total] = await Promise.all([
       this.prisma.activityLog.findMany({
         where,
@@ -89,6 +99,7 @@ export class ActivityService {
         entityType: item.entityType,
         entityId: item.entityId,
         entityName: item.entityName,
+        actorId: item.actorId,
         actorName: item.actorName,
         metadata: item.metadata,
         createdAt: item.createdAt.toISOString(),

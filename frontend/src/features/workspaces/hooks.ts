@@ -13,9 +13,10 @@ import {
   removeMember,
   revokeInvitation,
   updateMemberRole,
+  updateMemberScopes,
   updateWorkspace,
 } from './api';
-import type { WorkspaceRole } from './types';
+import type { WorkspaceRole, WorkspaceScope } from './types';
 
 export const workspaceKeys = {
   all: ['workspaces'] as const,
@@ -109,6 +110,20 @@ export function useUpdateMemberRoleMutation(workspaceId: string) {
   return useMutation({
     mutationFn: async ({ memberId, role }: { memberId: string; role: WorkspaceRole }) => {
       const response = await updateMemberRole(workspaceId, memberId, role);
+      return response.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: workspaceKeys.members(workspaceId) });
+    },
+  });
+}
+
+export function useUpdateMemberScopesMutation(workspaceId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ memberId, scopes }: { memberId: string; scopes: WorkspaceScope[] }) => {
+      const response = await updateMemberScopes(workspaceId, memberId, scopes);
       return response.data;
     },
     onSuccess: () => {

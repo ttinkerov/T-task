@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useWorkspaceActivityQuery } from '../hooks';
 
 const PAGE_SIZE = 25;
@@ -41,12 +41,25 @@ const ACTION_LABELS: Record<string, string> = {
   DEAL_PURGED: 'удалил(а) сделку навсегда',
   APP_RESTORED: 'восстановил(а) приложение из корзины',
   APP_PURGED: 'удалил(а) приложение навсегда',
+  AI_SETTINGS_UPDATED: 'обновил(а) настройки ИИ',
+  AI_SETTINGS_DELETED: 'удалил(а) токен ИИ',
 };
 
 export function ActivityPage({ workspaceId }: { workspaceId: string }) {
   const [page, setPage] = useState(1);
+  const [action, setAction] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   const listRef = useRef<HTMLOListElement>(null);
-  const query = useWorkspaceActivityQuery(workspaceId, page, PAGE_SIZE);
+  const filters = useMemo(
+    () => ({
+      ...(action ? { action } : {}),
+      ...(from ? { from: new Date(from).toISOString() } : {}),
+      ...(to ? { to: new Date(`${to}T23:59:59.999`).toISOString() } : {}),
+    }),
+    [action, from, to],
+  );
+  const query = useWorkspaceActivityQuery(workspaceId, page, PAGE_SIZE, filters);
   const result = query.data;
   const totalPages = Math.max(1, Math.ceil((result?.total ?? 0) / PAGE_SIZE));
   const statusMessage = query.isLoading
@@ -58,6 +71,10 @@ export function ActivityPage({ workspaceId }: { workspaceId: string }) {
         : '';
 
   useEffect(() => {
+    setPage(1);
+  }, [action, from, to]);
+
+  useEffect(() => {
     if (!query.isFetching && result?.items.length) {
       listRef.current?.focus();
     }
@@ -67,12 +84,45 @@ export function ActivityPage({ workspaceId }: { workspaceId: string }) {
     <section className="activity-page" aria-labelledby="activity-page-title">
       <header className="activity-page__header">
         <span>Рабочее пространство</span>
-        <h1 id="activity-page-title">Логирование действий</h1>
-        <p>
-          Неизменяемая история административных событий: участники, настройки, колонки, формы,
-          воронки, приложения, календари и связи задач.
-        </p>
+        <h1 id="activity-page-title">Журнал аудита</h1>
+        <p>История административных событий. Фильтруйте по действию и дате.</p>
       </header>
+
+      <div className="analytics-filters" style={{ marginBottom: '1rem' }}>
+        <label className="analytics-filters__group">
+          <span className="analytics-filters__label">Действие</span>
+          <select
+            className="board-filters__select"
+            value={action}
+            onChange={(event) => setAction(event.target.value)}
+          >
+            <option value="">Все</option>
+            {Object.keys(ACTION_LABELS).map((key) => (
+              <option key={key} value={key}>
+                {key}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="analytics-filters__group">
+          <span className="analytics-filters__label">С</span>
+          <input
+            type="date"
+            className="glass-input"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+          />
+        </label>
+        <label className="analytics-filters__group">
+          <span className="analytics-filters__label">По</span>
+          <input
+            type="date"
+            className="glass-input"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+          />
+        </label>
+      </div>
 
       <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {statusMessage}

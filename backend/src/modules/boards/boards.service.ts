@@ -47,7 +47,7 @@ export class BoardsService {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
 
     const board = await this.prisma.$transaction(async (tx) => {
-      return createDefaultBoard(tx, workspaceId, dto.name.trim());
+      return createDefaultBoard(tx, workspaceId, dto.name.trim(), dto.templateId);
     });
 
     return {

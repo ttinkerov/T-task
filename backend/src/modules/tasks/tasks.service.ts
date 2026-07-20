@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   ColumnAutomationAction,
   MentionSourceType,
@@ -7,6 +8,7 @@ import {
   TaskRecurrenceAction,
   TaskRecurrenceRule,
 } from '@prisma/client';
+import { DomainEvents } from '../../common/events/domain-events';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { BoardsService } from '../boards/boards.service';
 import { extractMentionUserIds } from '../mentions/mention-parser.util';
@@ -33,6 +35,7 @@ export class TasksService {
     private readonly boardsService: BoardsService,
     private readonly taskRelationsService: TaskRelationsService,
     private readonly mentionsService: MentionsService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async getById(workspaceId: string, taskId: string, userId: string) {
@@ -215,6 +218,22 @@ export class TasksService {
       return saved;
     });
 
+    if (dto.assigneeId !== undefined && dto.assigneeId !== task.assigneeId) {
+      const column = await this.prisma.boardColumn.findFirst({
+        where: { id: updated.columnId },
+        select: { boardId: true },
+      });
+      if (column) {
+        this.eventEmitter.emit(DomainEvents.TASK_ASSIGNED, {
+          workspaceId,
+          boardId: column.boardId,
+          taskId,
+          assigneeId: dto.assigneeId,
+          actorId: userId,
+        });
+      }
+    }
+
     return this.toTask(updated);
   }
 
@@ -323,6 +342,16 @@ export class TasksService {
       where: { id: taskId },
       include: taskWithAssignee,
     });
+
+    this.eventEmitter.emit(DomainEvents.TASK_MOVED, {
+      workspaceId,
+      boardId: targetColumn.boardId,
+      taskId,
+      columnId: dto.columnId,
+      position: dto.position,
+      actorId: userId,
+    });
+
     return this.toTask(updated);
   }
 

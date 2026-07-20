@@ -128,6 +128,7 @@ describe('ActivityService', () => {
           entityType: ActivityEntityType.APP,
           entityId: 'app-1',
           entityName: 'Макеты',
+          actorId: 'user-1',
           actorName: 'Анна',
           metadata: { provider: 'FIGMA' },
           createdAt: '2026-07-17T00:00:00.000Z',

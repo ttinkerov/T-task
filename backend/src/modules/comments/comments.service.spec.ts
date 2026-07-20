@@ -30,7 +30,11 @@ describe('CommentsService mentions', () => {
 
   beforeEach(() => {
     prisma = makePrisma();
-    prisma.task.findFirst.mockResolvedValue({ id: 'task-1', title: 'Запуск' });
+    prisma.task.findFirst.mockResolvedValue({
+      id: 'task-1',
+      title: 'Запуск',
+      column: { boardId: 'board-1' },
+    });
     prisma.comment.create.mockResolvedValue({
       id: 'comment-1',
       body: '@[Анна](cm12345678901234567890), проверь',
@@ -54,6 +58,7 @@ describe('CommentsService mentions', () => {
       prisma as never,
       { getWorkspaceForMember: vi.fn().mockResolvedValue({ id: 'workspace-1' }) } as never,
       mentions as never,
+      { emit: vi.fn() } as never,
     );
   });
 

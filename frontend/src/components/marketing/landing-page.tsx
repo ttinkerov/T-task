@@ -10,8 +10,10 @@ import {
   FormInput,
   Kanban,
   Layers3,
+  MessageSquare,
   Repeat2,
   Rocket,
+  Sparkles,
   Timer,
   Workflow,
   Globe2,
@@ -23,6 +25,7 @@ import { ThemeToggle } from '@/components/theme/theme-toggle';
 
 const navLinks = [
   { label: 'Возможности', href: '#features' },
+  { label: 'ИИ', href: '#ai' },
   { label: 'Как начать', href: '#howto' },
   { label: 'Для кого', href: '#audiences' },
 ];
@@ -67,6 +70,11 @@ const features = [
     icon: Timer,
     title: 'Фокус и Pomodoro',
     text: 'Встроенный таймер помогает держать ритм, когда день расползается на мелочи.',
+  },
+  {
+    icon: Sparkles,
+    title: 'ИИ-чат и помощник',
+    text: 'Разбивает задачи, правит формулировки и отвечает в контексте доски — достаточно вставить API-токен.',
   },
   {
     icon: Layers3,
@@ -162,7 +170,7 @@ export function LandingPage() {
               дорого в руках
             </motion.p>
             <motion.p className="tt-hero__text" variants={fadeUp}>
-              Канбан, CRM и фокус в одном плотном интерфейсе — без шаблонного SaaS-шума.
+              Канбан, CRM, ИИ и фокус в одном плотном интерфейсе — без шаблонного SaaS-шума.
             </motion.p>
             <motion.div className="tt-hero__actions" variants={fadeUp}>
               <Link href="/register" className="tt-btn tt-btn--primary tt-btn--lg">
@@ -224,6 +232,63 @@ export function LandingPage() {
               );
             })}
           </div>
+        </section>
+
+        <section id="ai" className="tt-ai-band">
+          <motion.div
+            className="tt-ai-band__inner"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div className="tt-ai-band__copy">
+              <p className="tt-section__eyebrow">ИИ внутри продукта</p>
+              <h2 className="tt-ai-band__title">
+                Не «ещё один чат».
+                <br />
+                Помощник по задачам.
+              </h2>
+              <p className="tt-ai-band__text">
+                Вставьте свой токен OpenAI, OpenRouter или Groq — и команда получает ИИ-чат плюс
+                ассистента прямо в карточке задачи. Токен хранится на сервере в зашифрованном виде.
+              </p>
+              <Link href="/register" className="tt-btn tt-btn--primary tt-btn--lg">
+                Попробовать с ИИ
+                <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
+              </Link>
+            </div>
+
+            <ul className="tt-ai-band__list">
+              <li>
+                <span className="tt-ai-band__icon" aria-hidden="true">
+                  <MessageSquare size={18} strokeWidth={1.75} />
+                </span>
+                <div>
+                  <strong>ИИ-чат в workspace</strong>
+                  <p>Приоритизация, формулировки, план спринта — без ухода в сторонний бот.</p>
+                </div>
+              </li>
+              <li>
+                <span className="tt-ai-band__icon" aria-hidden="true">
+                  <Sparkles size={18} strokeWidth={1.75} />
+                </span>
+                <div>
+                  <strong>Помощник в задаче</strong>
+                  <p>Подзадачи, критерии готовности и риски — по кнопке «Спросить ИИ».</p>
+                </div>
+              </li>
+              <li>
+                <span className="tt-ai-band__icon" aria-hidden="true">
+                  <Workflow size={18} strokeWidth={1.75} />
+                </span>
+                <div>
+                  <strong>Свой токен — свой провайдер</strong>
+                  <p>OpenAI / OpenRouter / Groq / custom. Один раз вставил — команда пользуется.</p>
+                </div>
+              </li>
+            </ul>
+          </motion.div>
         </section>
 
         <section id="howto" className="tt-section tt-section--panel">
@@ -309,6 +374,7 @@ export function LandingPage() {
               <Link href="/login">Войти</Link>
               <Link href="/register">Регистрация</Link>
               <Link href="#features">Возможности</Link>
+              <Link href="#ai">ИИ</Link>
               <Link href="#audiences">Для кого</Link>
             </div>
           </div>

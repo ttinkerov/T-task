@@ -10,6 +10,7 @@ import {
   type BoardViewMode,
 } from '@/features/boards';
 import { SavedFiltersControl } from '@/features/saved-filters';
+import { downloadExport } from '@/features/workspace-tools/api';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAllTasksQuery } from '../hooks';
@@ -160,6 +161,13 @@ export function AllTasksPage({
           filters={boardFiltersForSave}
           onApply={applySavedBoardFiltersSafe}
         />
+        <button
+          type="button"
+          className="board-filters__chip"
+          onClick={() => void downloadExport(workspaceId, 'tasks')}
+        >
+          CSV
+        </button>
         <input
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}

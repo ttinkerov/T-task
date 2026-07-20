@@ -6,6 +6,8 @@ export interface RateLimitConfig {
   keyPrefix: string;
   windowSeconds: number;
   maxAttempts: number;
+  /** Also enforce a shared budget keyed by route param workspaceId. */
+  includeWorkspaceId?: boolean;
 }
 
 export const RateLimit = (config: RateLimitConfig) => SetMetadata(RATE_LIMIT_KEY, config);

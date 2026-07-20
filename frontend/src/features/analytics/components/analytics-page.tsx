@@ -1,7 +1,9 @@
 'use client';
 
 import { useMemo, useState, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useBoardQuery } from '@/features/boards/hooks';
+import { fetchAnalyticsSummary } from '@/features/workspace-tools/api';
 import {
   buildWorkloadRows,
   filterTasksByAssignee,
@@ -35,6 +37,23 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
     () => resolveWorkloadDateRange(period, customFrom, customTo),
     [period, customFrom, customTo],
   );
+
+  const summaryQuery = useQuery({
+    queryKey: [
+      'analytics-summary',
+      workspaceId,
+      dateRange.from?.toISOString(),
+      dateRange.to?.toISOString(),
+    ],
+    queryFn: async () => {
+      const response = await fetchAnalyticsSummary(
+        workspaceId,
+        dateRange.from?.toISOString(),
+        dateRange.to?.toISOString(),
+      );
+      return response.data;
+    },
+  });
 
   const scopedTasks = useMemo(() => {
     if (!board) return [];
@@ -72,6 +91,35 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
           </p>
         </div>
       </header>
+
+      <div
+        className="analytics-summary-cards"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit,minmax(10rem,1fr))',
+          gap: '0.75rem',
+          marginBottom: '1.25rem',
+        }}
+      >
+        <article className="glass-card" style={{ padding: '0.9rem' }}>
+          <p className="text-sm text-muted-foreground">Throughput</p>
+          <p style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+            {summaryQuery.data?.throughput ?? '—'}
+          </p>
+        </article>
+        <article className="glass-card" style={{ padding: '0.9rem' }}>
+          <p className="text-sm text-muted-foreground">Avg cycle (ч)</p>
+          <p style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+            {summaryQuery.data?.avgCycleTimeHours ?? '—'}
+          </p>
+        </article>
+        <article className="glass-card" style={{ padding: '0.9rem' }}>
+          <p className="text-sm text-muted-foreground">Overdue</p>
+          <p style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+            {summaryQuery.data?.overdueCount ?? '—'}
+          </p>
+        </article>
+      </div>
 
       <div className="analytics-filters">
         <div className="analytics-filters__group">

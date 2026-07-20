@@ -57,8 +57,10 @@ export function useCreateFunnelMutation(workspaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (name: string) => {
-      const response = await createFunnel(workspaceId, name);
+    mutationFn: async (input: string | { name: string; templateId?: string }) => {
+      const name = typeof input === 'string' ? input : input.name;
+      const templateId = typeof input === 'string' ? undefined : input.templateId;
+      const response = await createFunnel(workspaceId, name, templateId);
       return response.data;
     },
     onSuccess: () => {

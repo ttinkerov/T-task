@@ -44,7 +44,7 @@ export class FunnelsService {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
 
     const funnel = await this.prisma.$transaction(async (tx) => {
-      const created = await createDefaultFunnel(tx, workspaceId, dto.name.trim());
+      const created = await createDefaultFunnel(tx, workspaceId, dto.name.trim(), dto.templateId);
       await this.activityService.record({
         workspaceId,
         actorId: userId,

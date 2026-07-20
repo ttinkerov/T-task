@@ -58,6 +58,14 @@ export async function updateMemberRole(workspaceId: string, memberId: string, ro
   });
 }
 
+export async function updateMemberScopes(workspaceId: string, memberId: string, scopes: string[]) {
+  return apiFetch<WorkspaceMember>(`/api/v1/workspaces/${workspaceId}/members/${memberId}/scopes`, {
+    method: 'PATCH',
+    headers: withWorkspace(workspaceId),
+    body: JSON.stringify({ scopes }),
+  });
+}
+
 export async function removeMember(workspaceId: string, memberId: string) {
   return apiFetch<{ success: boolean }>(`/api/v1/workspaces/${workspaceId}/members/${memberId}`, {
     method: 'DELETE',

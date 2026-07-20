@@ -7,6 +7,7 @@ describe('DueRemindersService', () => {
     notification: { createMany: vi.fn() },
     workspace: { findMany: vi.fn() },
     board: { findMany: vi.fn() },
+    user: { findMany: vi.fn().mockResolvedValue([]) },
     $transaction: vi.fn(),
   };
 
@@ -22,7 +23,7 @@ describe('DueRemindersService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new DueRemindersService(prisma as never, redis as never);
+    service = new DueRemindersService(prisma as never, redis as never, { emit: vi.fn() } as never);
     prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => Promise<unknown>) =>
       fn(prisma),
     );
@@ -35,9 +36,11 @@ describe('DueRemindersService', () => {
         id: 'task-1',
         title: 'Сдать отчёт',
         assigneeId: 'user-1',
+        dueDate: new Date('2030-01-01T12:00:00.000Z'),
         column: { board: { workspaceId: 'workspace-1' } },
       },
     ]);
+    prisma.user.findMany.mockResolvedValue([{ id: 'user-1', email: 'u@test.com', name: 'User' }]);
 
     await expect(service.syncBatch()).resolves.toBe(1);
     expect(prisma.notification.createMany).toHaveBeenCalledWith(

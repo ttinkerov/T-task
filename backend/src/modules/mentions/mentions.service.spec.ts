@@ -10,6 +10,13 @@ function makePrisma() {
       findMany: vi.fn().mockResolvedValue([]),
       createMany: vi.fn(),
     },
+    user: {
+      findUnique: vi.fn().mockResolvedValue({ name: 'Actor' }),
+      findMany: vi.fn().mockResolvedValue([
+        { email: 'a@test.com', name: 'A' },
+        { email: 'b@test.com', name: 'B' },
+      ]),
+    },
   };
 }
 
@@ -19,7 +26,7 @@ describe('MentionsService', () => {
 
   beforeEach(() => {
     prisma = makePrisma();
-    service = new MentionsService(prisma as never);
+    service = new MentionsService(prisma as never, { emit: vi.fn() } as never);
   });
 
   it('keeps only workspace members, excludes the actor, and normalizes labels', async () => {

@@ -1,5 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NotificationType, Prisma } from '@prisma/client';
+import { DomainEvents } from '../../common/events/domain-events';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { RedisService } from '../../infrastructure/redis/redis.service';
 import { countOverdueDays, isTaskOverdue, nextRolledDueDate } from '../boards/utils/overdue.util';
@@ -18,6 +20,7 @@ export class DueRemindersService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redisService: RedisService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   onModuleInit() {
@@ -63,6 +66,7 @@ export class DueRemindersService implements OnModuleInit, OnModuleDestroy {
         id: true,
         title: true,
         assigneeId: true,
+        dueDate: true,
         column: { select: { board: { select: { workspaceId: true } } } },
       },
       take: limit,
@@ -90,6 +94,25 @@ export class DueRemindersService implements OnModuleInit, OnModuleDestroy {
         data: { dueReminderSentAt: now },
       });
     });
+
+    const assignees = await this.prisma.user.findMany({
+      where: { id: { in: [...new Set(tasks.map((task) => task.assigneeId!))] } },
+      select: { id: true, email: true, name: true },
+    });
+    const byId = new Map(assignees.map((user) => [user.id, user]));
+
+    for (const task of tasks) {
+      const assignee = byId.get(task.assigneeId!);
+      if (!assignee || !task.dueDate) continue;
+      this.eventEmitter.emit(DomainEvents.DUE_REMINDER, {
+        workspaceId: task.column.board.workspaceId,
+        taskId: task.id,
+        taskTitle: task.title,
+        recipientEmail: assignee.email,
+        recipientName: assignee.name,
+        dueDate: task.dueDate.toISOString(),
+      });
+    }
 
     return tasks.length;
   }

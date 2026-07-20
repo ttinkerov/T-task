@@ -32,7 +32,7 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<
       Request & {
         user?: AuthenticatedUser;
-        workspaceMembership?: { workspaceId: string; role: WorkspaceRole };
+        workspaceMembership?: { workspaceId: string; role: WorkspaceRole; scopes?: string[] };
       }
     >();
 
@@ -73,6 +73,7 @@ export class RolesGuard implements CanActivate {
     request.workspaceMembership = {
       workspaceId,
       role: membership.role,
+      scopes: membership.scopes ?? [],
     };
 
     return true;

@@ -33,6 +33,7 @@ import { TaskDealsSection } from './task-deals-section';
 import { TaskRelationsSection } from './task-relations-section';
 import { TaskSubtasksSection } from './task-subtasks-section';
 import { TaskTagsSection } from './task-tags-section';
+import { TaskAiAssistant } from '@/features/ai';
 
 interface TaskDetailDrawerProps {
   workspaceId: string;
@@ -214,6 +215,12 @@ export function TaskDetailDrawer({
               placeholder="Подробности задачи… Введите @, чтобы упомянуть коллегу"
             />
           </label>
+
+          <TaskAiAssistant
+            workspaceId={workspaceId}
+            taskTitle={title}
+            taskDescription={description}
+          />
 
           <label className="task-drawer__field">
             <span>Исполнитель</span>

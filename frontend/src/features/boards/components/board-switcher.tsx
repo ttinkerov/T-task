@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import { fetchBoardTemplates, type BoardTemplate } from '@/features/workspace-tools/api';
 import {
   useBoardsQuery,
   useCreateBoardMutation,
@@ -39,8 +40,17 @@ export function BoardSwitcher({ workspaceId, boardId, onBoardChange }: BoardSwit
   const deleteMutation = useDeleteBoardMutation(workspaceId);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
+  const [templateId, setTemplateId] = useState('kanban');
+  const [templates, setTemplates] = useState<BoardTemplate[]>([]);
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
+
+  useEffect(() => {
+    if (!creating) return;
+    void fetchBoardTemplates(workspaceId)
+      .then((response) => setTemplates(response.data ?? []))
+      .catch(() => setTemplates([]));
+  }, [creating, workspaceId]);
 
   useEffect(() => {
     if (!boards.length) return;
@@ -57,9 +67,10 @@ export function BoardSwitcher({ workspaceId, boardId, onBoardChange }: BoardSwit
   const handleCreate = async (event: FormEvent) => {
     event.preventDefault();
     const name = newName.trim() || 'Новая доска';
-    const created = await createMutation.mutateAsync(name);
+    const created = await createMutation.mutateAsync({ name, templateId });
     setCreating(false);
     setNewName('');
+    setTemplateId('kanban');
     if (created?.id) onBoardChange(created.id);
   };
 
@@ -137,18 +148,32 @@ export function BoardSwitcher({ workspaceId, boardId, onBoardChange }: BoardSwit
             onChange={(event) => setNewName(event.target.value)}
             placeholder="Название доски"
             maxLength={80}
-            className="board-filters__search"
-            aria-label="Название новой доски"
+            className="glass-input"
             autoFocus
           />
-          <button
-            type="submit"
-            className="board-filters__chip board-filters__chip--active"
-            disabled={createMutation.isPending}
+          <select
+            value={templateId}
+            onChange={(event) => setTemplateId(event.target.value)}
+            className="board-filters__select"
+            aria-label="Шаблон доски"
           >
+            {(templates.length ? templates : [{ id: 'kanban', name: 'Канбан' }]).map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.name}
+              </option>
+            ))}
+          </select>
+          <button type="submit" className="btn-primary" disabled={createMutation.isPending}>
             Создать
           </button>
-          <button type="button" className="board-filters__reset" onClick={() => setCreating(false)}>
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => {
+              setCreating(false);
+              setNewName('');
+            }}
+          >
             Отмена
           </button>
         </form>

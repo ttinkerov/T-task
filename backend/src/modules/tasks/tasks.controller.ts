@@ -1,6 +1,8 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
+import { Scopes } from '../../common/auth/decorators/scopes.decorator';
+import { WorkspaceScope } from '../../common/auth/scopes';
 import { ALL_WORKSPACE_ROLES, MEMBER_PLUS_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
@@ -68,6 +70,7 @@ export class TasksController {
 
   @Delete(':taskId')
   @Roles(...MEMBER_PLUS_ROLES)
+  @Scopes(WorkspaceScope.TASK_DELETE)
   async remove(
     @Param('workspaceId') workspaceId: string,
     @Param('taskId') taskId: string,

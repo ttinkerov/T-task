@@ -34,6 +34,8 @@ export const ActivityAction = {
   DEAL_PURGED: 'DEAL_PURGED',
   APP_RESTORED: 'APP_RESTORED',
   APP_PURGED: 'APP_PURGED',
+  AI_SETTINGS_UPDATED: 'AI_SETTINGS_UPDATED',
+  AI_SETTINGS_DELETED: 'AI_SETTINGS_DELETED',
 } as const;
 
 export type ActivityAction = (typeof ActivityAction)[keyof typeof ActivityAction];
@@ -52,6 +54,7 @@ export const ActivityEntityType = {
   CUSTOM_FIELD: 'CUSTOM_FIELD',
   TASK: 'TASK',
   DEAL: 'DEAL',
+  AI: 'AI',
 } as const;
 
 export type ActivityEntityType = (typeof ActivityEntityType)[keyof typeof ActivityEntityType];

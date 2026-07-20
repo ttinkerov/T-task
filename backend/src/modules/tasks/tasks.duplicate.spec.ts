@@ -40,6 +40,7 @@ describe('TasksService.duplicate', () => {
       boardsService as never,
       { assertCanComplete: vi.fn() } as never,
       { prepare: vi.fn(), notify: vi.fn() } as never,
+      { emit: vi.fn() } as never,
     );
   });
 

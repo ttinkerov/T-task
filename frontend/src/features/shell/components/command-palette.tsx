@@ -1,9 +1,18 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, LayoutDashboard, Search, type LucideIcon } from 'lucide-react';
+import {
+  ArrowRight,
+  Handshake,
+  LayoutDashboard,
+  MessageSquareText,
+  Search,
+  SquareKanban,
+  type LucideIcon,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { searchWorkspace } from '@/features/workspace-tools/api';
 
 export interface CommandItem {
   id: string;
@@ -20,15 +29,17 @@ interface CommandPaletteProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   items: CommandItem[];
+  workspaceId?: string | null;
 }
 
-export function CommandPalette({ open, onOpenChange, items }: CommandPaletteProps) {
+export function CommandPalette({ open, onOpenChange, items, workspaceId }: CommandPaletteProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
+  const [remoteItems, setRemoteItems] = useState<CommandItem[]>([]);
 
-  const filtered = useMemo(() => {
+  const filteredNav = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return items;
     return items.filter((item) => {
@@ -38,9 +49,12 @@ export function CommandPalette({ open, onOpenChange, items }: CommandPaletteProp
     });
   }, [items, query]);
 
+  const filtered = useMemo(() => [...remoteItems, ...filteredNav], [filteredNav, remoteItems]);
+
   useEffect(() => {
     if (!open) return;
     setQuery('');
+    setRemoteItems([]);
     setActiveIndex(0);
     const id = window.setTimeout(() => inputRef.current?.focus(), 30);
     return () => window.clearTimeout(id);
@@ -48,7 +62,56 @@ export function CommandPalette({ open, onOpenChange, items }: CommandPaletteProp
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [query]);
+  }, [query, remoteItems]);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (!open || !workspaceId || q.length < 2) {
+      setRemoteItems([]);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void searchWorkspace(workspaceId, q)
+        .then((response) => {
+          if (cancelled || !response.data) return;
+          const next: CommandItem[] = [
+            ...response.data.tasks.map((task) => ({
+              id: `task-${task.id}`,
+              label: task.title,
+              group: 'Задачи',
+              href: task.href,
+              icon: SquareKanban,
+            })),
+            ...response.data.deals.map((deal) => ({
+              id: `deal-${deal.id}`,
+              label: deal.title,
+              group: 'Сделки',
+              href: deal.href,
+              icon: Handshake,
+            })),
+            ...response.data.comments.map((comment) => ({
+              id: `comment-${comment.id}`,
+              label: comment.preview,
+              hint: comment.taskTitle,
+              group: 'Комментарии',
+              href: comment.href,
+              icon: MessageSquareText,
+            })),
+          ];
+          setRemoteItems(next);
+        })
+        .catch(() => {
+          if (!cancelled) setRemoteItems([]);
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [open, query, workspaceId]);
 
   const runItem = useCallback(
     (item: CommandItem) => {

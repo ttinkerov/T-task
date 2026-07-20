@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { SecurityModule } from './common/security/security.module';
 import { AppConfigModule } from './config/config.module';
+import { MailModule } from './infrastructure/mail/mail.module';
+import { MailNotificationsListener } from './infrastructure/mail/mail-notifications.listener';
 import { PrismaModule } from './infrastructure/prisma/prisma.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
 import { IdentityModule } from './modules/identity/identity.module';
@@ -18,13 +21,19 @@ import { AppsModule } from './modules/apps/apps.module';
 import { TrashModule } from './modules/trash/trash.module';
 import { CalendarModule } from './modules/calendar/calendar.module';
 import { FiltersModule } from './modules/filters/filters.module';
+import { SearchModule } from './modules/search/search.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { ExportModule } from './modules/export/export.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot({ wildcard: false }),
     AppConfigModule,
     SecurityModule,
     PrismaModule,
     RedisModule,
+    MailModule,
     IdentityModule,
     WorkspacesModule,
     BoardsModule,
@@ -40,6 +49,11 @@ import { FiltersModule } from './modules/filters/filters.module';
     TrashModule,
     CalendarModule,
     FiltersModule,
+    SearchModule,
+    AnalyticsModule,
+    ExportModule,
+    AiModule,
   ],
+  providers: [MailNotificationsListener],
 })
 export class AppModule {}

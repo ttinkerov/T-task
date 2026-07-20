@@ -14,6 +14,13 @@ import { FunnelsService } from './funnels.service';
 export class FunnelsController {
   constructor(private readonly funnelsService: FunnelsService) {}
 
+  @Get('templates')
+  @Roles(...ALL_WORKSPACE_ROLES)
+  async listTemplates() {
+    const { FUNNEL_TEMPLATES } = await import('./templates/funnel-templates');
+    return successResponse(FUNNEL_TEMPLATES);
+  }
+
   @Get()
   @Roles(...ALL_WORKSPACE_ROLES)
   async listFunnels(

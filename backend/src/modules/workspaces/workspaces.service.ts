@@ -5,8 +5,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { WorkspaceRole, Prisma, TeamSize, WorkspaceUseCase } from '@prisma/client';
 import { generateRefreshToken, hashToken } from '../../common/auth/utils/token.util';
+import { DomainEvents } from '../../common/events/domain-events';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { InviteMemberDto } from './dto/invite-member.dto';
@@ -25,6 +27,7 @@ export class WorkspacesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly activityService: ActivityService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async listForUser(userId: string) {
@@ -195,9 +198,52 @@ export class WorkspacesService {
       id: member.id,
       userId: member.userId,
       role: member.role,
+      scopes: member.scopes ?? [],
       joinedAt: member.joinedAt,
       user: member.user,
     }));
+  }
+
+  async updateMemberScopes(
+    workspaceId: string,
+    actorUserId: string,
+    memberId: string,
+    scopes: string[],
+  ) {
+    const actorMembership = await this.getMembership(workspaceId, actorUserId);
+    if (
+      actorMembership.role !== WorkspaceRole.OWNER &&
+      actorMembership.role !== WorkspaceRole.ADMIN
+    ) {
+      throw new ForbiddenException('Insufficient permissions to change scopes');
+    }
+
+    const targetMember = await this.prisma.workspaceMember.findFirst({
+      where: { id: memberId, workspaceId },
+    });
+    if (!targetMember) {
+      throw new NotFoundException('Member not found');
+    }
+
+    const allowed = new Set(['CRM_WRITE', 'FORMS_WRITE', 'TASK_DELETE', 'DEAL_DELETE']);
+    const nextScopes = [...new Set(scopes.filter((scope) => allowed.has(scope)))];
+
+    const updated = await this.prisma.workspaceMember.update({
+      where: { id: memberId },
+      data: { scopes: nextScopes },
+      include: {
+        user: { select: { id: true, email: true, name: true, avatarUrl: true } },
+      },
+    });
+
+    return {
+      id: updated.id,
+      userId: updated.userId,
+      role: updated.role,
+      scopes: updated.scopes,
+      joinedAt: updated.joinedAt,
+      user: updated.user,
+    };
   }
 
   async updateMemberRole(
@@ -438,6 +484,25 @@ export class WorkspacesService {
         metadata: { role },
       });
       return created;
+    });
+
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { name: true },
+    });
+    const inviter = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+
+    this.eventEmitter.emit(DomainEvents.INVITATION_CREATED, {
+      workspaceId,
+      workspaceName: workspace?.name ?? 'Workspace',
+      invitationId: invitation.id,
+      email: invitation.email,
+      role: invitation.role,
+      token: rawToken,
+      inviterName: inviter?.name ?? 'Коллега',
     });
 
     return {

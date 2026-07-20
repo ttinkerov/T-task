@@ -18,11 +18,11 @@ export async function fetchFunnel(workspaceId: string, funnelId: string) {
   });
 }
 
-export async function createFunnel(workspaceId: string, name: string) {
+export async function createFunnel(workspaceId: string, name: string, templateId?: string) {
   return apiFetch<FunnelSummary>(`/api/v1/workspaces/${workspaceId}/funnels`, {
     method: 'POST',
     headers: withWorkspace(workspaceId),
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, ...(templateId ? { templateId } : {}) }),
   });
 }
 

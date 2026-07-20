@@ -86,6 +86,13 @@ enum ExternalAppProvider {
   AIRTABLE
 }
 
+enum AiProvider {
+  OPENAI
+  OPENROUTER
+  GROQ
+  CUSTOM
+}
+
 enum FormFieldType {
   SHORT_TEXT
   LONG_TEXT
@@ -162,6 +169,7 @@ model Workspace {
   savedFilters SavedFilter[]
   activityLogs ActivityLog[]
   notifications Notification[]
+  aiSetting     AiWorkspaceSetting?
 
   @@map("workspaces")
 }
@@ -171,6 +179,7 @@ model WorkspaceMember {
   workspaceId String        @map("workspace_id")
   userId      String        @map("user_id")
   role        WorkspaceRole
+  scopes      String[]      @default([])
   joinedAt    DateTime      @default(now()) @map("joined_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -645,4 +654,23 @@ model Notification {
   @@index([taskId])
   @@index([recipientId, commentId])
   @@map("notifications")
+}
+
+model AiWorkspaceSetting {
+  id              String     @id @default(cuid())
+  workspaceId     String     @unique @map("workspace_id")
+  provider        AiProvider @default(OPENAI)
+  baseUrl         String?    @map("base_url")
+  model           String
+  tokenCiphertext String     @map("token_ciphertext")
+  tokenIv         String     @map("token_iv")
+  tokenAuthTag    String     @map("token_auth_tag")
+  tokenLast4      String     @map("token_last4")
+  createdById     String?    @map("created_by_id")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("ai_workspace_settings")
 }

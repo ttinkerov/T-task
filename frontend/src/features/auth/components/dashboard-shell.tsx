@@ -22,6 +22,7 @@ import {
   PanelLeftOpen,
   Search,
   Settings,
+  Sparkles,
   Tags,
   Trash2,
   UserRound,
@@ -38,6 +39,7 @@ import { MobileBottomNav } from '@/features/shell/components/mobile-bottom-nav';
 import { useCanManageTrash } from '@/features/trash/hooks';
 import { WorkspaceSwitcher } from '@/features/workspaces/components/workspace-switcher';
 import { useWorkspaceStore } from '@/stores/workspace.store';
+import { useWorkspaceRealtime } from '@/shared/realtime';
 
 const COLLAPSE_KEY = 'ttask:sidebar-collapsed';
 
@@ -52,6 +54,7 @@ export function DashboardShell({
   const pathname = usePathname();
   const { data: session, isLoading, isError } = useMeQuery();
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
+  useWorkspaceRealtime(workspaceId);
   const logoutMutation = useLogoutMutation();
   const { canView: canViewActivity, isLoading: activityAccessLoading } = useCanViewActivity();
   const { canManage: canManageTrash, isLoading: trashAccessLoading } = useCanManageTrash();
@@ -118,6 +121,7 @@ export function DashboardShell({
           { href: '/dashboard/all-tasks', label: 'Все задачи', icon: ListTodo },
           { href: '/dashboard/my-tasks', label: 'Мои задачи', icon: UserRound },
           { href: '/dashboard/focus', label: 'Фокус', icon: Focus },
+          { href: '/dashboard/ai', label: 'ИИ', icon: Sparkles },
         ],
       },
       {
@@ -347,7 +351,12 @@ export function DashboardShell({
         </div>
       ) : null}
 
-      <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} items={commandItems} />
+      <CommandPalette
+        open={cmdOpen}
+        onOpenChange={setCmdOpen}
+        items={commandItems}
+        workspaceId={workspaceId}
+      />
     </div>
   );
 }

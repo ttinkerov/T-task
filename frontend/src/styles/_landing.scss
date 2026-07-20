@@ -858,6 +858,111 @@ $l-brand-muted: var(--tt-brand-muted);
   }
 }
 
+/* ── AI band ── */
+
+.tt-ai-band {
+  max-width: $landing-max-width;
+  margin: 0.5rem auto 0;
+  padding: 0 1.25rem 1rem;
+
+  @include md-up {
+    padding: 0 2rem 1.5rem;
+  }
+
+  &__inner {
+    display: grid;
+    gap: 2rem;
+    padding: 1.75rem 1.35rem;
+    border-radius: $radius-xl;
+    border: 1px solid color-mix(in srgb, var(--tt-brand) 28%, var(--tt-border));
+    background:
+      linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--tt-brand) 10%, var(--tt-surface)) 0%,
+        var(--tt-surface) 48%,
+        color-mix(in srgb, var(--tt-text) 3%, var(--tt-surface)) 100%
+      );
+    box-shadow: var(--tt-shadow);
+
+    @include md-up {
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 2.5rem;
+      align-items: center;
+      padding: 2.35rem 2.5rem;
+    }
+  }
+
+  &__copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  &__title {
+    margin: 0.55rem 0 0;
+    font-family: 'Ttask', var(--font-inter), sans-serif;
+    font-size: clamp(1.85rem, 4vw, 2.55rem);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    text-wrap: balance;
+    color: $l-text;
+  }
+
+  &__text {
+    margin: 0.9rem 0 1.35rem;
+    max-width: 32rem;
+    font-size: 1rem;
+    line-height: 1.55;
+    color: $l-text-muted;
+    text-wrap: pretty;
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__list li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.85rem;
+    align-items: flex-start;
+  }
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: $radius-sm;
+    background: var(--tt-brand-muted);
+    color: $l-brand;
+    flex-shrink: 0;
+  }
+
+  &__list strong {
+    display: block;
+    font-size: 0.9375rem;
+    font-weight: 650;
+    letter-spacing: -0.015em;
+    color: $l-text;
+  }
+
+  &__list p {
+    margin: 0.25rem 0 0;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    color: $l-text-muted;
+  }
+}
+
 .tt-steps {
   display: grid;
   gap: 0.75rem;
