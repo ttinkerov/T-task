@@ -40,6 +40,15 @@ describe('TaskAttachmentsService', () => {
 
     await expect(
       service.upload('workspace-1', 'task-1', 'user-1', {
+        originalname: 'fake.png',
+        mimetype: 'image/png',
+        size: 100,
+        buffer: Buffer.from('not-a-png'),
+      } as Express.Multer.File),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    await expect(
+      service.upload('workspace-1', 'task-1', 'user-1', {
         originalname: 'big.png',
         mimetype: 'image/png',
         size: 6 * 1024 * 1024,

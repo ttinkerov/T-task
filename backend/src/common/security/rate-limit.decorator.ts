@@ -13,7 +13,7 @@ export const RateLimit = (config: RateLimitConfig) => SetMetadata(RATE_LIMIT_KEY
 export const DEFAULT_AUTH_RATE_LIMIT: RateLimitConfig = {
   keyPrefix: 'auth:rate',
   windowSeconds: 60,
-  maxAttempts: 20,
+  maxAttempts: 5,
 };
 
 export const PUBLIC_FORM_GET_RATE_LIMIT: RateLimitConfig = {

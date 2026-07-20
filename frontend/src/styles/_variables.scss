@@ -21,8 +21,8 @@ $color-brand-blue: var(--tt-brand);
 $color-brand-blue-hover: var(--tt-brand-hover);
 $color-brand-blue-muted: var(--tt-brand-muted);
 
-$color-brand-green: #20a663;
-$color-brand-green-muted: rgba(32, 166, 99, 0.14);
+$color-brand-green: var(--tt-success);
+$color-brand-green-muted: var(--tt-success-muted);
 
 $color-apple-gray: #f5f5f7;
 $color-apple-surface: #1d1d1f;
@@ -40,9 +40,10 @@ $color-yellow-btn-bg: transparent;
 $color-yellow-btn-hover: $color-brand-blue-muted;
 $color-yellow-glow: transparent;
 $color-surface: $color-bg-elevated;
-$color-surface-hover: $color-bg-card;
+$color-surface-hover: var(--tt-surface-hover);
 
-$font-display-fallback: 'Ttask', system-ui, sans-serif;
+$font-ui: 'Inter', 'Ttask', system-ui, -apple-system, sans-serif;
+$font-display-fallback: 'Ttask', 'Inter', system-ui, sans-serif;
 
 $radius-sm: 8px;
 $radius-md: 12px;
@@ -50,9 +51,13 @@ $radius-lg: 16px;
 $radius-xl: 20px;
 $radius-pill: 980px;
 
-$transition: 0.2s;
-$transition-fast: 0.15s;
+$transition: var(--tt-duration);
+$transition-fast: var(--tt-duration-fast);
 $breakpoint-md: 768px;
 $breakpoint-lg: 1100px;
 
 $landing-max-width: 68rem;
+$sidebar-width: 248px;
+$sidebar-collapsed: 68px;
+$topbar-height: 52px;
+$mobile-nav-height: 64px;

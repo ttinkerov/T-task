@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
-import { WorkspaceRole } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
+import { MEMBER_PLUS_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { CreateDealDto } from './dto/create-deal.dto';
@@ -14,7 +14,7 @@ export class DealsController {
   constructor(private readonly dealsService: DealsService) {}
 
   @Post()
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async create(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -25,7 +25,7 @@ export class DealsController {
   }
 
   @Patch(':dealId')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async update(
     @Param('workspaceId') workspaceId: string,
     @Param('dealId') dealId: string,
@@ -37,7 +37,7 @@ export class DealsController {
   }
 
   @Patch(':dealId/move')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async move(
     @Param('workspaceId') workspaceId: string,
     @Param('dealId') dealId: string,
@@ -49,7 +49,7 @@ export class DealsController {
   }
 
   @Delete(':dealId')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async remove(
     @Param('workspaceId') workspaceId: string,
     @Param('dealId') dealId: string,

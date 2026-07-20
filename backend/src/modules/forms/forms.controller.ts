@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
-import { WorkspaceRole } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
+import { ALL_WORKSPACE_ROLES, MEMBER_PLUS_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { CreateFormFieldDto } from './dto/create-form-field.dto';
@@ -15,14 +15,14 @@ export class FormsController {
   constructor(private readonly formsService: FormsService) {}
 
   @Get()
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async list(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     const forms = await this.formsService.list(workspaceId, user.id);
     return successResponse(forms);
   }
 
   @Post()
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async create(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -33,7 +33,7 @@ export class FormsController {
   }
 
   @Get(':formId')
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async get(
     @Param('workspaceId') workspaceId: string,
     @Param('formId') formId: string,
@@ -44,7 +44,7 @@ export class FormsController {
   }
 
   @Patch(':formId')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async update(
     @Param('workspaceId') workspaceId: string,
     @Param('formId') formId: string,
@@ -56,7 +56,7 @@ export class FormsController {
   }
 
   @Delete(':formId')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async remove(
     @Param('workspaceId') workspaceId: string,
     @Param('formId') formId: string,
@@ -67,7 +67,7 @@ export class FormsController {
   }
 
   @Post(':formId/fields')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async addField(
     @Param('workspaceId') workspaceId: string,
     @Param('formId') formId: string,
@@ -79,7 +79,7 @@ export class FormsController {
   }
 
   @Patch(':formId/fields/:fieldId')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async updateField(
     @Param('workspaceId') workspaceId: string,
     @Param('formId') formId: string,
@@ -92,7 +92,7 @@ export class FormsController {
   }
 
   @Delete(':formId/fields/:fieldId')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async removeField(
     @Param('workspaceId') workspaceId: string,
     @Param('formId') formId: string,
@@ -104,7 +104,7 @@ export class FormsController {
   }
 
   @Get(':formId/responses')
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async responses(
     @Param('workspaceId') workspaceId: string,
     @Param('formId') formId: string,

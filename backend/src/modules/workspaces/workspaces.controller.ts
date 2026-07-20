@@ -3,6 +3,7 @@ import { WorkspaceRole } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Public } from '../../common/auth/decorators/public.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
+import { ALL_WORKSPACE_ROLES, ADMIN_PLUS_ROLES } from '../../common/auth/workspace-roles';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
@@ -29,14 +30,14 @@ export class WorkspacesController {
   }
 
   @Get(':workspaceId')
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async getOne(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     const workspace = await this.workspacesService.getWorkspaceForMember(workspaceId, user.id);
     return successResponse(workspace);
   }
 
   @Patch(':workspaceId')
-  @Roles(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ADMIN_PLUS_ROLES)
   async update(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -47,7 +48,7 @@ export class WorkspacesController {
   }
 
   @Post(':workspaceId/archive')
-  @Roles(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ADMIN_PLUS_ROLES)
   async archive(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     const result = await this.workspacesService.archive(workspaceId, user.id);
     return successResponse(result);
@@ -61,7 +62,7 @@ export class WorkspacesController {
   }
 
   @Get(':workspaceId/members')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER, WorkspaceRole.VIEWER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async listMembers(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -71,7 +72,7 @@ export class WorkspacesController {
   }
 
   @Patch(':workspaceId/members/:memberId')
-  @Roles(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ADMIN_PLUS_ROLES)
   async updateMemberRole(
     @Param('workspaceId') workspaceId: string,
     @Param('memberId') memberId: string,
@@ -88,7 +89,7 @@ export class WorkspacesController {
   }
 
   @Delete(':workspaceId/members/:memberId')
-  @Roles(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ADMIN_PLUS_ROLES)
   async removeMember(
     @Param('workspaceId') workspaceId: string,
     @Param('memberId') memberId: string,
@@ -99,7 +100,7 @@ export class WorkspacesController {
   }
 
   @Get(':workspaceId/invitations')
-  @Roles(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ADMIN_PLUS_ROLES)
   async listInvitations(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -109,7 +110,7 @@ export class WorkspacesController {
   }
 
   @Post(':workspaceId/invitations')
-  @Roles(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ADMIN_PLUS_ROLES)
   async createInvitation(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -120,7 +121,7 @@ export class WorkspacesController {
   }
 
   @Delete(':workspaceId/invitations/:invitationId')
-  @Roles(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ADMIN_PLUS_ROLES)
   async revokeInvitation(
     @Param('workspaceId') workspaceId: string,
     @Param('invitationId') invitationId: string,

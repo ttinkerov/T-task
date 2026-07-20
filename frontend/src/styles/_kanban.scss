@@ -472,24 +472,30 @@
 }
 
 .kanban-task-card {
-  border-radius: $radius-sm;
+  border-radius: $radius-md;
   border: 1px solid $color-border-subtle;
-  background: $color-bg-card;
-  padding: 0.5625rem 0.625rem;
+  background: var(--tt-surface);
+  padding: 0.625rem 0.7rem;
   cursor: pointer;
+  box-shadow: var(--tt-shadow-sm);
   transition:
-    border-color $transition-fast,
-    background $transition-fast;
+    border-color var(--tt-duration-fast),
+    background var(--tt-duration-fast),
+    box-shadow var(--tt-duration-fast),
+    transform var(--tt-duration-fast) var(--tt-ease-out);
 
   &:hover {
-    border-color: var(--tt-border);
-    background: var(--tt-surface-hover);
+    border-color: color-mix(in srgb, var(--tt-brand) 22%, var(--tt-border));
+    background: var(--tt-surface);
+    box-shadow: var(--tt-shadow-lift);
+    transform: translateY(-1px);
   }
 
   &--dragging {
-    box-shadow: var(--tt-shadow);
+    box-shadow: var(--tt-shadow-lg);
     cursor: grabbing;
     border-color: $color-brand-blue;
+    transform: scale(1.02) rotate(0.35deg);
   }
 
   &--overdue {

@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { WorkspaceRole } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
+import { ALL_WORKSPACE_ROLES, MEMBER_PLUS_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
@@ -14,7 +14,7 @@ export class AppsController {
   constructor(private readonly appsService: AppsService) {}
 
   @Get()
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async list(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     return successResponse(await this.appsService.list(workspaceId, user.id));
   }
@@ -22,7 +22,7 @@ export class AppsController {
   @Post()
   @UseGuards(AuthRateLimitGuard)
   @RateLimit({ keyPrefix: 'apps:create', windowSeconds: 60, maxAttempts: 30 })
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async create(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -34,7 +34,7 @@ export class AppsController {
   @Delete(':appId')
   @UseGuards(AuthRateLimitGuard)
   @RateLimit({ keyPrefix: 'apps:delete', windowSeconds: 60, maxAttempts: 30 })
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async remove(
     @Param('workspaceId') workspaceId: string,
     @Param('appId') appId: string,

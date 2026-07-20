@@ -1,5 +1,6 @@
 'use client';
 
+import { Bell } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -57,7 +58,7 @@ export function NotificationBell({ workspaceId }: { workspaceId: string | null }
         aria-expanded={open}
         aria-controls="notification-inbox"
       >
-        <span aria-hidden="true">🔔</span>
+        <Bell size={16} strokeWidth={1.75} aria-hidden="true" />
         {inbox?.unreadCount ? (
           <span className="notification-bell__count" aria-hidden="true">
             {inbox.unreadCount > 99 ? '99+' : inbox.unreadCount}

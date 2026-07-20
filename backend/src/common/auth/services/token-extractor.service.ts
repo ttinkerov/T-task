@@ -15,18 +15,7 @@ export class TokenExtractorService {
 
   extractAccessToken(request: Request): string | null {
     const cookieToken = request.cookies?.[ACCESS_TOKEN_COOKIE] as string | undefined;
-
-    if (cookieToken) {
-      return cookieToken;
-    }
-
-    const authorization = request.headers.authorization;
-
-    if (authorization?.startsWith('Bearer ')) {
-      return authorization.slice(7);
-    }
-
-    return null;
+    return cookieToken || null;
   }
 
   verifyAccessToken(token: string): JwtPayload {

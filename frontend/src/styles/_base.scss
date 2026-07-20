@@ -7,18 +7,35 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  background: var(--tt-bg);
+  background: var(--tt-bg-mesh);
+  background-attachment: fixed;
   color: var(--tt-text);
-  font-family: 'Ttask', system-ui, sans-serif;
+  font-family: var(--font-inter), 'Inter', 'Ttask', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  letter-spacing: -0.011em;
   min-height: 100vh;
   overflow-x: hidden;
 }
 
+::selection {
+  background: var(--tt-brand-muted);
+  color: var(--tt-text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--tt-ring);
+  outline-offset: 2px;
+}
+
 .app-shell {
-  background: var(--tt-bg);
+  background: transparent;
   color: var(--tt-text);
 }
 
@@ -36,4 +53,19 @@ body {
   white-space: nowrap;
   border: 0;
   padding: 0;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,9 +1,24 @@
 'use client';
 
+import { motion } from 'framer-motion';
+import {
+  ArrowRight,
+  BarChart3,
+  Building2,
+  CalendarClock,
+  ClipboardList,
+  FormInput,
+  Kanban,
+  Layers3,
+  Repeat2,
+  Rocket,
+  Timer,
+  Workflow,
+  Globe2,
+} from 'lucide-react';
 import Link from 'next/link';
 import { BrandLogo } from './brand-logo';
 import { Kanban3DScene } from './kanban-3d-scene';
-import { LandingBackground } from './landing-background';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 
 const navLinks = [
@@ -12,89 +27,51 @@ const navLinks = [
   { label: 'Для кого', href: '#audiences' },
 ];
 
-const logos = [
-  'Product teams',
-  'Digital-агентства',
-  'Стартапы',
-  'Удалённые команды',
-  'Маркетинг',
-  'Разработка',
-  'Дизайн-студии',
-  'Фриланс',
-];
-
 const features = [
   {
-    icon: '↗',
-    title: 'Приложения',
-    text: 'Прикрепляйте Google Документы и Таблицы, макеты Figma, доски Miro и базы Airtable — просматривайте рабочие ресурсы прямо в T-task.',
-    tone: 'green',
+    icon: Kanban,
+    title: 'Kanban без шума',
+    text: 'Колонки, приоритеты, теги и дедлайны — плотный интерфейс, который не мешает думать.',
   },
   {
-    icon: '⚡',
+    icon: Workflow,
     title: 'Автоматизация колонок',
-    text: 'Настройте действия при попадании задачи в колонку: назначьте исполнителя, запустите учёт времени или автоматически завершите работу.',
-    tone: 'blue',
+    text: 'Назначение, таймер и завершение срабатывают сами, когда карточка попадает в нужный статус.',
   },
   {
-    icon: '⏰',
-    title: 'Просроченные задачи',
-    text: 'Следите за дедлайнами, фильтруйте просрочку и автоматически переносите задачи на следующий день — со счётчиком дней просрочки для всей команды.',
-    tone: 'green',
-  },
-  {
-    icon: '🔁',
-    title: 'Повторяющиеся задачи',
-    text: 'Настройте регулярное повторение — при выполнении задача автоматически создастся снова или перенесётся на следующий срок: каждый день, неделю, месяц или в выбранные дни.',
-    tone: 'violet',
-  },
-  {
-    icon: '🍅',
-    title: 'Pomodoro-таймер',
-    text: 'Чередуйте фокус и отдых с настраиваемыми интервалами. Звуковой сигнал напомнит переключиться — оставайтесь продуктивными без выгорания.',
-    tone: 'blue',
-  },
-  {
-    icon: '📝',
-    title: 'Формы',
-    text: 'Создавайте опросы с разными типами полей, делитесь ссылкой и собирайте ответы. Статистика по вариантам и автоматическое создание задач на доске.',
-    tone: 'violet',
-  },
-  {
-    icon: '🎯',
+    icon: ClipboardList,
     title: 'CRM-воронки',
-    text: 'Воронки работают как канбан-доски, только со сделками. Распределяйте заявки по этапам и отслеживайте путь клиента от первого контакта до покупки.',
-    tone: 'green',
+    text: 'Сделки живут рядом с задачами. Связывайте заявки и работу команды без отдельного зоопарка инструментов.',
   },
   {
-    icon: '📊',
-    title: 'Аналитика',
-    text: 'Контролируйте прогресс каждого участника. Выберите период и сотрудника — и изучите, над какими задачами работал человек, сравнив план и факт.',
-    tone: 'green',
+    icon: CalendarClock,
+    title: 'Дедлайны и напоминания',
+    text: 'Просрочка видна сразу. Напоминания о сроках приходят в колокольчик, а не теряются в почте.',
   },
   {
-    icon: '⏱',
-    title: 'Оценка времени',
-    text: 'Каждую задачу можно оценить по времени. Это поможет просмотреть загрузку каждого сотрудника на день или общую загрузку по проекту. Ещё так можно сравнить план и факт трудозатрат.',
-    tone: 'violet',
+    icon: Repeat2,
+    title: 'Повторяющиеся задачи',
+    text: 'Ежедневные и недельные ритмы: задача сама возвращается после завершения.',
   },
   {
-    icon: '▦',
-    title: 'Kanban-доски',
-    text: 'Колонки, статусы, приоритеты и дедлайны — всё на одной доске.',
-    tone: 'blue',
+    icon: FormInput,
+    title: 'Формы → задачи',
+    text: 'Публичные формы собирают заявки и при желании сразу кладут их на доску.',
   },
   {
-    icon: '◎',
-    title: 'Workspaces',
-    text: 'Отдельные пространства для команд с ролями и приглашениями.',
-    tone: 'blue',
+    icon: BarChart3,
+    title: 'Аналитика нагрузки',
+    text: 'План и факт по людям и периодам — без тяжёлых отчётов «ради отчётов».',
   },
   {
-    icon: '⚡',
-    title: 'Быстрый старт',
-    text: 'Регистрация, онбординг и первая доска — за пару минут.',
-    tone: 'blue',
+    icon: Timer,
+    title: 'Фокус и Pomodoro',
+    text: 'Встроенный таймер помогает держать ритм, когда день расползается на мелочи.',
+  },
+  {
+    icon: Layers3,
+    title: 'Несколько досок',
+    text: 'Проекты внутри workspace переключаются мгновенно — без потери контекста.',
   },
 ];
 
@@ -102,51 +79,47 @@ const steps = [
   {
     num: '01',
     title: 'Создайте аккаунт',
-    text: 'Укажите имя, email и пароль — без лишних полей.',
-    cta: 'Регистрация',
-    href: '/register',
+    text: 'Имя, email, пароль — и вы внутри. Без онбординга на полчаса.',
   },
   {
     num: '02',
-    title: 'Настройте команду',
-    text: 'Назовите workspace, пригласите коллег и назначьте роли.',
-    cta: 'Пригласить',
-    href: '/register',
+    title: 'Соберите команду',
+    text: 'Workspace, роли и приглашения. Каждый видит только своё пространство.',
   },
   {
     num: '03',
     title: 'Запустите доску',
-    text: 'Создавайте задачи, двигайте карточки и ведите спринты.',
-    cta: 'Открыть доску',
-    href: '/register',
+    text: 'Карточки, фильтры, ⌘K и чекбоксы — как в инструментах, к которым уже привыкли.',
   },
 ];
 
 const audiences = [
   {
-    icon: '🚀',
+    icon: Rocket,
     title: 'Стартапам',
-    text: 'Запустите первую доску за минуты — без долгой настройки и сложных инструкций.',
-    tone: 'violet',
+    text: 'Первая доска за минуты. Скорость важнее «enterprise-настроек».',
   },
   {
-    icon: '🏢',
+    icon: Building2,
     title: 'Агентствам',
-    text: 'Отдельный workspace под каждого клиента: задачи, роли и доступы не смешиваются.',
-    tone: 'blue',
+    text: 'Отдельный workspace на клиента: задачи и доступы не смешиваются.',
   },
   {
-    icon: '🌍',
+    icon: Globe2,
     title: 'Удалённым командам',
-    text: 'Видно, кто за что отвечает: assignee, приоритеты, комментарии и статусы на доске.',
-    tone: 'green',
+    text: 'Assignee, статусы и активность — видно, кто за что отвечает сегодня.',
   },
 ];
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0 },
+};
 
 export function LandingPage() {
   return (
     <div className="tt-landing">
-      <LandingBackground />
+      <div className="tt-landing-glow" aria-hidden="true" />
 
       <div className="tt-landing__content">
         <header className="tt-nav-wrap">
@@ -173,110 +146,143 @@ export function LandingPage() {
           </nav>
         </header>
 
-        <section className="tt-hero tt-hero--centered">
-          <div className="tt-hero__copy">
-            <h1 className="tt-hero__title">
-              Виртуальный офис
+        <section className="tt-hero">
+          <motion.div
+            className="tt-hero__copy"
+            initial="hidden"
+            animate="show"
+            transition={{ staggerChildren: 0.08 }}
+          >
+            <motion.h1 className="tt-hero__brand" variants={fadeUp}>
+              T-task
+            </motion.h1>
+            <motion.p className="tt-hero__title" variants={fadeUp}>
+              Задачи, которые ощущаются
               <br />
-              для ваших задач
-            </h1>
-            <p className="tt-hero__text">
-              Канбан-доски, workspaces и роли в одном сервисе — прозрачные процессы, понятный
-              интерфейс и фокус на результате.
-            </p>
-            <div className="tt-hero__actions">
-              <Link href="/register" className="tt-btn tt-btn--primary tt-btn--pill tt-btn--lg">
+              дорого в руках
+            </motion.p>
+            <motion.p className="tt-hero__text" variants={fadeUp}>
+              Канбан, CRM и фокус в одном плотном интерфейсе — без шаблонного SaaS-шума.
+            </motion.p>
+            <motion.div className="tt-hero__actions" variants={fadeUp}>
+              <Link href="/register" className="tt-btn tt-btn--primary tt-btn--lg">
                 Начать бесплатно
+                <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
               </Link>
-              <Link href="#demo" className="tt-btn tt-btn--secondary tt-btn--pill tt-btn--lg">
-                Попробовать демо
+              <Link href="#demo" className="tt-btn tt-btn--secondary tt-btn--lg">
+                Смотреть продукт
               </Link>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
-          <div className="tt-marquee" aria-hidden="true">
-            <div className="tt-marquee__track">
-              {[...logos, ...logos].map((logo, index) => (
-                <span key={`${logo}-${index}`} className="tt-marquee__item">
-                  {logo}
-                </span>
-              ))}
+          <motion.div
+            id="demo"
+            className="tt-hero__stage"
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div className="tt-hero__stage-chrome">
+              <span />
+              <span />
+              <span />
+              <em>Доска · Live preview</em>
             </div>
-          </div>
-
-          <div id="demo" className="tt-hero__demo">
-            <Kanban3DScene />
-          </div>
+            <div className="tt-hero__stage-body">
+              <Kanban3DScene />
+            </div>
+          </motion.div>
         </section>
 
         <section id="features" className="tt-section">
-          <div className="tt-section__head tt-section__head--center">
-            <h2 className="tt-section__title">Всё для работы команды</h2>
+          <div className="tt-section__head">
+            <p className="tt-section__eyebrow">Возможности</p>
+            <h2 className="tt-section__title">Всё нужное — и ничего лишнего</h2>
             <p className="tt-section__subtitle">
-              Несколько инструментов в одном месте — без лишней сложности
+              Инструмент на каждый день: плотный, спокойный, с тактильным откликом.
             </p>
           </div>
 
           <div className="tt-feature-grid">
-            {features.map((feature) => (
-              <article
-                key={feature.title}
-                className={`tt-feature-card tt-feature-card--${feature.tone}`}
-              >
-                <span className="tt-feature-card__icon" aria-hidden="true">
-                  {feature.icon}
-                </span>
-                <h3>{feature.title}</h3>
-                <p>{feature.text}</p>
-              </article>
-            ))}
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <motion.article
+                  key={feature.title}
+                  className="tt-feature-card"
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ delay: index * 0.04, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <span className="tt-feature-card__icon" aria-hidden="true">
+                    <Icon size={18} strokeWidth={1.75} />
+                  </span>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.text}</p>
+                </motion.article>
+              );
+            })}
           </div>
         </section>
 
         <section id="howto" className="tt-section tt-section--panel">
-          <div className="tt-section__head tt-section__head--center">
-            <h2 className="tt-section__title">Как начать</h2>
-            <p className="tt-section__subtitle">Три шага до первой доски</p>
+          <div className="tt-section__head">
+            <p className="tt-section__eyebrow">Старт</p>
+            <h2 className="tt-section__title">Три шага до первой доски</h2>
           </div>
 
           <div className="tt-steps">
-            {steps.map((step) => (
-              <article key={step.num} className="tt-step-card">
+            {steps.map((step, index) => (
+              <motion.article
+                key={step.num}
+                className="tt-step-card"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.08, duration: 0.4 }}
+              >
                 <span className="tt-step-card__num">{step.num}</span>
                 <h3>{step.title}</h3>
                 <p>{step.text}</p>
-                <Link href={step.href} className="tt-step-card__link">
-                  {step.cta} →
-                </Link>
-              </article>
+              </motion.article>
             ))}
           </div>
         </section>
 
         <section id="audiences" className="tt-section">
-          <div className="tt-section__head tt-section__head--center">
+          <div className="tt-section__head">
+            <p className="tt-section__eyebrow">Аудитория</p>
             <h2 className="tt-section__title">Для кого подходит</h2>
             <p className="tt-section__subtitle">
-              T-task заточен под небольшие команды, которым нужен порядок без перегруза
+              Малые команды, которым нужен порядок без корпоративного перегруза.
             </p>
           </div>
 
           <div className="tt-audience-grid">
-            {audiences.map((audience) => (
-              <article
-                key={audience.title}
-                className={`tt-audience-card tt-audience-card--${audience.tone}`}
-              >
-                <span className="tt-audience-card__icon" aria-hidden="true">
-                  {audience.icon}
-                </span>
-                <h3>{audience.title}</h3>
-                <p>{audience.text}</p>
-                <Link href="/register" className="tt-audience-card__link">
-                  Начать бесплатно →
-                </Link>
-              </article>
-            ))}
+            {audiences.map((audience, index) => {
+              const Icon = audience.icon;
+              return (
+                <motion.article
+                  key={audience.title}
+                  className="tt-audience-card"
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.06, duration: 0.4 }}
+                >
+                  <span className="tt-audience-card__icon" aria-hidden="true">
+                    <Icon size={20} strokeWidth={1.75} />
+                  </span>
+                  <h3>{audience.title}</h3>
+                  <p>{audience.text}</p>
+                  <Link href="/register" className="tt-audience-card__link">
+                    Начать бесплатно
+                    <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
+                  </Link>
+                </motion.article>
+              );
+            })}
           </div>
         </section>
 
@@ -284,10 +290,11 @@ export function LandingPage() {
           <div className="tt-cta-banner__inner">
             <div className="tt-cta-banner__copy">
               <h2>Готовы навести порядок в задачах?</h2>
-              <p>Бесплатный старт для команд до 50 человек. Без карты.</p>
+              <p>Бесплатный старт для команд. Без карты и без «enterprise-демо».</p>
             </div>
-            <Link href="/register" className="tt-btn tt-btn--primary tt-btn--pill tt-btn--lg">
-              Начать бесплатно
+            <Link href="/register" className="tt-btn tt-btn--primary tt-btn--lg">
+              Создать workspace
+              <ArrowRight size={16} strokeWidth={2} aria-hidden="true" />
             </Link>
           </div>
         </section>
@@ -295,7 +302,7 @@ export function LandingPage() {
         <footer className="tt-footer">
           <div className="tt-footer__inner">
             <div>
-              <p className="tt-footer__logo">T-task</p>
+              <BrandLogo href="/" />
               <p className="tt-footer__text">Управление проектами для малых команд</p>
             </div>
             <div className="tt-footer__links">

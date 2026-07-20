@@ -9,9 +9,10 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { SavedFilterView, WorkspaceRole } from '@prisma/client';
+import { SavedFilterView } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
+import { ALL_WORKSPACE_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
@@ -31,7 +32,7 @@ export class SavedFiltersController {
   constructor(private readonly savedFiltersService: SavedFiltersService) {}
 
   @Get()
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async list(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -43,7 +44,7 @@ export class SavedFiltersController {
   @Post()
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(FILTER_MUTATE_RATE_LIMIT)
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async create(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -55,7 +56,7 @@ export class SavedFiltersController {
   @Patch(':filterId')
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(FILTER_MUTATE_RATE_LIMIT)
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async update(
     @Param('workspaceId') workspaceId: string,
     @Param('filterId') filterId: string,
@@ -70,7 +71,7 @@ export class SavedFiltersController {
   @Delete(':filterId')
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(FILTER_MUTATE_RATE_LIMIT)
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async remove(
     @Param('workspaceId') workspaceId: string,
     @Param('filterId') filterId: string,

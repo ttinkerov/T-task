@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
-import { WorkspaceRole } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
+import { ADMIN_PLUS_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
@@ -16,7 +16,7 @@ export class ActivityController {
   @Get()
   @UseGuards(AuthRateLimitGuard)
   @RateLimit({ keyPrefix: 'activity:list', windowSeconds: 60, maxAttempts: 60 })
-  @Roles(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ADMIN_PLUS_ROLES)
   async list(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,

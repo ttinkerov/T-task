@@ -31,11 +31,13 @@
     top: calc(100% + 0.7rem);
     right: 0;
     width: min(25rem, calc(100vw - 2rem));
-    border: 1px solid var(--tt-border);
+    border: 1px solid var(--tt-glass-border);
     border-radius: $radius-lg;
-    background: var(--tt-surface-strong);
+    background: var(--tt-glass);
+    backdrop-filter: blur(20px) saturate(1.2);
+    -webkit-backdrop-filter: blur(20px) saturate(1.2);
     overflow: hidden;
-    box-shadow: 0 20px 55px var(--tt-shadow);
+    box-shadow: var(--tt-shadow-lg);
 
     > header {
       display: flex;

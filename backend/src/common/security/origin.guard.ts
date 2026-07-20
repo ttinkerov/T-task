@@ -1,17 +1,12 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
-import { IS_PUBLIC_KEY } from '../auth/decorators/public.decorator';
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 @Injectable()
 export class OriginGuard implements CanActivate {
-  constructor(
-    private readonly reflector: Reflector,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private readonly configService: ConfigService) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
@@ -21,18 +16,15 @@ export class OriginGuard implements CanActivate {
     }
 
     const origin = request.headers.origin;
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
 
+    // Cookie-authenticated browsers always send Origin on cross-origin and same-origin
+    // fetch/XHR mutations. Require it in production to block CSRF from non-browser clients
+    // that omit Origin while still carrying cookies.
     if (!origin) {
-      const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
-      const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-        context.getHandler(),
-        context.getClass(),
-      ]);
-
-      if (isProduction && isPublic) {
+      if (isProduction) {
         throw new ForbiddenException('Origin header is required');
       }
-
       return true;
     }
 

@@ -1,7 +1,11 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
-import { WorkspaceRole } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
+import {
+  ALL_WORKSPACE_ROLES,
+  MEMBER_PLUS_ROLES,
+  ADMIN_PLUS_ROLES,
+} from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
@@ -22,7 +26,7 @@ export class TagsController {
   constructor(private readonly tagsService: TagsService) {}
 
   @Get()
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async list(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     return successResponse(await this.tagsService.list(workspaceId, user.id));
   }
@@ -30,7 +34,7 @@ export class TagsController {
   @Post()
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(TAG_MUTATE_RATE_LIMIT)
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async create(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -42,7 +46,7 @@ export class TagsController {
   @Patch(':tagId')
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(TAG_MUTATE_RATE_LIMIT)
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async update(
     @Param('workspaceId') workspaceId: string,
     @Param('tagId') tagId: string,
@@ -55,7 +59,7 @@ export class TagsController {
   @Delete(':tagId')
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(TAG_MUTATE_RATE_LIMIT)
-  @Roles(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ADMIN_PLUS_ROLES)
   async remove(
     @Param('workspaceId') workspaceId: string,
     @Param('tagId') tagId: string,
@@ -72,7 +76,7 @@ export class TaskTagsController {
   @Put()
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(TAG_MUTATE_RATE_LIMIT)
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async setTags(
     @Param('workspaceId') workspaceId: string,
     @Param('taskId') taskId: string,

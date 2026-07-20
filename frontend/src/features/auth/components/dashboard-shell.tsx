@@ -2,15 +2,44 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Activity,
+  AppWindow,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  Focus,
+  FormInput,
+  Home,
+  Kanban,
+  LayoutDashboard,
+  ListTodo,
+  LogOut,
+  MoreHorizontal,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  Settings,
+  Tags,
+  Trash2,
+  UserRound,
+} from 'lucide-react';
 import { BrandLogo } from '@/components/marketing/brand-logo';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
+import { BoardSkeleton } from '@/components/ui/skeleton';
 import { useCanViewActivity } from '@/features/activity/hooks';
 import { useLogoutMutation, useMeQuery } from '@/features/auth/hooks';
 import { NotificationBell } from '@/features/notifications';
+import { AppSidebar, type NavGroup } from '@/features/shell/components/app-sidebar';
+import { CommandPalette, type CommandItem } from '@/features/shell/components/command-palette';
+import { MobileBottomNav } from '@/features/shell/components/mobile-bottom-nav';
 import { useCanManageTrash } from '@/features/trash/hooks';
 import { WorkspaceSwitcher } from '@/features/workspaces/components/workspace-switcher';
 import { useWorkspaceStore } from '@/stores/workspace.store';
+
+const COLLAPSE_KEY = 'ttask:sidebar-collapsed';
 
 export function DashboardShell({
   children,
@@ -26,17 +55,51 @@ export function DashboardShell({
   const logoutMutation = useLogoutMutation();
   const { canView: canViewActivity, isLoading: activityAccessLoading } = useCanViewActivity();
   const { canManage: canManageTrash, isLoading: trashAccessLoading } = useCanManageTrash();
+  const [collapsed, setCollapsed] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === '1');
+    } catch {
+      // ignore
+    }
+  }, []);
 
   useEffect(() => {
     if (!isLoading && (isError || !session)) {
       router.replace('/login');
       return;
     }
-
     if (session && session.workspaces.length === 0) {
       router.replace('/onboarding');
     }
   }, [isError, isLoading, router, session]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const meta = event.metaKey || event.ctrlKey;
+      if (meta && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setCmdOpen((open) => !open);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((value) => {
+      const next = !value;
+      try {
+        window.localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0');
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
 
   const handleLogout = async () => {
     await logoutMutation.mutateAsync();
@@ -44,10 +107,112 @@ export function DashboardShell({
     router.refresh();
   };
 
+  const navGroups: NavGroup[] = useMemo(
+    () => [
+      {
+        id: 'work',
+        label: 'Работа',
+        items: [
+          { href: '/dashboard', label: 'Главная', icon: Home },
+          { href: '/dashboard/board', label: 'Доска', icon: Kanban },
+          { href: '/dashboard/all-tasks', label: 'Все задачи', icon: ListTodo },
+          { href: '/dashboard/my-tasks', label: 'Мои задачи', icon: UserRound },
+          { href: '/dashboard/focus', label: 'Фокус', icon: Focus },
+        ],
+      },
+      {
+        id: 'crm',
+        label: 'Рост',
+        items: [
+          { href: '/dashboard/crm', label: 'CRM', icon: ClipboardList },
+          { href: '/dashboard/analytics', label: 'Аналитика', icon: LayoutDashboard },
+          { href: '/dashboard/forms', label: 'Формы', icon: FormInput },
+        ],
+      },
+      {
+        id: 'system',
+        label: 'Система',
+        items: [
+          { href: '/dashboard/apps', label: 'Приложения', icon: AppWindow },
+          { href: '/dashboard/calendar', label: 'Календарь', icon: CalendarDays },
+          { href: '/dashboard/custom-fields', label: 'Поля', icon: Settings },
+          { href: '/dashboard/tags', label: 'Теги', icon: Tags },
+          {
+            href: '/dashboard/activity',
+            label: 'Журнал',
+            icon: Activity,
+            hidden: activityAccessLoading || !canViewActivity,
+          },
+          {
+            href: '/dashboard/trash',
+            label: 'Корзина',
+            icon: Trash2,
+            hidden: trashAccessLoading || !canManageTrash,
+          },
+        ],
+      },
+    ],
+    [activityAccessLoading, canManageTrash, canViewActivity, trashAccessLoading],
+  );
+
+  const commandItems: CommandItem[] = useMemo(() => {
+    const navItems = navGroups.flatMap((group) =>
+      group.items
+        .filter((item) => !item.hidden)
+        .map((item) => ({
+          id: item.href,
+          label: item.label,
+          href: item.href,
+          icon: item.icon,
+          group: 'Навигация',
+          keywords: [group.label, item.label],
+          hint: undefined as string | undefined,
+        })),
+    );
+    return [
+      ...navItems,
+      {
+        id: 'cmd-board',
+        label: 'Открыть доску',
+        href: '/dashboard/board',
+        icon: Kanban,
+        group: 'Быстрые действия',
+        hint: 'B',
+      },
+      {
+        id: 'cmd-theme',
+        label: 'Переключить тему',
+        icon: Settings,
+        group: 'Быстрые действия',
+        action: () => {
+          const current = document.documentElement.getAttribute('data-theme');
+          const next = current === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          try {
+            window.localStorage.setItem('ttask-theme', next);
+          } catch {
+            // ignore
+          }
+        },
+      },
+      {
+        id: 'cmd-logout',
+        label: 'Выйти',
+        icon: LogOut,
+        group: 'Аккаунт',
+        action: () => {
+          void handleLogout();
+        },
+      },
+    ];
+  }, [navGroups]);
+
   if (isLoading) {
     return (
       <main className="mx-auto flex min-h-screen items-center justify-center px-6">
-        <p className="text-sm text-muted-foreground">Загрузка сессии...</p>
+        <div className="w-full max-w-4xl">
+          <BoardSkeleton />
+        </div>
       </main>
     );
   }
@@ -55,163 +220,134 @@ export function DashboardShell({
   if (isError || !session) {
     return (
       <main className="mx-auto flex min-h-screen items-center justify-center px-6">
-        <p className="text-sm text-muted-foreground">Перенаправление на вход...</p>
+        <p className="text-sm text-[var(--tt-text-muted)]">Перенаправление на вход...</p>
       </main>
     );
   }
 
-  const isNavActive = (href: string) => {
-    if (href === '/dashboard') {
-      return pathname === '/dashboard';
-    }
+  const mobileItems = [
+    { href: '/dashboard/board', label: 'Доска', icon: Kanban },
+    { href: '/dashboard/all-tasks', label: 'Задачи', icon: ListTodo },
+    { href: '/dashboard/my-tasks', label: 'Мои', icon: UserRound },
+    { href: '/dashboard/crm', label: 'CRM', icon: ClipboardList },
+  ];
 
-    return pathname === href || pathname.startsWith(`${href}/`);
-  };
-
-  const navLinkClass = (href: string) =>
-    `dashboard-header__nav-link${isNavActive(href) ? ' dashboard-header__nav-link--active' : ''}`;
+  const settingsHref = workspaceId ? `/dashboard/workspaces/${workspaceId}/settings` : '/dashboard';
 
   return (
-    <div className="app-shell min-h-screen">
+    <div className={`app-frame${collapsed ? ' app-frame--collapsed' : ''}`}>
       <a className="dashboard-skip-link" href="#dashboard-content">
         Перейти к содержимому
       </a>
-      <header className="dashboard-header">
-        <div className="dashboard-header__inner">
-          <div className="dashboard-header__left">
-            <BrandLogo href="/dashboard" className="dashboard-header__logo" />
-            <nav className="dashboard-header__nav" aria-label="Основная навигация">
-              <Link
-                href="/dashboard"
-                className={navLinkClass('/dashboard')}
-                aria-current={isNavActive('/dashboard') ? 'page' : undefined}
-              >
-                Главная
-              </Link>
-              <Link
-                href="/dashboard/board"
-                className={navLinkClass('/dashboard/board')}
-                aria-current={isNavActive('/dashboard/board') ? 'page' : undefined}
-              >
-                Доска
-              </Link>
-              <Link
-                href="/dashboard/all-tasks"
-                className={navLinkClass('/dashboard/all-tasks')}
-                aria-current={isNavActive('/dashboard/all-tasks') ? 'page' : undefined}
-              >
-                Все задачи
-              </Link>
-              <Link
-                href="/dashboard/my-tasks"
-                className={navLinkClass('/dashboard/my-tasks')}
-                aria-current={isNavActive('/dashboard/my-tasks') ? 'page' : undefined}
-              >
-                Мои задачи
-              </Link>
-              <Link
-                href="/dashboard/analytics"
-                className={navLinkClass('/dashboard/analytics')}
-                aria-current={isNavActive('/dashboard/analytics') ? 'page' : undefined}
-              >
-                Аналитика
-              </Link>
-              <Link
-                href="/dashboard/crm"
-                className={navLinkClass('/dashboard/crm')}
-                aria-current={isNavActive('/dashboard/crm') ? 'page' : undefined}
-              >
-                CRM
-              </Link>
-              <Link
-                href="/dashboard/forms"
-                className={navLinkClass('/dashboard/forms')}
-                aria-current={isNavActive('/dashboard/forms') ? 'page' : undefined}
-              >
-                Формы
-              </Link>
-              <Link
-                href="/dashboard/apps"
-                className={navLinkClass('/dashboard/apps')}
-                aria-current={isNavActive('/dashboard/apps') ? 'page' : undefined}
-              >
-                Приложения
-              </Link>
-              <Link
-                href="/dashboard/calendar"
-                className={navLinkClass('/dashboard/calendar')}
-                aria-current={isNavActive('/dashboard/calendar') ? 'page' : undefined}
-              >
-                Календарь
-              </Link>
-              <Link
-                href="/dashboard/custom-fields"
-                className={navLinkClass('/dashboard/custom-fields')}
-                aria-current={isNavActive('/dashboard/custom-fields') ? 'page' : undefined}
-              >
-                Поля
-              </Link>
-              <Link
-                href="/dashboard/tags"
-                className={navLinkClass('/dashboard/tags')}
-                aria-current={isNavActive('/dashboard/tags') ? 'page' : undefined}
-              >
-                Теги
-              </Link>
-              {!activityAccessLoading && canViewActivity ? (
-                <Link
-                  href="/dashboard/activity"
-                  className={navLinkClass('/dashboard/activity')}
-                  aria-current={isNavActive('/dashboard/activity') ? 'page' : undefined}
-                >
-                  Журнал
-                </Link>
-              ) : null}
-              {!trashAccessLoading && canManageTrash ? (
-                <Link
-                  href="/dashboard/trash"
-                  className={navLinkClass('/dashboard/trash')}
-                  aria-current={isNavActive('/dashboard/trash') ? 'page' : undefined}
-                >
-                  Корзина
-                </Link>
-              ) : null}
-              <Link
-                href="/dashboard/focus"
-                className={navLinkClass('/dashboard/focus')}
-                aria-current={isNavActive('/dashboard/focus') ? 'page' : undefined}
-              >
-                Фокус
-              </Link>
-            </nav>
-          </div>
 
-          <div className="dashboard-header__right">
-            <NotificationBell workspaceId={workspaceId} />
-            <ThemeToggle />
-            <span className="dashboard-header__user">{session.user.name}</span>
-            <WorkspaceSwitcher />
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={logoutMutation.isPending}
-              className="dashboard-header__icon-btn"
-              title="Выйти"
-              aria-label="Выйти"
-            >
-              <span aria-hidden="true">↗</span>
-            </button>
-          </div>
+      <AppSidebar
+        groups={navGroups}
+        collapsed={collapsed}
+        onToggleCollapse={toggleCollapsed}
+        CollapseIcon={collapsed ? PanelLeftOpen : PanelLeftClose}
+      />
+
+      <header className="app-topbar">
+        <div className="app-topbar__left">
+          <span className="lg:hidden">
+            <BrandLogo href="/dashboard" />
+          </span>
+          <button
+            type="button"
+            className="app-topbar__search"
+            onClick={() => setCmdOpen(true)}
+            aria-label="Открыть командную палитру"
+          >
+            <Search size={14} strokeWidth={1.75} aria-hidden="true" />
+            <span>Поиск и команды</span>
+            <kbd>⌘K</kbd>
+          </button>
+        </div>
+        <div className="app-topbar__right">
+          <NotificationBell workspaceId={workspaceId} />
+          <ThemeToggle />
+          <span className="app-topbar__user">{session.user.name}</span>
+          <WorkspaceSwitcher />
+          <Link
+            href={settingsHref}
+            className="dashboard-header__icon-btn"
+            aria-label="Настройки"
+            title="Настройки"
+          >
+            <Settings size={16} strokeWidth={1.75} />
+          </Link>
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            disabled={logoutMutation.isPending}
+            className="dashboard-header__icon-btn"
+            title="Выйти"
+            aria-label="Выйти"
+          >
+            <LogOut size={16} strokeWidth={1.75} />
+          </button>
         </div>
       </header>
 
       <main
         id="dashboard-content"
         tabIndex={-1}
-        className={`dashboard-main${boardMode ? ' dashboard-main--board' : ''}`}
+        className={`app-main${boardMode ? ' app-main--board' : ''}`}
       >
         {children}
       </main>
+
+      <MobileBottomNav
+        items={mobileItems}
+        moreIcon={MoreHorizontal}
+        moreActive={moreOpen}
+        onMore={() => setMoreOpen((value) => !value)}
+      />
+
+      {moreOpen ? (
+        <div className="mobile-more" role="dialog" aria-label="Ещё разделы">
+          <button
+            type="button"
+            className="mobile-more__backdrop"
+            onClick={() => setMoreOpen(false)}
+          />
+          <div className="mobile-more__sheet">
+            <div className="mobile-more__head">
+              <strong>Разделы</strong>
+              <button
+                type="button"
+                className="dashboard-header__icon-btn"
+                onClick={() => setMoreOpen(false)}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+            <div className="mobile-more__links">
+              {navGroups
+                .flatMap((group) => group.items)
+                .filter((item) => !item.hidden)
+                .map((item) => {
+                  const Icon = item.icon;
+                  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`mobile-more__link${active ? ' is-active' : ''}`}
+                      onClick={() => setMoreOpen(false)}
+                    >
+                      <Icon size={16} strokeWidth={1.75} />
+                      {item.label}
+                      <ChevronLeft size={14} className="opacity-0" />
+                    </Link>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <CommandPalette open={cmdOpen} onOpenChange={setCmdOpen} items={commandItems} />
     </div>
   );
 }

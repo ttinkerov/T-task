@@ -15,7 +15,11 @@ async function bootstrap(): Promise<void> {
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('BACKEND_PORT', 3001);
-  const corsOrigin = configService.get<string>('CORS_ORIGIN', 'http://localhost');
+  const corsOrigins = configService
+    .get<string>('CORS_ORIGIN', 'http://localhost')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
 
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
@@ -27,6 +31,13 @@ async function bootstrap(): Promise<void> {
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
+      strictTransportSecurity: isProduction
+        ? {
+            maxAge: 63_072_000,
+            includeSubDomains: true,
+            preload: true,
+          }
+        : false,
       contentSecurityPolicy: isProduction
         ? {
             directives: {
@@ -39,7 +50,7 @@ async function bootstrap(): Promise<void> {
   );
   app.use(cookieParser());
   app.enableCors({
-    origin: corsOrigin,
+    origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-workspace-id'],

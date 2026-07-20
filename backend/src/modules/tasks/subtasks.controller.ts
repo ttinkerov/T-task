@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { WorkspaceRole } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
+import { ALL_WORKSPACE_ROLES, MEMBER_PLUS_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
@@ -21,7 +21,7 @@ export class SubtasksController {
   constructor(private readonly subtasksService: SubtasksService) {}
 
   @Get()
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async list(
     @Param('workspaceId') workspaceId: string,
     @Param('taskId') taskId: string,
@@ -33,7 +33,7 @@ export class SubtasksController {
   @Post()
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(SUBTASK_MUTATE_RATE_LIMIT)
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async create(
     @Param('workspaceId') workspaceId: string,
     @Param('taskId') taskId: string,
@@ -46,7 +46,7 @@ export class SubtasksController {
   @Patch(':subtaskId')
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(SUBTASK_MUTATE_RATE_LIMIT)
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async update(
     @Param('workspaceId') workspaceId: string,
     @Param('taskId') taskId: string,
@@ -62,7 +62,7 @@ export class SubtasksController {
   @Delete(':subtaskId')
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(SUBTASK_MUTATE_RATE_LIMIT)
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async remove(
     @Param('workspaceId') workspaceId: string,
     @Param('taskId') taskId: string,

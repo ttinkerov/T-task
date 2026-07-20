@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
-import { WorkspaceRole } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
+import { ALL_WORKSPACE_ROLES, MEMBER_PLUS_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
@@ -19,7 +19,7 @@ export class CustomFieldsController {
   constructor(private readonly customFieldsService: CustomFieldsService) {}
 
   @Get()
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async list(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     return successResponse(await this.customFieldsService.listDefinitions(workspaceId, user.id));
   }
@@ -27,7 +27,7 @@ export class CustomFieldsController {
   @Post()
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(CUSTOM_FIELD_MUTATE_RATE_LIMIT)
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async create(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -41,7 +41,7 @@ export class CustomFieldsController {
   @Patch(':fieldId')
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(CUSTOM_FIELD_MUTATE_RATE_LIMIT)
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async update(
     @Param('workspaceId') workspaceId: string,
     @Param('fieldId') fieldId: string,
@@ -56,7 +56,7 @@ export class CustomFieldsController {
   @Delete(':fieldId')
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(CUSTOM_FIELD_MUTATE_RATE_LIMIT)
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async remove(
     @Param('workspaceId') workspaceId: string,
     @Param('fieldId') fieldId: string,
@@ -75,7 +75,7 @@ export class TaskCustomFieldsController {
   @Put(':fieldId')
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(CUSTOM_FIELD_MUTATE_RATE_LIMIT)
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async setValue(
     @Param('workspaceId') workspaceId: string,
     @Param('taskId') taskId: string,

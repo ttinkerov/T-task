@@ -30,22 +30,45 @@ export class AuthRateLimitGuard implements CanActivate {
         context.getClass(),
       ]) ?? DEFAULT_AUTH_RATE_LIMIT;
 
-    // Prefer authenticated user id — JWT subject cannot be spoofed via X-Forwarded-For.
-    // With Express `trust proxy`, request.ip already reflects the first trusted hop.
-    const rateKey = request.user?.id ?? request.ip ?? 'unknown';
+    const keys = this.resolveRateKeys(request);
 
-    try {
-      return await this.checkRedisRateLimit(rateKey, config);
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
+    for (const rateKey of keys) {
+      try {
+        await this.checkRedisRateLimit(rateKey, config);
+      } catch (error) {
+        if (error instanceof HttpException) {
+          throw error;
+        }
+
+        this.logger.warn(
+          `Redis rate limit unavailable, using in-memory fallback: ${error instanceof Error ? error.message : 'unknown error'}`,
+        );
+        this.checkMemoryRateLimit(rateKey, config);
       }
-
-      this.logger.warn(
-        `Redis rate limit unavailable, using in-memory fallback: ${error instanceof Error ? error.message : 'unknown error'}`,
-      );
-      return this.checkMemoryRateLimit(rateKey, config);
     }
+
+    return true;
+  }
+
+  /**
+   * Prefer user id; for anonymous auth endpoints also key by email so
+   * X-Forwarded-For spoofing cannot bypass per-account brute-force limits.
+   */
+  private resolveRateKeys(request: Request & { user?: AuthenticatedUser }): string[] {
+    if (request.user?.id) {
+      return [request.user.id];
+    }
+
+    const body = request.body as { email?: unknown } | undefined;
+    const email =
+      typeof body?.email === 'string' ? body.email.trim().toLowerCase().slice(0, 320) : '';
+    const ip = request.ip ?? 'unknown';
+
+    if (email) {
+      return [`ip:${ip}`, `email:${email}`];
+    }
+
+    return [`ip:${ip}`];
   }
 
   private async checkRedisRateLimit(rateKey: string, config: RateLimitConfig): Promise<boolean> {

@@ -9,11 +9,11 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { WorkspaceRole } from '@prisma/client';
 import { Request, Response } from 'express';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Public } from '../../common/auth/decorators/public.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
+import { ALL_WORKSPACE_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
@@ -23,13 +23,6 @@ import {
   RateLimit,
 } from '../../common/security/rate-limit.decorator';
 import { CalendarFeedsService } from './calendar-feeds.service';
-
-const ALL_WORKSPACE_ROLES = [
-  WorkspaceRole.VIEWER,
-  WorkspaceRole.MEMBER,
-  WorkspaceRole.ADMIN,
-  WorkspaceRole.OWNER,
-];
 
 @Controller('workspaces/:workspaceId/calendar-feed')
 @UseGuards(AuthRateLimitGuard)

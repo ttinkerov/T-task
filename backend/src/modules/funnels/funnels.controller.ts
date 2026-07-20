@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
-import { WorkspaceRole } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
+import { ALL_WORKSPACE_ROLES, MEMBER_PLUS_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { CreateFunnelDto } from './dto/create-funnel.dto';
@@ -15,7 +15,7 @@ export class FunnelsController {
   constructor(private readonly funnelsService: FunnelsService) {}
 
   @Get()
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async listFunnels(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -25,7 +25,7 @@ export class FunnelsController {
   }
 
   @Post()
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async createFunnel(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -36,7 +36,7 @@ export class FunnelsController {
   }
 
   @Get(':funnelId')
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async getFunnel(
     @Param('workspaceId') workspaceId: string,
     @Param('funnelId') funnelId: string,
@@ -47,7 +47,7 @@ export class FunnelsController {
   }
 
   @Post(':funnelId/stages')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async createStage(
     @Param('workspaceId') workspaceId: string,
     @Param('funnelId') funnelId: string,
@@ -59,7 +59,7 @@ export class FunnelsController {
   }
 
   @Patch(':funnelId/stages/:stageId')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async updateStage(
     @Param('workspaceId') workspaceId: string,
     @Param('funnelId') funnelId: string,
@@ -78,7 +78,7 @@ export class FunnelsController {
   }
 
   @Patch(':funnelId/stages/:stageId/move')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async moveStage(
     @Param('workspaceId') workspaceId: string,
     @Param('funnelId') funnelId: string,
@@ -91,7 +91,7 @@ export class FunnelsController {
   }
 
   @Delete(':funnelId/stages/:stageId')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async deleteStage(
     @Param('workspaceId') workspaceId: string,
     @Param('funnelId') funnelId: string,

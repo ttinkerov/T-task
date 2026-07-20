@@ -2,9 +2,10 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { ConfigService } from '@nestjs/config';
 import { createHash, randomUUID } from 'crypto';
 import { mkdir, unlink, writeFile } from 'fs/promises';
-import { join } from 'path';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import { detectAllowedBinaryMime, isSafePlainText } from './utils/file-mime.util';
+import { assertPathInsideRoot, resolveUnderRoot } from './utils/storage-path.util';
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME = new Set([
@@ -26,7 +27,7 @@ export class TaskAttachmentsService {
     private readonly configService: ConfigService,
   ) {
     this.uploadRoot =
-      this.configService.get<string>('UPLOAD_DIR') ?? join(process.cwd(), 'uploads');
+      this.configService.get<string>('UPLOAD_DIR') ?? resolveUnderRoot(process.cwd(), 'uploads');
   }
 
   async list(workspaceId: string, taskId: string, userId: string) {
@@ -40,13 +41,12 @@ export class TaskAttachmentsService {
 
   async upload(workspaceId: string, taskId: string, userId: string, file: Express.Multer.File) {
     await this.requireTask(workspaceId, taskId, userId);
-    this.assertFile(file);
+    const mimeType = this.assertFile(file);
 
     const safeName = file.originalname.replace(/[^\w.\-()\sа-яА-ЯёЁ]/g, '_').slice(0, 120);
     const storageName = `${randomUUID()}-${createHash('sha1').update(safeName).digest('hex').slice(0, 8)}`;
-    const dir = join(this.uploadRoot, workspaceId, taskId);
-    await mkdir(dir, { recursive: true });
-    const storagePath = join(dir, storageName);
+    const storagePath = resolveUnderRoot(this.uploadRoot, workspaceId, taskId, storageName);
+    await mkdir(resolveUnderRoot(this.uploadRoot, workspaceId, taskId), { recursive: true });
     await writeFile(storagePath, file.buffer);
 
     const created = await this.prisma.taskAttachment.create({
@@ -54,7 +54,7 @@ export class TaskAttachmentsService {
         taskId,
         uploadedById: userId,
         originalName: safeName || 'file',
-        mimeType: file.mimetype,
+        mimeType,
         sizeBytes: file.size,
         storagePath,
       },
@@ -69,7 +69,11 @@ export class TaskAttachmentsService {
       where: { id: attachmentId, taskId },
     });
     if (!attachment) throw new NotFoundException('Файл не найден');
-    return attachment;
+
+    return {
+      ...attachment,
+      storagePath: assertPathInsideRoot(this.uploadRoot, attachment.storagePath),
+    };
   }
 
   async remove(workspaceId: string, taskId: string, attachmentId: string, userId: string) {
@@ -79,9 +83,10 @@ export class TaskAttachmentsService {
     });
     if (!attachment) throw new NotFoundException('Файл не найден');
 
+    const storagePath = assertPathInsideRoot(this.uploadRoot, attachment.storagePath);
     await this.prisma.taskAttachment.delete({ where: { id: attachmentId } });
     try {
-      await unlink(attachment.storagePath);
+      await unlink(storagePath);
     } catch {
       // file may already be gone
     }
@@ -106,18 +111,35 @@ export class TaskAttachmentsService {
     };
   }
 
-  private assertFile(file?: Express.Multer.File) {
+  private assertFile(file?: Express.Multer.File): string {
     if (!file) throw new BadRequestException('Файл обязателен');
     if (file.size <= 0 || file.size > MAX_FILE_BYTES) {
       throw new BadRequestException('Размер файла должен быть до 5 МБ');
     }
-    if (!ALLOWED_MIME.has(file.mimetype)) {
+
+    const claimed = file.mimetype;
+    if (!ALLOWED_MIME.has(claimed)) {
       throw new BadRequestException('Допустимы изображения, PDF и текстовые файлы');
     }
+
+    if (claimed === 'text/plain') {
+      if (!isSafePlainText(file.buffer)) {
+        throw new BadRequestException('Содержимое файла не соответствует типу');
+      }
+      return 'text/plain';
+    }
+
+    const detected = detectAllowedBinaryMime(file.buffer);
+    if (!detected || detected !== claimed) {
+      throw new BadRequestException('Содержимое файла не соответствует типу');
+    }
+
+    return detected;
   }
 
   private async requireTask(workspaceId: string, taskId: string, userId: string) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+
     const task = await this.prisma.task.findFirst({
       where: {
         id: taskId,
@@ -126,7 +148,11 @@ export class TaskAttachmentsService {
       },
       select: { id: true },
     });
-    if (!task) throw new NotFoundException('Задача не найдена');
+
+    if (!task) {
+      throw new NotFoundException('Задача не найдена');
+    }
+
     return task;
   }
 }

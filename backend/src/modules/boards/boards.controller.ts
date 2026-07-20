@@ -1,7 +1,11 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put } from '@nestjs/common';
-import { WorkspaceRole } from '@prisma/client';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
+import {
+  ALL_WORKSPACE_ROLES,
+  MEMBER_PLUS_ROLES,
+  ADMIN_PLUS_ROLES,
+} from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { BoardsService } from './boards.service';
@@ -18,7 +22,7 @@ export class BoardsController {
   constructor(private readonly boardsService: BoardsService) {}
 
   @Get()
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async getBoard(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -28,7 +32,7 @@ export class BoardsController {
   }
 
   @Post('columns')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async createColumn(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -39,7 +43,7 @@ export class BoardsController {
   }
 
   @Patch('columns/:columnId')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async updateColumn(
     @Param('workspaceId') workspaceId: string,
     @Param('columnId') columnId: string,
@@ -51,7 +55,7 @@ export class BoardsController {
   }
 
   @Get('columns/:columnId/automations')
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async getColumnAutomations(
     @Param('workspaceId') workspaceId: string,
     @Param('columnId') columnId: string,
@@ -66,7 +70,7 @@ export class BoardsController {
   }
 
   @Put('columns/:columnId/automations')
-  @Roles(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ADMIN_PLUS_ROLES)
   async updateColumnAutomations(
     @Param('workspaceId') workspaceId: string,
     @Param('columnId') columnId: string,
@@ -83,7 +87,7 @@ export class BoardsController {
   }
 
   @Patch('columns/:columnId/move')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async moveColumn(
     @Param('workspaceId') workspaceId: string,
     @Param('columnId') columnId: string,
@@ -95,7 +99,7 @@ export class BoardsController {
   }
 
   @Delete('columns/:columnId')
-  @Roles(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ADMIN_PLUS_ROLES)
   async deleteColumn(
     @Param('workspaceId') workspaceId: string,
     @Param('columnId') columnId: string,
@@ -112,7 +116,7 @@ export class WorkspaceBoardsController {
   constructor(private readonly boardsService: BoardsService) {}
 
   @Get()
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async listBoards(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -122,7 +126,7 @@ export class WorkspaceBoardsController {
   }
 
   @Post()
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async createBoard(
     @Param('workspaceId') workspaceId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -133,7 +137,7 @@ export class WorkspaceBoardsController {
   }
 
   @Get(':boardId')
-  @Roles(WorkspaceRole.VIEWER, WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ALL_WORKSPACE_ROLES)
   async getBoardById(
     @Param('workspaceId') workspaceId: string,
     @Param('boardId') boardId: string,
@@ -144,7 +148,7 @@ export class WorkspaceBoardsController {
   }
 
   @Patch(':boardId')
-  @Roles(WorkspaceRole.MEMBER, WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...MEMBER_PLUS_ROLES)
   async updateBoard(
     @Param('workspaceId') workspaceId: string,
     @Param('boardId') boardId: string,
@@ -156,7 +160,7 @@ export class WorkspaceBoardsController {
   }
 
   @Delete(':boardId')
-  @Roles(WorkspaceRole.ADMIN, WorkspaceRole.OWNER)
+  @Roles(...ADMIN_PLUS_ROLES)
   async deleteBoard(
     @Param('workspaceId') workspaceId: string,
     @Param('boardId') boardId: string,

@@ -20,12 +20,16 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { GripVertical } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BoardSkeleton } from '@/components/ui/skeleton';
+import { TaskCheckbox } from '@/components/ui/task-checkbox';
 import { useMeQuery } from '@/features/auth/hooks';
 import { useCustomFieldsQuery } from '@/features/custom-fields/hooks';
 import type { CustomFieldDefinition } from '@/features/custom-fields/types';
 import { tokenizeMentions } from '@/features/mentions/mention-utils';
 import { useMembersQuery } from '@/features/workspaces/hooks';
+import { celebrateTaskComplete } from '@/shared/lib/celebrate';
 import { formatMinutes } from '@/shared/lib/format-duration';
 import { formatRecurrenceLabel } from '@/shared/lib/format-recurrence';
 import { formatOverdueLabel, isDoneColumn, isTaskOverdue } from '../lib/overdue';
@@ -206,7 +210,7 @@ export function KanbanBoard({
           boardId={boardId}
           onBoardChange={handleBoardChange}
         />
-        <p className="text-sm text-muted-foreground">Загрузка доски...</p>
+        <BoardSkeleton />
       </>
     );
   }
@@ -266,6 +270,26 @@ export function KanbanBoard({
                   cardFields={cardFields}
                   memberNames={memberNames}
                   onOpenTask={setSelectedTaskId}
+                  onCompleteTask={(task) => {
+                    const done = findDoneColumn(board.columns);
+                    if (!done || task.columnId === done.id) return;
+                    void moveTaskMutation
+                      .mutateAsync({
+                        taskId: task.id,
+                        columnId: done.id,
+                        position: done.tasks.length,
+                      })
+                      .then(() => {
+                        if (task.priority === 'URGENT' || task.priority === 'HIGH') {
+                          celebrateTaskComplete();
+                        }
+                      })
+                      .catch((error) => {
+                        setMoveError(
+                          error instanceof Error ? error.message : 'Не удалось завершить задачу',
+                        );
+                      });
+                  }}
                 />
               ))}
             </SortableContext>
@@ -281,7 +305,7 @@ export function KanbanBoard({
               </div>
             ) : null}
             {activeTask ? (
-              <div className="kanban-task-card kanban-task-card--dragging">
+              <div className="kanban-task-card kanban-task-card--dragging kanban-task">
                 <p className="kanban-task-card__title">{activeTask.title}</p>
               </div>
             ) : null}
@@ -383,6 +407,7 @@ function SortableKanbanColumn({
   cardFields,
   memberNames,
   onOpenTask,
+  onCompleteTask,
 }: {
   column: BoardColumn;
   allColumns: BoardColumn[];
@@ -393,6 +418,7 @@ function SortableKanbanColumn({
   cardFields: CustomFieldDefinition[];
   memberNames: Map<string, string>;
   onOpenTask: (taskId: string) => void;
+  onCompleteTask: (task: BoardTask) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: column.id,
@@ -418,6 +444,7 @@ function SortableKanbanColumn({
         memberNames={memberNames}
         dragHandleProps={{ ...attributes, ...listeners }}
         onOpenTask={onOpenTask}
+        onCompleteTask={onCompleteTask}
       />
     </div>
   );
@@ -434,6 +461,7 @@ function KanbanColumn({
   memberNames,
   dragHandleProps,
   onOpenTask,
+  onCompleteTask,
 }: {
   column: BoardColumn;
   allColumns: BoardColumn[];
@@ -445,6 +473,7 @@ function KanbanColumn({
   memberNames: Map<string, string>;
   dragHandleProps?: React.HTMLAttributes<HTMLElement>;
   onOpenTask: (taskId: string) => void;
+  onCompleteTask: (task: BoardTask) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const createMutation = useCreateTaskMutation(workspaceId, boardId);
@@ -580,6 +609,7 @@ function KanbanColumn({
               cardFields={cardFields}
               memberNames={memberNames}
               onOpen={() => onOpenTask(task.id)}
+              onComplete={() => onCompleteTask(task)}
             />
           ))}
         </div>
@@ -621,6 +651,7 @@ function KanbanTaskCard({
   cardFields,
   memberNames,
   onOpen,
+  onComplete,
 }: {
   task: BoardTask;
   column: BoardColumn;
@@ -628,6 +659,7 @@ function KanbanTaskCard({
   cardFields: CustomFieldDefinition[];
   memberNames: Map<string, string>;
   onOpen: () => void;
+  onComplete: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -637,7 +669,7 @@ function KanbanTaskCard({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.4 : 1,
+    opacity: isDragging ? 0.35 : 1,
   };
 
   const dueLabel = task.dueDate
@@ -646,6 +678,7 @@ function KanbanTaskCard({
   const recurrenceLabel = formatRecurrenceLabel(task.recurrenceRule, task.recurrenceWeekdays);
   const overdueLabel = formatOverdueLabel(task, column, allColumns);
   const isOverdue = isTaskOverdue(task, column, allColumns);
+  const isComplete = Boolean(task.completedAt) || isDoneColumn(column, allColumns);
   const customFieldChips = cardFields
     .map((field) => {
       const entry = task.customFields.find((item) => item.fieldId === field.id);
@@ -659,7 +692,7 @@ function KanbanTaskCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`kanban-task-card ${isOverdue ? 'kanban-task-card--overdue' : ''}`}
+      className={`kanban-task-card kanban-task ${isOverdue ? 'kanban-task-card--overdue' : ''} ${isDragging ? 'kanban-task--dragging' : ''}`}
       onClick={onOpen}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -671,6 +704,13 @@ function KanbanTaskCard({
       tabIndex={0}
     >
       <div className="kanban-task-card__body">
+        <TaskCheckbox
+          checked={isComplete}
+          ariaLabel={isComplete ? 'Задача выполнена' : 'Отметить выполненной'}
+          onChange={(checked) => {
+            if (checked && !isComplete) onComplete();
+          }}
+        />
         <button
           type="button"
           className="kanban-task-card__drag"
@@ -679,7 +719,7 @@ function KanbanTaskCard({
           onClick={(event) => event.stopPropagation()}
           aria-label="Перетащить задачу"
         >
-          ⠿
+          <GripVertical size={14} strokeWidth={1.75} aria-hidden="true" />
         </button>
         <div className="min-w-0 flex-1">
           <p className="kanban-task-card__title">{task.title}</p>
@@ -833,6 +873,12 @@ function findTask(board: BoardView | null | undefined, taskId: string) {
     if (task) return task;
   }
   return null;
+}
+
+function findDoneColumn(columns: BoardColumn[]) {
+  return (
+    columns.find((column) => isDoneColumn(column, columns)) ?? columns[columns.length - 1] ?? null
+  );
 }
 
 function resolveDropTarget(board: BoardView, overId: string, taskId: string) {

@@ -1,29 +1,21 @@
 @use 'variables' as *;
 @use 'mixins' as *;
 
-// Weeek-inspired landing palette (theme-aware)
-$l-bg: var(--tt-bg);
-$l-surface: var(--tt-surface);
-$l-surface-muted: var(--tt-surface-muted);
 $l-text: var(--tt-text);
 $l-text-muted: var(--tt-text-muted);
 $l-text-dim: var(--tt-text-dim);
-$l-border: var(--tt-border);
 $l-brand: var(--tt-brand);
 $l-brand-hover: var(--tt-brand-hover);
 $l-brand-muted: var(--tt-brand-muted);
-$l-shadow: var(--tt-shadow);
-
-$radius-pill: 980px;
-$radius-card: 20px;
 
 .tt-landing {
   position: relative;
   min-height: 100vh;
   color: $l-text;
   overflow-x: hidden;
-  font-family: 'Ttask', system-ui, sans-serif;
-  background: $l-bg;
+  font-family: var(--font-inter), 'Inter', 'Ttask', system-ui, sans-serif;
+  background: var(--tt-bg-mesh);
+  background-attachment: fixed;
 
   &__content {
     position: relative;
@@ -31,8 +23,8 @@ $radius-card: 20px;
   }
 
   .glass-input {
-    border: 1px solid $l-border;
-    background: $l-surface;
+    border: 1px solid var(--tt-border);
+    background: var(--tt-surface);
     color: $l-text;
 
     &::placeholder {
@@ -54,18 +46,35 @@ $radius-card: 20px;
   }
 }
 
-// ── Nav ──
+.tt-landing-glow {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(900px 480px at 12% -8%, rgba(190, 24, 93, 0.14), transparent 55%),
+    radial-gradient(700px 420px at 88% 8%, rgba(17, 19, 24, 0.06), transparent 50%);
+  opacity: 1;
+}
+
+[data-theme='dark'] .tt-landing-glow {
+  background:
+    radial-gradient(900px 480px at 12% -8%, rgba(225, 29, 116, 0.18), transparent 55%),
+    radial-gradient(700px 420px at 90% 0%, rgba(255, 255, 255, 0.04), transparent 48%);
+}
+
+/* ── Nav ── */
 
 .tt-nav-wrap {
   position: sticky;
   top: 0;
   z-index: 30;
-  padding: 0.75rem 1.5rem;
-  max-width: calc($landing-max-width + 3rem);
+  padding: 0.85rem 1.25rem;
+  max-width: calc(#{$landing-max-width} + 4rem);
   margin: 0 auto;
 
   @include md-up {
-    padding: 1rem 2.5rem;
+    padding: 1rem 2rem;
   }
 }
 
@@ -74,17 +83,18 @@ $radius-card: 20px;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.5rem 0.625rem 0.5rem 1.125rem;
-  border: 1px solid $l-border;
-  border-radius: $radius-pill;
-  background: var(--tt-nav-bg);
-  backdrop-filter: saturate(180%) blur(16px);
-  box-shadow: var(--tt-shadow);
+  padding: 0.45rem 0.55rem 0.45rem 0.9rem;
+  border: 1px solid var(--tt-glass-border);
+  border-radius: $radius-lg;
+  background: var(--tt-glass);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: var(--tt-shadow-sm);
 
   &__links {
     display: none;
     align-items: center;
-    gap: 0.125rem;
+    gap: 0.15rem;
 
     @include md-up {
       display: flex;
@@ -92,33 +102,37 @@ $radius-card: 20px;
   }
 
   &__link {
-    padding: 0.5rem 0.875rem;
-    border-radius: $radius-pill;
-    font-size: 0.875rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: $radius-sm;
+    font-size: 0.8125rem;
     font-weight: 500;
     color: $l-text-muted;
     text-decoration: none;
-    transition: color $transition-fast;
+    transition:
+      color var(--tt-duration-fast),
+      background var(--tt-duration-fast);
 
     &:hover {
       color: $l-text;
+      background: var(--tt-hover);
     }
   }
 
   &__actions {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
   }
 
   &__login {
     display: none;
-    padding: 0.5rem 0.875rem;
-    font-size: 0.875rem;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     color: $l-text-muted;
     text-decoration: none;
-    transition: color $transition-fast;
+    border-radius: $radius-sm;
+    transition: color var(--tt-duration-fast);
 
     @include md-up {
       display: inline-flex;
@@ -130,31 +144,20 @@ $radius-card: 20px;
   }
 
   &__cta {
-    margin-top: 0 !important;
-    padding: 0.5625rem 1rem !important;
-    font-size: 0.875rem !important;
-    border-radius: $radius-pill !important;
+    padding: 0.55rem 0.9rem !important;
+    font-size: 0.8125rem !important;
   }
-}
-
-.tt-logo {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: $l-text;
-  text-decoration: none;
-  letter-spacing: -0.03em;
 }
 
 .tt-brand-logo {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   text-decoration: none;
   color: inherit;
 
   &__mark {
-    display: inline-flex;
-    flex-shrink: 0;
+    display: block;
     width: 1.75rem;
     height: 1.75rem;
 
@@ -166,175 +169,221 @@ $radius-card: 20px;
   }
 
   &__text {
-    font-size: 1.125rem;
+    font-family: 'Ttask', var(--font-inter), sans-serif;
+    font-size: 1.05rem;
     font-weight: 700;
     letter-spacing: -0.03em;
     color: $l-text;
   }
 }
 
-// ── Buttons ──
+/* ── Buttons ── */
 
 .tt-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.4rem;
   border-radius: $radius-sm;
-  padding: 0.75rem 1.25rem;
-  font-size: 0.9375rem;
+  padding: 0.7rem 1.1rem;
+  font-size: 0.875rem;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  outline: none;
+  border: none;
   transition:
-    background $transition-fast,
-    border-color $transition-fast,
-    color $transition-fast,
-    box-shadow $transition-fast;
-  margin-top: auto;
+    background var(--tt-duration-fast),
+    color var(--tt-duration-fast),
+    border-color var(--tt-duration-fast),
+    box-shadow var(--tt-duration-fast),
+    transform var(--tt-duration-fast) var(--tt-ease-out);
+
+  &:active {
+    transform: scale(0.98);
+  }
 
   &--pill {
-    border-radius: $radius-pill;
-    padding: 0.75rem 1.5rem;
-    margin-top: 0;
+    border-radius: $radius-sm;
   }
 
   &--lg {
-    padding: 0.875rem 1.75rem;
-    font-size: 1rem;
+    padding: 0.85rem 1.35rem;
+    font-size: 0.9375rem;
   }
 
   &--primary {
-    color: #ffffff;
+    color: #fff;
     background: $l-brand;
-    border: none;
+    box-shadow: 0 10px 28px var(--tt-brand-glow);
 
     &:hover {
       background: $l-brand-hover;
+      transform: translateY(-1px);
     }
   }
 
   &--secondary {
     color: $l-text;
-    background: $l-surface;
-    border: 1px solid $l-border;
+    background: var(--tt-glass);
+    border: 1px solid var(--tt-glass-border);
+    backdrop-filter: blur(12px);
 
     &:hover {
-      background: $l-surface-muted;
-      border-color: rgba(20, 24, 36, 0.16);
-    }
-  }
-
-  &--ghost {
-    color: $l-brand;
-    background: transparent;
-    border: 1px solid $l-brand-muted;
-
-    &:hover {
-      background: $l-brand-muted;
+      background: var(--tt-hover-strong);
+      border-color: var(--tt-border);
+      transform: translateY(-1px);
     }
   }
 }
 
-// ── Hero ──
+/* ── Hero ── */
 
 .tt-hero {
   max-width: $landing-max-width;
   margin: 0 auto;
-  padding: 2.5rem 1.5rem 3.5rem;
+  padding: 2rem 1.25rem 3.5rem;
 
   @include md-up {
-    padding: 3.5rem 2.5rem 4.5rem;
-  }
-
-  &--centered {
-    text-align: center;
+    padding: 2.75rem 2rem 4.5rem;
   }
 
   &__copy {
-    max-width: 42rem;
-    margin: 0 auto;
+    max-width: 40rem;
   }
 
-  &__badge {
-    display: inline-block;
-    padding: 0.3125rem 0.75rem;
-    border-radius: $radius-pill;
-    background: $l-brand-muted;
+  &__eyebrow {
+    margin: 0;
     font-size: 0.75rem;
     font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: $l-brand;
-    letter-spacing: 0.01em;
+  }
+
+  &__brand {
+    margin: 0.85rem 0 0;
+    font-family: 'Ttask', var(--font-inter), sans-serif;
+    font-size: clamp(3.2rem, 9vw, 5.5rem);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.05em;
+    color: $l-text;
+    text-wrap: balance;
   }
 
   &__title {
     margin: 1rem 0 0;
-    font-family: 'Ttask', system-ui, sans-serif;
-    font-size: clamp(2.25rem, 6vw, 3.5rem);
-    font-weight: 700;
-    line-height: 1.08;
-    letter-spacing: -0.035em;
-    color: $l-text;
+    font-size: clamp(1.35rem, 3.2vw, 1.85rem);
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+    color: $l-text-muted;
+    text-wrap: balance;
   }
 
   &__text {
-    max-width: 34rem;
-    margin: 1.25rem auto 0;
-    font-size: 1.0625rem;
+    max-width: 32rem;
+    margin: 1rem 0 0;
+    font-size: 1rem;
     line-height: 1.55;
-    color: $l-text-muted;
+    color: $l-text-dim;
+    text-wrap: pretty;
   }
 
   &__actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
-    justify-content: center;
-    margin-top: 1.75rem;
+    gap: 0.65rem;
+    margin-top: 1.6rem;
   }
 
-  &__demo {
-    margin-top: 2.5rem;
-    max-width: 52rem;
-    margin-left: auto;
-    margin-right: auto;
-  }
-}
-
-// ── Logo marquee ──
-
-.tt-marquee {
-  margin-top: 2.5rem;
-  overflow: hidden;
-  mask-image: linear-gradient(90deg, transparent, black 12%, black 88%, transparent);
-
-  &__track {
+  &__meta {
     display: flex;
-    gap: 2.5rem;
-    width: max-content;
-    animation: tt-marquee 32s linear infinite;
-  }
-
-  &__item {
-    flex-shrink: 0;
-    font-size: 0.875rem;
-    font-weight: 600;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.15rem;
+    margin: 1.35rem 0 0;
+    padding: 0;
+    list-style: none;
     color: $l-text-dim;
-    white-space: nowrap;
+    font-size: 0.8125rem;
+
+    li {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+  }
+
+  &__stage {
+    margin-top: 2.5rem;
+    overflow: hidden;
+    border-radius: $radius-xl;
+    border: 1px solid var(--tt-glass-border);
+    background: var(--tt-glass);
+    box-shadow: var(--tt-shadow-lg);
+    backdrop-filter: blur(18px);
+  }
+
+  &__stage-chrome {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.7rem 0.9rem;
+    border-bottom: 1px solid var(--tt-border-subtle);
+    background: color-mix(in srgb, var(--tt-surface) 55%, transparent);
+
+    span {
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: var(--tt-border);
+
+      &:nth-child(1) {
+        background: #ff5f57;
+      }
+      &:nth-child(2) {
+        background: #febc2e;
+      }
+      &:nth-child(3) {
+        background: #28c840;
+      }
+    }
+
+    em {
+      margin-left: 0.55rem;
+      font-style: normal;
+      font-size: 0.75rem;
+      color: $l-text-dim;
+    }
+  }
+
+  &__stage-body {
+    padding: 0.75rem;
+    min-height: 18rem;
+
+    @include md-up {
+      padding: 1rem;
+      min-height: 24rem;
+    }
+
+    .tt-board__card {
+      padding: 0;
+      border: none;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .tt-board__header {
+      margin-bottom: 0.5rem;
+    }
+
+    .tt-board__hint {
+      margin-bottom: 0.75rem;
+    }
   }
 }
 
-@keyframes tt-marquee {
-  from {
-    transform: translateX(0);
-  }
-
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-// ── Board demo ──
+/* ── Demo board (interactive preview) ── */
 
 .tt-board {
   max-width: 100%;
@@ -343,9 +392,9 @@ $radius-card: 20px;
 
   &__card {
     padding: 1.25rem;
-    border-radius: $radius-card;
-    border: 1px solid $l-border;
-    background: $l-surface;
+    border-radius: $radius-lg;
+    border: 1px solid var(--tt-border);
+    background: var(--tt-surface);
 
     &--interactive {
       padding: 1rem 1rem 1.125rem;
@@ -360,17 +409,8 @@ $radius-card: 20px;
     margin-bottom: 0.75rem;
   }
 
-  &__label {
-    margin: 0;
-    font-size: 0.6875rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: $l-brand;
-  }
-
   &__name {
-    margin: 0.25rem 0 0;
+    margin: 0;
     font-size: 1rem;
     font-weight: 600;
     letter-spacing: -0.02em;
@@ -382,39 +422,6 @@ $radius-card: 20px;
     font-size: 0.75rem;
     line-height: 1.45;
     color: $l-text-dim;
-  }
-
-  &__status {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    flex-shrink: 0;
-    padding: 0.3125rem 0.625rem;
-    border-radius: $radius-pill;
-    background: rgba(32, 166, 99, 0.12);
-    font-size: 0.625rem;
-    font-weight: 600;
-    color: #1a9b5c;
-    white-space: nowrap;
-  }
-
-  &__status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #20a663;
-    animation: tt-demo-pulse 2s ease-in-out infinite;
-  }
-}
-
-@keyframes tt-demo-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.4;
   }
 }
 
@@ -430,7 +437,7 @@ $radius-card: 20px;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(20, 24, 36, 0.12);
+    background: var(--tt-border);
     border-radius: $radius-pill;
   }
 
@@ -442,8 +449,8 @@ $radius-card: 20px;
     min-width: 8.5rem;
     padding: 0.625rem;
     border-radius: $radius-md;
-    border: 1px dashed rgba(20, 24, 36, 0.14);
-    background: $l-surface-muted;
+    border: 1px dashed var(--tt-border);
+    background: var(--tt-surface-muted);
     align-self: flex-start;
   }
 
@@ -451,8 +458,8 @@ $radius-card: 20px;
     width: 100%;
     padding: 0.5rem 0.625rem;
     border-radius: $radius-sm;
-    border: 1px solid $l-border;
-    background: $l-surface;
+    border: 1px solid var(--tt-border);
+    background: var(--tt-surface);
     font-size: 0.75rem;
     color: $l-text;
     outline: none;
@@ -478,7 +485,7 @@ $radius-card: 20px;
     transition: background $transition-fast;
 
     &:hover:not(:disabled) {
-      background: rgba(190, 24, 93, 0.2);
+      filter: brightness(0.96);
     }
 
     &:disabled {
@@ -499,8 +506,8 @@ $radius-card: 20px;
   height: 100%;
   min-height: 13rem;
   border-radius: $radius-md;
-  border: 1px solid $l-border;
-  background: $l-surface-muted;
+  border: 1px solid var(--tt-border);
+  background: var(--tt-surface-muted);
   transition: border-color $transition-fast;
 
   &--over {
@@ -508,9 +515,9 @@ $radius-card: 20px;
   }
 
   &--dragging {
-    box-shadow: $l-shadow;
+    box-shadow: var(--tt-shadow);
     border-color: $l-brand;
-    background: $l-surface;
+    background: var(--tt-surface);
   }
 
   &__header {
@@ -518,7 +525,7 @@ $radius-card: 20px;
     align-items: center;
     gap: 0.25rem;
     padding: 0.625rem 0.625rem 0.5rem;
-    border-bottom: 1px solid $l-border;
+    border-bottom: 1px solid var(--tt-border);
     flex-shrink: 0;
   }
 
@@ -564,7 +571,7 @@ $radius-card: 20px;
     padding: 0.125rem 0.375rem;
     border-radius: 4px;
     border: 1px solid $l-brand;
-    background: $l-surface;
+    background: var(--tt-surface);
     font-size: 0.75rem;
     font-weight: 600;
     color: $l-text;
@@ -623,7 +630,7 @@ $radius-card: 20px;
     padding: 0.375rem 0.5rem;
     border-radius: 6px;
     border: 1px solid transparent;
-    background: $l-surface;
+    background: var(--tt-surface);
     font-size: 0.6875rem;
     color: $l-text;
     outline: none;
@@ -633,7 +640,7 @@ $radius-card: 20px;
     }
 
     &:focus {
-      border-color: $l-border;
+      border-color: var(--tt-border);
     }
   }
 
@@ -662,16 +669,16 @@ $radius-card: 20px;
   gap: 0.25rem;
   padding: 0.4375rem 0.375rem;
   border-radius: 8px;
-  background: $l-surface;
-  border: 1px solid $l-border;
+  background: var(--tt-surface);
+  border: 1px solid var(--tt-border);
   transition: border-color $transition-fast;
 
   &:hover {
-    border-color: rgba(20, 24, 36, 0.16);
+    border-color: var(--tt-border);
   }
 
   &--dragging {
-    box-shadow: $l-shadow;
+    box-shadow: var(--tt-shadow);
     border-color: $l-brand;
   }
 
@@ -712,7 +719,7 @@ $radius-card: 20px;
     padding: 0.125rem 0.375rem;
     border-radius: 4px;
     border: 1px solid $l-brand;
-    background: $l-surface;
+    background: var(--tt-surface);
     font-size: 0.6875rem;
     color: $l-text;
     outline: none;
@@ -739,248 +746,217 @@ $radius-card: 20px;
   }
 }
 
-// ── Sections ──
+/* ── Sections ── */
 
 .tt-section {
   max-width: $landing-max-width;
   margin: 0 auto;
-  padding: 3.5rem 1.5rem;
+  padding: 3.5rem 1.25rem;
 
   @include md-up {
-    padding: 4.5rem 2.5rem;
+    padding: 4.5rem 2rem;
   }
 
   &--panel {
-    max-width: calc($landing-max-width + 1rem);
-    margin-left: auto;
-    margin-right: auto;
-    padding: 3rem 1.5rem;
-    border-radius: $radius-card;
-    background: $l-surface;
-    border: 1px solid $l-border;
-    box-shadow: $l-shadow;
+    margin: 0 1rem;
+    max-width: calc(#{$landing-max-width} + 0rem);
+    border-radius: $radius-xl;
+    border: 1px solid var(--tt-border-subtle);
+    background: color-mix(in srgb, var(--tt-surface) 70%, transparent);
+    box-shadow: var(--tt-shadow-sm);
 
     @include md-up {
-      padding: 3.5rem 2.5rem;
+      margin: 0 auto;
+      padding-inline: 2rem;
     }
   }
 
   &__head {
+    max-width: 36rem;
     margin-bottom: 2rem;
+  }
 
-    &--center {
-      text-align: center;
-    }
+  &__eyebrow {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: $l-brand;
   }
 
   &__title {
-    font-family: 'Ttask', system-ui, sans-serif;
-    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    margin: 0.55rem 0 0;
+    font-family: 'Ttask', var(--font-inter), sans-serif;
+    font-size: clamp(1.75rem, 3.5vw, 2.35rem);
     font-weight: 700;
-    letter-spacing: -0.03em;
-    color: $l-text;
+    letter-spacing: -0.035em;
+    line-height: 1.15;
+    text-wrap: balance;
   }
 
   &__subtitle {
-    margin-top: 0.625rem;
+    margin: 0.75rem 0 0;
     font-size: 1rem;
-    line-height: 1.5;
+    line-height: 1.55;
     color: $l-text-muted;
+    text-wrap: pretty;
   }
 }
 
-// ── Features ──
-
 .tt-feature-grid {
   display: grid;
-  gap: 1rem;
+  gap: 0.75rem;
+  grid-template-columns: 1fr;
 
   @include md-up {
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
   }
 }
 
 .tt-feature-card {
-  padding: 1.5rem 1.375rem;
-  border-radius: $radius-card;
-  border: 1px solid $l-border;
-  background: $l-surface;
+  padding: 1.15rem 1.15rem 1.25rem;
+  border-radius: $radius-lg;
+  border: 1px solid var(--tt-border-subtle);
+  background: var(--tt-surface);
+  box-shadow: var(--tt-shadow-sm);
   transition:
-    border-color $transition-fast,
-    box-shadow $transition-fast;
+    transform var(--tt-duration-fast) var(--tt-ease-out),
+    box-shadow var(--tt-duration-fast),
+    border-color var(--tt-duration-fast);
 
   &:hover {
-    border-color: rgba(20, 24, 36, 0.14);
-    box-shadow: $l-shadow;
+    transform: translateY(-2px);
+    box-shadow: var(--tt-shadow-lift);
+    border-color: color-mix(in srgb, var(--tt-brand) 20%, var(--tt-border));
   }
 
   &__icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 12px;
-    font-size: 1.125rem;
-    margin-bottom: 1rem;
-  }
-
-  &--violet &__icon {
-    background: $l-brand-muted;
+    width: 2.1rem;
+    height: 2.1rem;
+    margin-bottom: 0.85rem;
+    border-radius: $radius-sm;
+    background: var(--tt-brand-muted);
     color: $l-brand;
   }
 
-  &--blue &__icon {
-      background: rgba(190, 24, 93, 0.1);
-      color: #be185d;
-  }
-
-  &--green &__icon {
-    background: rgba(32, 166, 99, 0.12);
-    color: #1a9b5c;
-  }
-
   h3 {
-    margin: 0 0 0.5rem;
-    font-size: 1.0625rem;
-    font-weight: 600;
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 650;
     letter-spacing: -0.02em;
-    color: $l-text;
   }
 
   p {
-    margin: 0;
-    font-size: 0.875rem;
-    line-height: 1.55;
+    margin: 0.45rem 0 0;
+    font-size: 0.84rem;
+    line-height: 1.5;
     color: $l-text-muted;
   }
 }
 
-// ── Steps ──
-
 .tt-steps {
   display: grid;
-  gap: 1rem;
+  gap: 0.75rem;
 
   @include md-up {
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
   }
 }
 
 .tt-step-card {
-  padding: 1.5rem;
-  border-radius: $radius-md;
-  border: 1px solid $l-border;
-  background: $l-surface-muted;
+  padding: 1.25rem;
+  border-radius: $radius-lg;
+  border: 1px solid var(--tt-border-subtle);
+  background: var(--tt-surface);
 
   &__num {
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
+    display: block;
+    margin-bottom: 0.85rem;
+    font-family: 'Ttask', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
     color: $l-brand;
+    font-variant-numeric: tabular-nums;
   }
 
   h3 {
-    margin: 0.75rem 0 0.375rem;
-    font-size: 1.0625rem;
-    font-weight: 600;
-    color: $l-text;
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
   }
 
   p {
-    margin: 0;
+    margin: 0.5rem 0 0;
     font-size: 0.875rem;
-    line-height: 1.55;
+    line-height: 1.5;
     color: $l-text-muted;
-  }
-
-  &__link {
-    display: inline-block;
-    margin-top: 1rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: $l-brand;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
   }
 }
 
-// ── Audiences ──
-
 .tt-audience-grid {
   display: grid;
-  gap: 1rem;
+  gap: 0.75rem;
 
   @include md-up {
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
   }
 }
 
 .tt-audience-card {
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 1.375rem;
-  border-radius: $radius-card;
-  border: 1px solid $l-border;
-  background: $l-surface;
+  padding: 1.35rem;
+  border-radius: $radius-lg;
+  border: 1px solid var(--tt-border-subtle);
+  background: var(--tt-surface);
+  box-shadow: var(--tt-shadow-sm);
   transition:
-    border-color $transition-fast,
-    box-shadow $transition-fast;
+    transform var(--tt-duration-fast) var(--tt-ease-out),
+    box-shadow var(--tt-duration-fast);
 
   &:hover {
-    border-color: rgba(20, 24, 36, 0.14);
-    box-shadow: $l-shadow;
+    transform: translateY(-2px);
+    box-shadow: var(--tt-shadow-lift);
   }
 
   &__icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.75rem;
-    height: 2.75rem;
-    border-radius: 14px;
-    font-size: 1.25rem;
+    width: 2.4rem;
+    height: 2.4rem;
     margin-bottom: 1rem;
-  }
-
-  &--violet &__icon {
-    background: $l-brand-muted;
-  }
-
-  &--blue &__icon {
-    background: rgba(190, 24, 93, 0.08);
-  }
-
-  &--green &__icon {
-    background: rgba(32, 166, 99, 0.12);
+    border-radius: $radius-sm;
+    background: var(--tt-surface-muted);
+    color: $l-brand;
   }
 
   h3 {
-    margin: 0 0 0.5rem;
-    font-size: 1.125rem;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    color: $l-text;
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 650;
   }
 
   p {
+    margin: 0.5rem 0 0;
     flex: 1;
-    margin: 0;
     font-size: 0.875rem;
-    line-height: 1.55;
+    line-height: 1.5;
     color: $l-text-muted;
   }
 
   &__link {
-    display: inline-block;
-    margin-top: 1.125rem;
-    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 1.1rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     color: $l-brand;
     text-decoration: none;
@@ -991,81 +967,76 @@ $radius-card: 20px;
   }
 }
 
-// ── CTA ──
-
 .tt-cta-banner {
   max-width: $landing-max-width;
-  margin: 0 auto 2rem;
-  padding: 0 1.5rem;
+  margin: 0 auto 3rem;
+  padding: 0 1.25rem;
 
   @include md-up {
-    padding: 0 2.5rem;
+    padding: 0 2rem;
   }
 
   &__inner {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
     gap: 1.25rem;
-    padding: 2rem 1.5rem;
-    border-radius: $radius-card;
-    border: 1px solid $l-border;
-    background: linear-gradient(135deg, rgba(190, 24, 93, 0.08) 0%, $l-surface 60%);
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 1.75rem;
+    border-radius: $radius-xl;
+    border: 1px solid color-mix(in srgb, var(--tt-brand) 22%, var(--tt-border));
+    background:
+      radial-gradient(600px 220px at 0% 0%, var(--tt-brand-muted), transparent 60%),
+      var(--tt-surface);
+    box-shadow: var(--tt-shadow);
 
     @include md-up {
       flex-direction: row;
       align-items: center;
-      justify-content: space-between;
       padding: 2rem 2.25rem;
     }
   }
 
-  &__copy {
-    h2 {
-      margin: 0;
-      font-size: 1.375rem;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      color: $l-text;
-    }
+  h2 {
+    margin: 0;
+    font-family: 'Ttask', sans-serif;
+    font-size: clamp(1.4rem, 3vw, 1.85rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
 
-    p {
-      margin: 0.375rem 0 0;
-      font-size: 0.9375rem;
-      color: $l-text-muted;
-    }
+  p {
+    margin: 0.45rem 0 0;
+    color: $l-text-muted;
+    font-size: 0.9375rem;
   }
 }
 
-// ── Footer ──
-
 .tt-footer {
-  padding: 2rem 1.5rem 3rem;
-  border-top: 1px solid $l-border;
+  border-top: 1px solid var(--tt-border-subtle);
+  padding: 2rem 1.25rem 2.5rem;
+
+  @include md-up {
+    padding: 2.5rem 2rem 3rem;
+  }
 
   &__inner {
-    max-width: $landing-max-width;
-    margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
+    max-width: $landing-max-width;
+    margin: 0 auto;
 
     @include md-up {
       flex-direction: row;
-      align-items: center;
       justify-content: space-between;
+      align-items: flex-end;
     }
   }
 
-  &__logo {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 700;
-    color: $l-text;
-  }
-
   &__text {
-    margin: 0.25rem 0 0;
+    margin: 0.55rem 0 0;
     font-size: 0.8125rem;
     color: $l-text-dim;
   }
@@ -1073,22 +1044,22 @@ $radius-card: 20px;
   &__links {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 0.85rem 1.15rem;
 
     a {
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       font-weight: 500;
       color: $l-text-muted;
       text-decoration: none;
 
       &:hover {
-        color: $l-brand;
+        color: $l-text;
       }
     }
   }
 }
 
-// ── Auth ──
+/* ── Auth (login / register) ── */
 
 .tt-auth {
   min-height: 100vh;
@@ -1117,10 +1088,12 @@ $radius-card: 20px;
     width: 100%;
     max-width: 26rem;
     padding: 2rem;
-    border: 1px solid $l-border;
-    border-radius: $radius-card;
-    background: $l-surface;
-    box-shadow: $l-shadow;
+    border: 1px solid var(--tt-glass-border);
+    border-radius: $radius-lg;
+    background: var(--tt-glass);
+    backdrop-filter: blur(24px) saturate(1.2);
+    -webkit-backdrop-filter: blur(24px) saturate(1.2);
+    box-shadow: var(--tt-shadow-lg);
   }
 
   &__head {
@@ -1128,14 +1101,15 @@ $radius-card: 20px;
   }
 
   &__title {
-    font-size: 1.5rem;
+    font-family: 'Ttask', sans-serif;
+    font-size: 1.55rem;
     font-weight: 700;
     letter-spacing: -0.03em;
     color: $l-text;
   }
 
   &__subtitle {
-    margin-top: 0.375rem;
+    margin-top: 0.4rem;
     font-size: 0.9375rem;
     line-height: 1.5;
     color: $l-text-muted;
@@ -1166,7 +1140,9 @@ $radius-card: 20px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tt-marquee__track {
-    animation: none;
+  .tt-feature-card,
+  .tt-audience-card,
+  .tt-btn {
+    transition: none;
   }
 }

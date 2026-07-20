@@ -140,17 +140,13 @@
 }
 
 .dashboard-main {
-  margin: 0 auto;
-  padding: 1rem 1.25rem 1.5rem;
-  max-width: 56rem;
+  /* Layout owned by .app-main in shell; keep alias for older pages */
+  margin: 0;
+  padding: 0;
+  max-width: none;
 
   &--board {
-    display: flex;
-    flex-direction: column;
-    max-width: 100%;
-    height: calc(100vh - 3.25rem);
-    padding: 0.75rem 1rem 1rem;
-    overflow: hidden;
+    display: contents;
   }
 }
 
