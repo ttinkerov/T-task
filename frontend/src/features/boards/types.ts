@@ -60,6 +60,9 @@ export interface BoardTask {
   customFields: TaskCustomFieldValue[];
   tags: TaskTag[];
   subtasks: TaskSubtask[];
+  sprintId: string | null;
+  isEpic: boolean;
+  epicId: string | null;
 }
 
 export interface ColumnAutomation {
@@ -73,6 +76,7 @@ export interface BoardColumn {
   id: string;
   name: string;
   position: number;
+  wipLimit: number | null;
   automations: ColumnAutomation[];
   tasks: BoardTask[];
 }
@@ -111,6 +115,9 @@ export interface UpdateTaskPayload {
   recurrenceAction?: TaskRecurrenceAction;
   recurrenceWeekdays?: number[];
   recurrenceOriginColumnId?: string | null;
+  sprintId?: string | null;
+  isEpic?: boolean;
+  epicId?: string | null;
 }
 
 export interface TaskComment {
@@ -147,6 +154,8 @@ export interface BoardFilters {
   tagId: string | '';
   myTasksOnly: boolean;
   overdueStatus: '' | 'overdue' | 'not_overdue';
+  sprintId: string | '';
+  epicId: string | '';
 }
 
 export const TEAM_SIZE_OPTIONS: { value: TeamSize; label: string }[] = [
@@ -207,6 +216,8 @@ export const EMPTY_BOARD_FILTERS: BoardFilters = {
   tagId: '',
   myTasksOnly: false,
   overdueStatus: '',
+  sprintId: '',
+  epicId: '',
 };
 
 export const OVERDUE_FILTER_OPTIONS: {

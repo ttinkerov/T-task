@@ -13,6 +13,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { BoardsService } from '../boards/boards.service';
 import { extractMentionUserIds } from '../mentions/mention-parser.util';
 import { MentionsService } from '../mentions/mentions.service';
+import { WatchersService } from '../watchers/watchers.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
@@ -35,6 +36,7 @@ export class TasksService {
     private readonly boardsService: BoardsService,
     private readonly taskRelationsService: TaskRelationsService,
     private readonly mentionsService: MentionsService,
+    private readonly watchersService: WatchersService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -167,6 +169,34 @@ export class TasksService {
       await this.assertColumnInWorkspace(workspaceId, dto.recurrenceOriginColumnId);
     }
 
+    if (dto.sprintId) {
+      const sprint = await this.prisma.sprint.findFirst({
+        where: { id: dto.sprintId, workspaceId },
+        select: { id: true },
+      });
+      if (!sprint) throw new BadRequestException('Спринт не найден в этом пространстве');
+    }
+
+    const nextIsEpic = dto.isEpic ?? task.isEpic;
+    if (nextIsEpic && dto.epicId) {
+      throw new BadRequestException('Эпик не может входить в другой эпик');
+    }
+    if (dto.epicId) {
+      if (dto.epicId === taskId) {
+        throw new BadRequestException('Задача не может быть эпиком самой себе');
+      }
+      const epic = await this.prisma.task.findFirst({
+        where: {
+          id: dto.epicId,
+          isEpic: true,
+          deletedAt: null,
+          column: { board: { workspaceId } },
+        },
+        select: { id: true },
+      });
+      if (!epic) throw new BadRequestException('Эпик не найден');
+    }
+
     const updated = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const saved = await tx.task.update({
         where: { id: task.id },
@@ -197,6 +227,13 @@ export class TasksService {
           ...(dto.recurrenceOriginColumnId !== undefined
             ? { recurrenceOriginColumnId: dto.recurrenceOriginColumnId }
             : {}),
+          ...(dto.sprintId !== undefined ? { sprintId: dto.sprintId } : {}),
+          ...(dto.isEpic !== undefined ? { isEpic: dto.isEpic } : {}),
+          ...(dto.isEpic === true
+            ? { epicId: null }
+            : dto.epicId !== undefined
+              ? { epicId: dto.epicId }
+              : {}),
         },
         include: taskWithAssignee,
       });
@@ -351,6 +388,16 @@ export class TasksService {
       position: dto.position,
       actorId: userId,
     });
+
+    if (task.columnId !== dto.columnId) {
+      const columnName = targetColumn.name;
+      await this.watchersService.notifyWatchers({
+        workspaceId,
+        taskId,
+        actorId: userId,
+        preview: `Статус → ${columnName}`,
+      });
+    }
 
     return this.toTask(updated);
   }

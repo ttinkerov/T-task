@@ -33,7 +33,7 @@ import { useMembersQuery } from '@/features/workspaces/hooks';
 import { celebrateTaskComplete } from '@/shared/lib/celebrate';
 import { formatMinutes } from '@/shared/lib/format-duration';
 import { formatRecurrenceLabel } from '@/shared/lib/format-recurrence';
-import { formatOverdueLabel, isDoneColumn, isTaskOverdue } from '../lib/overdue';
+import { formatAgingLabel, getAgingLevel, isDoneColumn, isTaskOverdue } from '../lib/overdue';
 import type { BoardViewMode } from '../lib/task-view-utils';
 import {
   useBoardQuery,
@@ -53,6 +53,7 @@ import {
   type BoardView,
 } from '../types';
 import { BoardFiltersBar } from './board-filters-bar';
+import { BoardSprintPanel } from './board-sprint-panel';
 import { BoardSwitcher, storeSelectedBoardId } from './board-switcher';
 import { BoardWorkloadPanel } from './board-workload-panel';
 import { ColumnAutomationDialog } from './column-automation-dialog';
@@ -250,6 +251,7 @@ export function KanbanBoard({
         </p>
       ) : null}
       {viewMode === 'BOARD' ? <BoardWorkloadPanel board={board} /> : null}
+      {viewMode === 'BOARD' ? <BoardSprintPanel workspaceId={workspaceId} /> : null}
 
       {viewMode === 'BOARD' ? (
         <DndContext
@@ -363,6 +365,9 @@ function matchesFilters(
   const overdue = isTaskOverdue(task, column, columns);
   if (filters.overdueStatus === 'overdue' && !overdue) return false;
   if (filters.overdueStatus === 'not_overdue' && overdue) return false;
+
+  if (filters.sprintId && task.sprintId !== filters.sprintId) return false;
+  if (filters.epicId && task.epicId !== filters.epicId) return false;
 
   return true;
 }
@@ -509,6 +514,19 @@ function KanbanColumn({
     setEditingName(false);
   };
 
+  const overWip =
+    typeof column.wipLimit === 'number' &&
+    column.wipLimit > 0 &&
+    column.tasks.length > column.wipLimit;
+
+  const handleWipBlur = async (value: string) => {
+    const trimmed = value.trim();
+    const next = trimmed === '' ? null : Number(trimmed);
+    if (next !== null && (!Number.isInteger(next) || next < 1)) return;
+    if (next === (column.wipLimit ?? null)) return;
+    await updateColumnMutation.mutateAsync({ columnId: column.id, wipLimit: next });
+  };
+
   const handleDelete = async () => {
     const message =
       column.tasks.length > 0
@@ -519,7 +537,10 @@ function KanbanColumn({
   };
 
   return (
-    <div ref={setNodeRef} className={`kanban-column ${isOver ? 'kanban-column--over' : ''}`}>
+    <div
+      ref={setNodeRef}
+      className={`kanban-column ${isOver ? 'kanban-column--over' : ''} ${overWip ? 'kanban-column--over-wip' : ''}`}
+    >
       <div className="kanban-column__header">
         <button
           type="button"
@@ -563,7 +584,23 @@ function KanbanColumn({
           </button>
         )}
 
-        <span className="kanban-column__count">{column.tasks.length}</span>
+        <span className={`kanban-column__count ${overWip ? 'kanban-column__count--over' : ''}`}>
+          {column.wipLimit ? `${column.tasks.length}/${column.wipLimit}` : column.tasks.length}
+        </span>
+        {canManageAutomations ? (
+          <input
+            type="number"
+            min={1}
+            max={999}
+            className="kanban-column__wip-input"
+            title="WIP-лимит"
+            aria-label="WIP-лимит колонки"
+            defaultValue={column.wipLimit ?? ''}
+            placeholder="WIP"
+            onBlur={(event) => void handleWipBlur(event.target.value)}
+            onClick={(event) => event.stopPropagation()}
+          />
+        ) : null}
 
         {canManageAutomations ? (
           <button
@@ -678,7 +715,8 @@ function KanbanTaskCard({
     ? new Date(task.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
     : null;
   const recurrenceLabel = formatRecurrenceLabel(task.recurrenceRule, task.recurrenceWeekdays);
-  const overdueLabel = formatOverdueLabel(task, column, allColumns);
+  const overdueLabel = formatAgingLabel(task, column, allColumns);
+  const agingLevel = getAgingLevel(task, column, allColumns);
   const isOverdue = isTaskOverdue(task, column, allColumns);
   const isComplete = Boolean(task.completedAt) || isDoneColumn(column, allColumns);
   const customFieldChips = cardFields
@@ -694,7 +732,7 @@ function KanbanTaskCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`kanban-task-card kanban-task ${isOverdue ? 'kanban-task-card--overdue' : ''} ${isDragging ? 'kanban-task--dragging' : ''}`}
+      className={`kanban-task-card kanban-task ${agingLevel !== 'none' ? `kanban-task-card--aging-${agingLevel}` : ''} ${isOverdue ? 'kanban-task-card--overdue' : ''} ${task.isEpic ? 'kanban-task-card--epic' : ''} ${isDragging ? 'kanban-task--dragging' : ''}`}
       onClick={onOpen}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -757,7 +795,15 @@ function KanbanTaskCard({
                 </span>
               ) : null}
               {overdueLabel ? (
-                <span className="kanban-task-chip kanban-task-chip--overdue">{overdueLabel}</span>
+                <span
+                  className={`kanban-task-chip ${
+                    agingLevel === 'due-today' || agingLevel === 'due-soon'
+                      ? 'kanban-task-chip--due-soon'
+                      : 'kanban-task-chip--overdue'
+                  }`}
+                >
+                  {overdueLabel}
+                </span>
               ) : null}
               {recurrenceLabel ? (
                 <span className="kanban-task-chip kanban-task-chip--recurrence">

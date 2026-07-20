@@ -8,6 +8,17 @@ export const savedFilterKeys = {
     [...savedFilterKeys.all, workspaceId, view ?? 'all'] as const,
 };
 
+export function usePinnedSavedFiltersQuery(workspaceId: string | null) {
+  return useQuery({
+    queryKey: [...savedFilterKeys.all, workspaceId ?? '', 'pinned'],
+    queryFn: async () => {
+      const response = await fetchSavedFilters(workspaceId!);
+      return (response.data ?? []).filter((item) => item.isPinned);
+    },
+    enabled: Boolean(workspaceId),
+  });
+}
+
 export function useSavedFiltersQuery(workspaceId: string | null, view: SavedFilterView) {
   return useQuery({
     queryKey: savedFilterKeys.list(workspaceId ?? '', view),

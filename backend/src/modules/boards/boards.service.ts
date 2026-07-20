@@ -107,6 +107,7 @@ export class BoardsService {
       id: string;
       name: string;
       position: number;
+      wipLimit?: number | null;
       automations: Array<{
         id: string;
         action: ColumnAutomationAction;
@@ -129,6 +130,7 @@ export class BoardsService {
         id: column.id,
         name: column.name,
         position: column.position,
+        wipLimit: column.wipLimit ?? null,
         automations: column.automations.map((automation) => ({
           id: automation.id,
           action: automation.action,
@@ -179,6 +181,9 @@ export class BoardsService {
                 timerStartedAt: true,
                 completedAt: true,
                 createdAt: true,
+                sprintId: true,
+                isEpic: true,
+                epicId: true,
                 assignee: {
                   select: { id: true, name: true, email: true, avatarUrl: true },
                 },
@@ -270,6 +275,7 @@ export class BoardsService {
       id: column.id,
       name: column.name,
       position: column.position,
+      wipLimit: null,
       automations: [],
       tasks: [],
     };
@@ -279,20 +285,29 @@ export class BoardsService {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
     const column = await this.findColumnInWorkspace(workspaceId, columnId);
 
+    if (dto.name === undefined && dto.wipLimit === undefined) {
+      throw new BadRequestException('Нечего обновлять');
+    }
+
     const updated = await this.prisma.$transaction(async (tx) => {
       const renamed = await tx.boardColumn.update({
         where: { id: columnId },
-        data: { name: dto.name.trim() },
+        data: {
+          ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
+          ...(dto.wipLimit !== undefined ? { wipLimit: dto.wipLimit } : {}),
+        },
       });
-      await this.activityService.record({
-        workspaceId,
-        actorId: userId,
-        action: ActivityAction.COLUMN_UPDATED,
-        entityType: ActivityEntityType.COLUMN,
-        entityId: renamed.id,
-        entityName: renamed.name,
-        metadata: { previousName: column.name },
-      });
+      if (dto.name !== undefined && dto.name.trim() !== column.name) {
+        await this.activityService.record({
+          workspaceId,
+          actorId: userId,
+          action: ActivityAction.COLUMN_UPDATED,
+          entityType: ActivityEntityType.COLUMN,
+          entityId: renamed.id,
+          entityName: renamed.name,
+          metadata: { previousName: column.name },
+        });
+      }
       return renamed;
     });
 
@@ -300,6 +315,7 @@ export class BoardsService {
       id: updated.id,
       name: updated.name,
       position: updated.position,
+      wipLimit: updated.wipLimit,
     };
   }
 
@@ -502,6 +518,9 @@ export class BoardsService {
     timerStartedAt: Date | null;
     completedAt: Date | null;
     createdAt: Date;
+    sprintId?: string | null;
+    isEpic?: boolean;
+    epicId?: string | null;
     assignee?: {
       id: string;
       name: string;
@@ -550,6 +569,9 @@ export class BoardsService {
       timerStartedAt: task.timerStartedAt?.toISOString() ?? null,
       completedAt: task.completedAt?.toISOString() ?? null,
       createdAt: task.createdAt.toISOString(),
+      sprintId: task.sprintId ?? null,
+      isEpic: Boolean(task.isEpic),
+      epicId: task.epicId ?? null,
       customFields: (task.customFieldValues ?? []).map((entry) => ({
         fieldId: entry.fieldId,
         value: entry.value,

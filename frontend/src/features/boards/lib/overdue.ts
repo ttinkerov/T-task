@@ -6,6 +6,8 @@ function startOfDay(date: Date): Date {
   return result;
 }
 
+export type AgingLevel = 'none' | 'due-soon' | 'due-today' | 'overdue' | 'overdue-critical';
+
 export function isDoneColumn(column: BoardColumn, columns: BoardColumn[]): boolean {
   const maxPosition = Math.max(...columns.map((item) => item.position));
   const normalizedName = column.name.trim().toLowerCase();
@@ -36,6 +38,42 @@ export function isTaskOverdue(
   }
 
   return countOverdueDays(task.dueDate, reference) > 0;
+}
+
+export function getAgingLevel(
+  task: BoardTask,
+  column: BoardColumn,
+  columns: BoardColumn[],
+  reference = new Date(),
+): AgingLevel {
+  if (!task.dueDate || isDoneColumn(column, columns) || task.completedAt) {
+    return 'none';
+  }
+
+  const due = startOfDay(new Date(task.dueDate));
+  const today = startOfDay(reference);
+  const diffDays = Math.floor((due.getTime() - today.getTime()) / 86_400_000);
+
+  if (diffDays < 0) {
+    const overdueDays = Math.max(task.overdueDays, Math.abs(diffDays));
+    return overdueDays >= 3 ? 'overdue-critical' : 'overdue';
+  }
+
+  if (diffDays === 0) return 'due-today';
+  if (diffDays === 1 || diffDays === 2) return 'due-soon';
+  return 'none';
+}
+
+export function formatAgingLabel(
+  task: BoardTask,
+  column: BoardColumn,
+  columns: BoardColumn[],
+  reference = new Date(),
+): string | null {
+  const level = getAgingLevel(task, column, columns, reference);
+  if (level === 'due-today') return 'Сегодня';
+  if (level === 'due-soon') return 'Скоро';
+  return formatOverdueLabel(task, column, columns);
 }
 
 export function formatOverdueLabel(

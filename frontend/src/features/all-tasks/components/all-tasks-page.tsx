@@ -362,6 +362,7 @@ function buildDisplayColumns(tasks: AllTask[]): BoardColumn[] {
       id: key,
       name: `${task.board.name} · ${task.column.name}`,
       position: current?.position ?? grouped.size,
+      wipLimit: null,
       automations: [],
       tasks: [...(current?.tasks ?? []), task],
     });
@@ -381,6 +382,8 @@ function allTasksFiltersToBoardFilters(
     tagId: filters.tagId,
     myTasksOnly,
     overdueStatus: filters.due === 'OVERDUE' ? 'overdue' : '',
+    sprintId: '',
+    epicId: '',
   };
 }
 

@@ -26,6 +26,14 @@ export class CreateSavedFilterDto {
   @IsOptional()
   @IsBoolean()
   isDefault?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isShared?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isPinned?: boolean;
 }
 
 export class UpdateSavedFilterDto {
@@ -43,4 +51,12 @@ export class UpdateSavedFilterDto {
   @IsOptional()
   @IsBoolean()
   isDefault?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isShared?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isPinned?: boolean;
 }

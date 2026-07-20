@@ -58,6 +58,7 @@ describe('CommentsService mentions', () => {
       prisma as never,
       { getWorkspaceForMember: vi.fn().mockResolvedValue({ id: 'workspace-1' }) } as never,
       mentions as never,
+      { notifyWatchers: vi.fn().mockResolvedValue(undefined) } as never,
       { emit: vi.fn() } as never,
     );
   });

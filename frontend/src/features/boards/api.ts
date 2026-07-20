@@ -71,11 +71,15 @@ export async function createColumn(workspaceId: string, name: string, boardId?: 
   });
 }
 
-export async function updateColumn(workspaceId: string, columnId: string, name: string) {
+export async function updateColumn(
+  workspaceId: string,
+  columnId: string,
+  data: { name?: string; wipLimit?: number | null },
+) {
   return apiFetch(`/api/v1/workspaces/${workspaceId}/board/columns/${columnId}`, {
     method: 'PATCH',
     headers: withWorkspace(workspaceId),
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(data),
   });
 }
 

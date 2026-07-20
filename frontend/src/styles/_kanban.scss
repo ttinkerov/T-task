@@ -49,6 +49,10 @@
     border-color: $color-brand-blue;
   }
 
+  &--over-wip {
+    border-color: rgba(192, 57, 43, 0.55);
+  }
+
   &--dragging {
     box-shadow: var(--tt-shadow);
     border-color: $color-brand-blue;
@@ -152,6 +156,22 @@
     background: var(--tt-hover);
     border-radius: $radius-pill;
     padding: 0.125rem 0.4375rem;
+
+    &--over {
+      color: #c0392b;
+      background: rgba(192, 57, 43, 0.12);
+    }
+  }
+
+  &__wip-input {
+    width: 3.2rem;
+    flex-shrink: 0;
+    border-radius: $radius-sm;
+    border: 1px solid var(--tt-border-subtle);
+    background: var(--tt-surface);
+    color: var(--tt-text-muted);
+    font-size: 0.65rem;
+    padding: 0.15rem 0.25rem;
   }
 
   &__automation {
@@ -503,6 +523,28 @@
     background: rgba(255, 107, 107, 0.06);
   }
 
+  &--aging-due-soon {
+    border-left: 3px solid #d4a017;
+  }
+
+  &--aging-due-today {
+    border-left: 3px solid #e67e22;
+    background: rgba(230, 126, 34, 0.06);
+  }
+
+  &--aging-overdue {
+    border-left: 3px solid #e74c3c;
+  }
+
+  &--aging-overdue-critical {
+    border-left: 3px solid #c0392b;
+    background: rgba(192, 57, 43, 0.1);
+  }
+
+  &--epic {
+    border-style: dashed;
+  }
+
   &__body {
     display: flex;
     align-items: flex-start;
@@ -571,3 +613,18 @@
     }
   }
 }
+
+.board-sprint-panel {
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--tt-border-subtle);
+  border-radius: 12px;
+  background: var(--tt-surface);
+}
+.board-sprint-panel__head { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.board-sprint-panel__eyebrow { margin:0; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--tt-text-muted); }
+.board-sprint-panel__actions { display:flex; gap:0.35rem; }
+.board-sprint-panel__form { display:grid; grid-template-columns:1.4fr 1fr 1fr auto; gap:0.5rem; margin-top:0.75rem; }
+.board-sprint-panel__chart { margin-top:0.75rem; }
+.board-sprint-panel__chart svg { width:100%; max-width:420px; height:80px; }
+.board-sprint-panel__meta { margin:0.25rem 0 0; font-size:0.75rem; color:var(--tt-text-muted); }

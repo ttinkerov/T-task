@@ -167,8 +167,16 @@ export function useUpdateColumnMutation(workspaceId: string, boardId?: string | 
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ columnId, name }: { columnId: string; name: string }) => {
-      await updateColumn(workspaceId, columnId, name);
+    mutationFn: async ({
+      columnId,
+      name,
+      wipLimit,
+    }: {
+      columnId: string;
+      name?: string;
+      wipLimit?: number | null;
+    }) => {
+      await updateColumn(workspaceId, columnId, { name, wipLimit });
     },
     onSuccess: () => {
       invalidateBoardAndLists(queryClient, workspaceId, boardId);

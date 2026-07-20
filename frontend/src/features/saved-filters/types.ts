@@ -8,6 +8,9 @@ export interface SavedFilter {
   name: string;
   filters: BoardFilters;
   isDefault: boolean;
+  isShared: boolean;
+  isPinned: boolean;
+  userId: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -17,10 +20,14 @@ export interface CreateSavedFilterPayload {
   name: string;
   filters: BoardFilters;
   isDefault?: boolean;
+  isShared?: boolean;
+  isPinned?: boolean;
 }
 
 export interface UpdateSavedFilterPayload {
   name?: string;
   filters?: BoardFilters;
   isDefault?: boolean;
+  isShared?: boolean;
+  isPinned?: boolean;
 }

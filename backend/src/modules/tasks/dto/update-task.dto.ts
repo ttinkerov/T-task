@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   IsArray,
+  IsBoolean,
   ArrayMinSize,
   ArrayMaxSize,
   Max,
@@ -86,4 +87,18 @@ export class UpdateTaskDto {
   @ValidateIf((_, value) => value !== null)
   @IsEntityId()
   recurrenceOriginColumnId?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsEntityId()
+  sprintId?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  isEpic?: boolean;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsEntityId()
+  epicId?: string | null;
 }

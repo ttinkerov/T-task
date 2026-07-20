@@ -25,6 +25,8 @@ import { SearchModule } from './modules/search/search.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ExportModule } from './modules/export/export.module';
 import { AiModule } from './modules/ai/ai.module';
+import { SprintsModule } from './modules/sprints/sprints.module';
+import { WatchersModule } from './modules/watchers/watchers.module';
 
 @Module({
   imports: [
@@ -53,6 +55,8 @@ import { AiModule } from './modules/ai/ai.module';
     AnalyticsModule,
     ExportModule,
     AiModule,
+    SprintsModule,
+    WatchersModule,
   ],
   providers: [MailNotificationsListener],
 })

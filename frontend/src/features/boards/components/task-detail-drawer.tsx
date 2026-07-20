@@ -34,6 +34,10 @@ import { TaskRelationsSection } from './task-relations-section';
 import { TaskSubtasksSection } from './task-subtasks-section';
 import { TaskTagsSection } from './task-tags-section';
 import { TaskAiAssistant } from '@/features/ai';
+import { useSprintsQuery } from '@/features/sprints';
+import { useTaskWatchersQuery, useToggleWatchMutation } from '@/features/watchers/hooks';
+import { useBoardQuery } from '../hooks';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface TaskDetailDrawerProps {
   workspaceId: string;
@@ -56,6 +60,10 @@ export function TaskDetailDrawer({
 }: TaskDetailDrawerProps) {
   const { data: session } = useMeQuery();
   const { data: members = [] } = useMembersQuery(workspaceId);
+  const { data: sprints = [] } = useSprintsQuery(workspaceId);
+  const { data: board } = useBoardQuery(workspaceId);
+  const { data: watchState } = useTaskWatchersQuery(workspaceId, task.id);
+  const toggleWatchMutation = useToggleWatchMutation(workspaceId, task.id);
   const updateMutation = useUpdateTaskMutation(workspaceId);
   const deleteMutation = useDeleteTaskMutation(workspaceId);
   const duplicateMutation = useDuplicateTaskMutation(workspaceId);
@@ -78,6 +86,9 @@ export function TaskDetailDrawer({
   const [actualMinutes, setActualMinutes] = useState<number | ''>(task.actualMinutes ?? '');
   const [dueDate, setDueDate] = useState(toDateInputValue(task.dueDate));
   const [assigneeId, setAssigneeId] = useState(task.assigneeId ?? '');
+  const [sprintId, setSprintId] = useState(task.sprintId ?? '');
+  const [epicId, setEpicId] = useState(task.epicId ?? '');
+  const [isEpic, setIsEpic] = useState(Boolean(task.isEpic));
   const [recurrenceRule, setRecurrenceRule] = useState<TaskRecurrenceRule>(task.recurrenceRule);
   const [recurrenceAction, setRecurrenceAction] = useState<TaskRecurrenceAction>(
     task.recurrenceAction,
@@ -97,6 +108,9 @@ export function TaskDetailDrawer({
     setActualMinutes(detailTask.actualMinutes ?? '');
     setDueDate(toDateInputValue(detailTask.dueDate));
     setAssigneeId(detailTask.assigneeId ?? '');
+    setSprintId(detailTask.sprintId ?? '');
+    setEpicId(detailTask.epicId ?? '');
+    setIsEpic(Boolean(detailTask.isEpic));
     setRecurrenceRule(detailTask.recurrenceRule);
     setRecurrenceAction(detailTask.recurrenceAction);
     setRecurrenceWeekdays(detailTask.recurrenceWeekdays ?? []);
@@ -125,6 +139,9 @@ export function TaskDetailDrawer({
         actualMinutes: actualMinutes === '' ? null : Number(actualMinutes),
         dueDate: dueDate ? new Date(`${dueDate}T12:00:00`).toISOString() : null,
         assigneeId: assigneeId || null,
+        sprintId: sprintId || null,
+        epicId: isEpic ? null : epicId || null,
+        isEpic,
         recurrenceRule,
         recurrenceAction,
         recurrenceWeekdays: recurrenceRule === 'WEEKLY' ? recurrenceWeekdays : [],
@@ -222,21 +239,98 @@ export function TaskDetailDrawer({
             taskDescription={description}
           />
 
-          <label className="task-drawer__field">
-            <span>Исполнитель</span>
-            <select
-              value={assigneeId}
-              onChange={(event) => setAssigneeId(event.target.value)}
-              className="glass-input"
-            >
-              <option value="">Не назначен</option>
-              {members.map((member) => (
-                <option key={member.userId} value={member.userId}>
-                  {member.user.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="task-drawer__grid">
+            <label className="task-drawer__field">
+              <span>Исполнитель</span>
+              <select
+                value={assigneeId}
+                onChange={(event) => setAssigneeId(event.target.value)}
+                className="glass-input"
+              >
+                <option value="">Не назначен</option>
+                {members.map((member) => (
+                  <option key={member.userId} value={member.userId}>
+                    {member.user.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="task-drawer__field">
+              <span>Наблюдение</span>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => void toggleWatchMutation.mutateAsync(Boolean(watchState?.watching))}
+                disabled={toggleWatchMutation.isPending}
+              >
+                {watchState?.watching ? (
+                  <>
+                    <EyeOff size={14} /> Не следить
+                  </>
+                ) : (
+                  <>
+                    <Eye size={14} /> Следить
+                  </>
+                )}
+              </button>
+              {watchState?.watchers?.length ? (
+                <p className="settings-card__hint">
+                  Следят: {watchState.watchers.map((item) => item.name).join(', ')}
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="task-drawer__grid">
+            <label className="task-drawer__field">
+              <span>Спринт</span>
+              <select
+                value={sprintId}
+                onChange={(event) => setSprintId(event.target.value)}
+                className="glass-input"
+              >
+                <option value="">Без спринта</option>
+                {sprints
+                  .filter((sprint) => !sprint.closedAt || sprint.id === sprintId)
+                  .map((sprint) => (
+                    <option key={sprint.id} value={sprint.id}>
+                      {sprint.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+
+            <label className="task-drawer__field">
+              <span>Эпик</span>
+              <select
+                value={isEpic ? '' : epicId}
+                onChange={(event) => setEpicId(event.target.value)}
+                className="glass-input"
+                disabled={isEpic}
+              >
+                <option value="">Без эпика</option>
+                {(board?.columns.flatMap((column) => column.tasks) ?? [])
+                  .filter((item) => item.isEpic && item.id !== task.id)
+                  .map((epic) => (
+                    <option key={epic.id} value={epic.id}>
+                      {epic.title}
+                    </option>
+                  ))}
+              </select>
+              <label className="forms-editor__checkbox" style={{ marginTop: '0.5rem' }}>
+                <input
+                  type="checkbox"
+                  checked={isEpic}
+                  onChange={(event) => {
+                    setIsEpic(event.target.checked);
+                    if (event.target.checked) setEpicId('');
+                  }}
+                />
+                Это эпик
+              </label>
+            </label>
+          </div>
 
           <div className="task-drawer__grid">
             <label className="task-drawer__field">

@@ -4,6 +4,7 @@ import { MentionSourceType, Prisma } from '@prisma/client';
 import { DomainEvents } from '../../common/events/domain-events';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { MentionsService } from '../mentions/mentions.service';
+import { WatchersService } from '../watchers/watchers.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 
@@ -13,6 +14,7 @@ export class CommentsService {
     private readonly prisma: PrismaService,
     private readonly workspacesService: WorkspacesService,
     private readonly mentionsService: MentionsService,
+    private readonly watchersService: WatchersService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -64,6 +66,15 @@ export class CommentsService {
       );
 
       return created;
+    });
+
+    await this.watchersService.notifyWatchers({
+      workspaceId,
+      taskId,
+      actorId: userId,
+      commentId: comment.id,
+      preview: `Комментарий: ${prepared.text}`,
+      skipUserIds: prepared.recipientIds,
     });
 
     this.eventEmitter.emit(DomainEvents.COMMENT_CREATED, {

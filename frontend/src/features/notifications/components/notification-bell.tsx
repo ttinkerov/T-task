@@ -135,6 +135,9 @@ function actorInitial(notification: AppNotification) {
   if (notification.type === 'DUE_REMINDER' || !notification.actor) {
     return '⏱';
   }
+  if (notification.type === 'WATCH') {
+    return '👁';
+  }
   return notification.actor.name.slice(0, 1).toUpperCase() || '?';
 }
 
@@ -143,6 +146,15 @@ function NotificationCopy({ notification }: { notification: AppNotification }) {
     return (
       <>
         <strong>Система</strong> напоминает о сроке
+      </>
+    );
+  }
+
+  if (notification.type === 'WATCH') {
+    const actorName = notification.actor?.name ?? 'Кто-то';
+    return (
+      <>
+        <strong>{actorName}</strong> · обновление по задаче, за которой вы следите
       </>
     );
   }

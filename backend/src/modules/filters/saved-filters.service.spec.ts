@@ -36,7 +36,11 @@ describe('SavedFiltersService', () => {
     await service.list('workspace-1', 'user-1', 'BOARD');
     expect(prisma.savedFilter.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { workspaceId: 'workspace-1', userId: 'user-1', view: 'BOARD' },
+        where: {
+          workspaceId: 'workspace-1',
+          view: 'BOARD',
+          OR: [{ userId: 'user-1' }, { isShared: true }],
+        },
       }),
     );
   });

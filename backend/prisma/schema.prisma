@@ -59,6 +59,7 @@ enum TaskRelationType {
 enum NotificationType {
   MENTION
   DUE_REMINDER
+  WATCH
 }
 
 enum SavedFilterView {
@@ -122,6 +123,7 @@ model User {
   receivedNotifications Notification[]       @relation("NotificationRecipient")
   sentNotifications     Notification[]       @relation("NotificationActor")
   savedFilters          SavedFilter[]
+  watchedTasks          TaskWatcher[]
 
   @@map("users")
 }
@@ -170,6 +172,7 @@ model Workspace {
   activityLogs ActivityLog[]
   notifications Notification[]
   aiSetting     AiWorkspaceSetting?
+  sprints       Sprint[]
 
   @@map("workspaces")
 }
@@ -247,6 +250,7 @@ model BoardColumn {
   boardId   String    @map("board_id")
   name      String
   position  Int
+  wipLimit  Int?      @map("wip_limit")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
@@ -279,12 +283,18 @@ model Task {
   timerStartedAt           DateTime?            @map("timer_started_at")
   completedAt              DateTime?            @map("completed_at")
   dueReminderSentAt        DateTime?            @map("due_reminder_sent_at")
+  sprintId                 String?              @map("sprint_id")
+  isEpic                   Boolean              @default(false) @map("is_epic")
+  epicId                   String?              @map("epic_id")
   createdAt                DateTime             @default(now()) @map("created_at")
   updatedAt                DateTime             @updatedAt @map("updated_at")
   deletedAt                DateTime?            @map("deleted_at")
 
   column   BoardColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
   assignee User?       @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  sprint   Sprint?     @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+  epic     Task?       @relation("TaskEpic", fields: [epicId], references: [id], onDelete: SetNull)
+  children Task[]      @relation("TaskEpic")
   comments Comment[]
   outgoingRelations TaskRelation[] @relation("TaskRelationSource")
   incomingRelations TaskRelation[] @relation("TaskRelationTarget")
@@ -294,11 +304,44 @@ model Task {
   subtasks Subtask[]
   attachments TaskAttachment[]
   dealLinks DealTask[]
+  watchers TaskWatcher[]
 
   @@index([columnId])
   @@index([assigneeId])
   @@index([deletedAt])
+  @@index([sprintId])
+  @@index([epicId])
   @@map("tasks")
+}
+
+model Sprint {
+  id          String    @id @default(cuid())
+  workspaceId String    @map("workspace_id")
+  name        String
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime  @map("end_date")
+  closedAt    DateTime? @map("closed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+
+  @@index([workspaceId])
+  @@map("sprints")
+}
+
+model TaskWatcher {
+  taskId    String   @map("task_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, userId])
+  @@index([userId])
+  @@map("task_watchers")
 }
 
 model Tag {
@@ -540,6 +583,8 @@ model SavedFilter {
   name        String
   filters     Json
   isDefault   Boolean         @default(false) @map("is_default")
+  isShared    Boolean         @default(false) @map("is_shared")
+  isPinned    Boolean         @default(false) @map("is_pinned")
   createdAt   DateTime        @default(now()) @map("created_at")
   updatedAt   DateTime        @updatedAt @map("updated_at")
 
@@ -547,6 +592,7 @@ model SavedFilter {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId, userId, view])
+  @@index([workspaceId, isShared])
   @@map("saved_filters")
 }
 

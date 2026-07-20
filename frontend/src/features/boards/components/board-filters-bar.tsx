@@ -1,8 +1,11 @@
 'use client';
 
 import { SavedFiltersControl } from '@/features/saved-filters';
+import { useSprintsQuery } from '@/features/sprints';
 import { useTagsQuery } from '@/features/tags/hooks';
 import { useMembersQuery } from '@/features/workspaces/hooks';
+import { useMemo } from 'react';
+import { useBoardQuery } from '../hooks';
 import {
   EMPTY_BOARD_FILTERS,
   OVERDUE_FILTER_OPTIONS,
@@ -20,13 +23,23 @@ interface BoardFiltersBarProps {
 export function BoardFiltersBar({ workspaceId, filters, onChange }: BoardFiltersBarProps) {
   const { data: members = [] } = useMembersQuery(workspaceId);
   const { data: tags = [] } = useTagsQuery(workspaceId);
+  const { data: sprints = [] } = useSprintsQuery(workspaceId);
+  const { data: board } = useBoardQuery(workspaceId);
+  const activeSprint = sprints.find((sprint) => sprint.active);
+  const epics = useMemo(() => {
+    if (!board) return [];
+    return board.columns.flatMap((column) => column.tasks).filter((task) => task.isEpic);
+  }, [board]);
+
   const hasActiveFilters =
     Boolean(filters.search) ||
     Boolean(filters.priority) ||
     Boolean(filters.assigneeId) ||
     Boolean(filters.tagId) ||
     filters.myTasksOnly ||
-    Boolean(filters.overdueStatus);
+    Boolean(filters.overdueStatus) ||
+    Boolean(filters.sprintId) ||
+    Boolean(filters.epicId);
 
   return (
     <div className="board-filters">
@@ -89,6 +102,35 @@ export function BoardFiltersBar({ workspaceId, filters, onChange }: BoardFilters
       </select>
 
       <select
+        value={filters.sprintId}
+        onChange={(event) => onChange({ ...filters, sprintId: event.target.value })}
+        className="board-filters__select"
+        aria-label="Фильтр по спринту"
+      >
+        <option value="">Все спринты</option>
+        {sprints.map((sprint) => (
+          <option key={sprint.id} value={sprint.id}>
+            {sprint.name}
+            {sprint.active ? ' · активный' : ''}
+          </option>
+        ))}
+      </select>
+
+      <select
+        value={filters.epicId}
+        onChange={(event) => onChange({ ...filters, epicId: event.target.value })}
+        className="board-filters__select"
+        aria-label="Фильтр по эпику"
+      >
+        <option value="">Все эпики</option>
+        {epics.map((epic) => (
+          <option key={epic.id} value={epic.id}>
+            {epic.title}
+          </option>
+        ))}
+      </select>
+
+      <select
         value={filters.overdueStatus}
         onChange={(event) =>
           onChange({
@@ -113,6 +155,21 @@ export function BoardFiltersBar({ workspaceId, filters, onChange }: BoardFilters
       >
         Мои задачи
       </button>
+
+      {activeSprint ? (
+        <button
+          type="button"
+          className={`board-filters__chip ${filters.sprintId === activeSprint.id ? 'board-filters__chip--active' : ''}`}
+          onClick={() =>
+            onChange({
+              ...filters,
+              sprintId: filters.sprintId === activeSprint.id ? '' : activeSprint.id,
+            })
+          }
+        >
+          Этот спринт
+        </button>
+      ) : null}
 
       {hasActiveFilters ? (
         <button

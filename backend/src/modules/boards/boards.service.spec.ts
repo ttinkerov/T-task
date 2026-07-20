@@ -264,6 +264,7 @@ describe('BoardsService — multiple boards', () => {
         id: 'col-new',
         name: 'Ревью',
         position: 3,
+        wipLimit: null,
         automations: [],
         tasks: [],
       });

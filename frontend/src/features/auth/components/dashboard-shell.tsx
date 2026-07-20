@@ -26,6 +26,7 @@ import {
   Tags,
   Trash2,
   UserRound,
+  Bookmark,
 } from 'lucide-react';
 import { BrandLogo } from '@/components/marketing/brand-logo';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
@@ -33,6 +34,7 @@ import { BoardSkeleton } from '@/components/ui/skeleton';
 import { useCanViewActivity } from '@/features/activity/hooks';
 import { useLogoutMutation, useMeQuery } from '@/features/auth/hooks';
 import { NotificationBell } from '@/features/notifications';
+import { usePinnedSavedFiltersQuery } from '@/features/saved-filters/hooks';
 import { AppSidebar, type NavGroup } from '@/features/shell/components/app-sidebar';
 import { CommandPalette, type CommandItem } from '@/features/shell/components/command-palette';
 import { MobileBottomNav } from '@/features/shell/components/mobile-bottom-nav';
@@ -58,6 +60,7 @@ export function DashboardShell({
   const logoutMutation = useLogoutMutation();
   const { canView: canViewActivity, isLoading: activityAccessLoading } = useCanViewActivity();
   const { canManage: canManageTrash, isLoading: trashAccessLoading } = useCanManageTrash();
+  const { data: pinnedViews = [] } = usePinnedSavedFiltersQuery(workspaceId);
   const [collapsed, setCollapsed] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -124,6 +127,24 @@ export function DashboardShell({
           { href: '/dashboard/ai', label: 'ИИ', icon: Sparkles },
         ],
       },
+      ...(pinnedViews.length
+        ? [
+            {
+              id: 'views',
+              label: 'Виды',
+              items: pinnedViews.map((view) => ({
+                href:
+                  view.view === 'ALL_TASKS'
+                    ? `/dashboard/all-tasks?filter=${view.id}`
+                    : view.view === 'MY_TASKS'
+                      ? `/dashboard/my-tasks?filter=${view.id}`
+                      : `/dashboard/board?filter=${view.id}`,
+                label: view.name,
+                icon: Bookmark,
+              })),
+            },
+          ]
+        : []),
       {
         id: 'crm',
         label: 'Рост',
@@ -156,7 +177,7 @@ export function DashboardShell({
         ],
       },
     ],
-    [activityAccessLoading, canManageTrash, canViewActivity, trashAccessLoading],
+    [activityAccessLoading, canManageTrash, canViewActivity, pinnedViews, trashAccessLoading],
   );
 
   const commandItems: CommandItem[] = useMemo(() => {

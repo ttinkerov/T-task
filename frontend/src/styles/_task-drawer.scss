@@ -798,6 +798,12 @@
     background: rgba(255, 107, 107, 0.08);
   }
 
+  &--due-soon {
+    color: #d4a017;
+    border-color: rgba(212, 160, 23, 0.35);
+    background: rgba(212, 160, 23, 0.1);
+  }
+
   &--custom {
     max-width: 12rem;
     overflow: hidden;

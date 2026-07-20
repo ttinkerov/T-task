@@ -35,6 +35,7 @@ export function SavedFiltersControl({
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState('');
   const [saveAsDefault, setSaveAsDefault] = useState(false);
+  const [saveAsShared, setSaveAsShared] = useState(false);
   const appliedDefaultRef = useRef(false);
 
   useEffect(() => {
@@ -68,10 +69,12 @@ export function SavedFiltersControl({
       name,
       filters,
       isDefault: saveAsDefault,
+      isShared: saveAsShared,
     });
     setSaveOpen(false);
     setSaveName('');
     setSaveAsDefault(false);
+    setSaveAsShared(false);
     if (created?.id) setSelectedId(created.id);
   };
 
@@ -89,7 +92,10 @@ export function SavedFiltersControl({
         <option value="">Сохранённые фильтры</option>
         {saved.map((item) => (
           <option key={item.id} value={item.id}>
-            {item.isDefault ? `★ ${item.name}` : item.name}
+            {item.isPinned ? '📌 ' : ''}
+            {item.isDefault ? '★ ' : ''}
+            {item.name}
+            {item.isShared ? ' · общий' : ''}
           </option>
         ))}
       </select>
@@ -116,6 +122,32 @@ export function SavedFiltersControl({
               По умолчанию
             </button>
           ) : null}
+          <button
+            type="button"
+            className="board-filters__chip"
+            disabled={updateMutation.isPending}
+            onClick={() =>
+              updateMutation.mutate({
+                filterId: selected.id,
+                data: { isPinned: !selected.isPinned },
+              })
+            }
+          >
+            {selected.isPinned ? 'Открепить' : 'Закрепить'}
+          </button>
+          <button
+            type="button"
+            className="board-filters__chip"
+            disabled={updateMutation.isPending}
+            onClick={() =>
+              updateMutation.mutate({
+                filterId: selected.id,
+                data: { isShared: !selected.isShared },
+              })
+            }
+          >
+            {selected.isShared ? 'Скрыть' : 'Поделиться'}
+          </button>
           <button
             type="button"
             className="board-filters__reset"
@@ -153,6 +185,14 @@ export function SavedFiltersControl({
               onChange={(event) => setSaveAsDefault(event.target.checked)}
             />
             По умолчанию
+          </label>
+          <label className="saved-filters__default">
+            <input
+              type="checkbox"
+              checked={saveAsShared}
+              onChange={(event) => setSaveAsShared(event.target.checked)}
+            />
+            Общий для команды
           </label>
           <button
             type="submit"
@@ -195,5 +235,7 @@ function normalizeFilters(raw: SavedFilter['filters'] | Record<string, unknown>)
       source.overdueStatus === 'overdue' || source.overdueStatus === 'not_overdue'
         ? source.overdueStatus
         : '',
+    sprintId: typeof source.sprintId === 'string' ? source.sprintId : '',
+    epicId: typeof source.epicId === 'string' ? source.epicId : '',
   };
 }

@@ -1,4 +1,4 @@
-export type NotificationType = 'MENTION' | 'DUE_REMINDER';
+export type NotificationType = 'MENTION' | 'DUE_REMINDER' | 'WATCH';
 export type NotificationSourceType = 'TASK_DESCRIPTION' | 'COMMENT';
 
 export interface NotificationActor {

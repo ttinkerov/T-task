@@ -5,6 +5,19 @@ import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateSavedFilterDto } from './dto/create-saved-filter.dto';
 import { UpdateSavedFilterDto } from './dto/update-saved-filter.dto';
 
+const filterSelect = {
+  id: true,
+  view: true,
+  name: true,
+  filters: true,
+  isDefault: true,
+  isShared: true,
+  isPinned: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 @Injectable()
 export class SavedFiltersService {
   constructor(
@@ -15,17 +28,13 @@ export class SavedFiltersService {
   async list(workspaceId: string, userId: string, view?: SavedFilterView) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
     return this.prisma.savedFilter.findMany({
-      where: { workspaceId, userId, ...(view ? { view } : {}) },
-      orderBy: [{ isDefault: 'desc' }, { name: 'asc' }],
-      select: {
-        id: true,
-        view: true,
-        name: true,
-        filters: true,
-        isDefault: true,
-        createdAt: true,
-        updatedAt: true,
+      where: {
+        workspaceId,
+        ...(view ? { view } : {}),
+        OR: [{ userId }, { isShared: true }],
       },
+      orderBy: [{ isPinned: 'desc' }, { isDefault: 'desc' }, { name: 'asc' }],
+      select: filterSelect,
     });
   }
 
@@ -51,16 +60,10 @@ export class SavedFiltersService {
           name,
           filters: dto.filters as Prisma.InputJsonValue,
           isDefault: Boolean(dto.isDefault),
+          isShared: Boolean(dto.isShared),
+          isPinned: Boolean(dto.isPinned),
         },
-        select: {
-          id: true,
-          view: true,
-          name: true,
-          filters: true,
-          isDefault: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        select: filterSelect,
       });
     });
   }
@@ -90,16 +93,10 @@ export class SavedFiltersService {
           ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
           ...(dto.filters !== undefined ? { filters: dto.filters as Prisma.InputJsonValue } : {}),
           ...(dto.isDefault !== undefined ? { isDefault: dto.isDefault } : {}),
+          ...(dto.isShared !== undefined ? { isShared: dto.isShared } : {}),
+          ...(dto.isPinned !== undefined ? { isPinned: dto.isPinned } : {}),
         },
-        select: {
-          id: true,
-          view: true,
-          name: true,
-          filters: true,
-          isDefault: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        select: filterSelect,
       });
     });
   }
@@ -120,8 +117,7 @@ export class SavedFiltersService {
   }
 
   private assertFiltersSize(filters: Record<string, unknown>) {
-    const size = Buffer.byteLength(JSON.stringify(filters), 'utf8');
-    if (size > 8_192) {
+    if (JSON.stringify(filters).length > 8_000) {
       throw new BadRequestException('Фильтр слишком большой');
     }
   }
