@@ -9,10 +9,12 @@ import { AiProvider } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { ActivityService } from '../activity/activity.service';
 import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
+import { AnalyticsService } from '../analytics/analytics.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { AiProviderClient } from './ai-provider.client';
 import { AiChatDto } from './dto/ai-chat.dto';
 import { ApplyEpicBreakdownDto, ProposeEpicBreakdownDto } from './dto/epic-breakdown.dto';
+import { StuckTasksInsightDto } from './dto/stuck-tasks-insight.dto';
 import { SummarizeAiDto } from './dto/summarize-ai.dto';
 import { UpsertAiSettingsDto } from './dto/upsert-ai-settings.dto';
 import { assertSafeAiBaseUrl, sanitizeProviderErrorMessage } from './utils/base-url-guard.util';
@@ -21,6 +23,7 @@ import { decryptToken, encryptToken, tokenLast4 } from './utils/token-crypto.uti
 
 const SUMMARY_TASK_LIMIT = 60;
 const EPIC_BREAKDOWN_MAX_TASKS = 10;
+const STUCK_INSIGHT_TASK_LIMIT = 30;
 
 type SummaryTaskRow = {
   title: string;
@@ -42,6 +45,7 @@ export class AiService {
     private readonly activityService: ActivityService,
     private readonly configService: ConfigService,
     private readonly providerClient: AiProviderClient,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async getSettings(workspaceId: string, userId: string) {
@@ -413,6 +417,66 @@ export class AiService {
       createdCount: created.length,
       tasks: created,
     };
+  }
+
+  async stuckTasksInsight(workspaceId: string, userId: string, dto: StuckTasksInsightDto) {
+    const stuck = await this.analyticsService.stuckTasks(workspaceId, userId, {
+      days: dto.days,
+      boardId: dto.boardId,
+      assigneeId: dto.assigneeId,
+    });
+    const credentials = await this.loadCredentials(workspaceId);
+
+    const sample = stuck.tasks.slice(0, STUCK_INSIGHT_TASK_LIMIT);
+    const lines = [
+      `Порог: без обновлений ≥ ${stuck.days} дн.`,
+      `Найдено задач: ${stuck.count}${stuck.truncated ? ' (показана выборка)' : ''}`,
+      'Список:',
+    ];
+    if (sample.length === 0) {
+      lines.push('- (нет застрявших задач)');
+    } else {
+      for (const task of sample) {
+        const who = task.assignee?.name ? ` — ${task.assignee.name}` : '';
+        lines.push(`- «${task.title}» · ${task.columnName} · ${task.daysSinceUpdate} дн.${who}`);
+      }
+    }
+
+    try {
+      const result = await this.providerClient.chatCompletion({
+        baseUrl: credentials.baseUrl,
+        apiToken: credentials.apiToken,
+        model: credentials.model,
+        messages: [
+          {
+            role: 'system',
+            content: [
+              'Ты помощник T-task. Пиши краткий разбор застрявших задач на русском.',
+              'Структура: где скопились, возможные причины, 3–5 конкретных следующих шагов.',
+              'Не выдумывай задачи и цифры — только факты из контекста.',
+              'Без вступлений. 5–10 коротких пунктов или абзацев.',
+            ].join(' '),
+          },
+          { role: 'user', content: lines.join('\n') },
+        ],
+      });
+
+      return {
+        insight: result.content.trim(),
+        basedOnCount: stuck.count,
+        days: stuck.days,
+        model: result.model,
+      };
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new ServiceUnavailableException('Провайдер ИИ не ответил вовремя');
+      }
+      throw new BadRequestException(
+        error instanceof Error
+          ? sanitizeProviderErrorMessage(error.message)
+          : 'Ошибка запроса к ИИ',
+      );
+    }
   }
 
   private async requireEpic(workspaceId: string, epicId: string) {

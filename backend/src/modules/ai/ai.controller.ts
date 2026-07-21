@@ -17,6 +17,7 @@ import {
 import { AiService } from './ai.service';
 import { AiChatDto } from './dto/ai-chat.dto';
 import { ApplyEpicBreakdownDto, ProposeEpicBreakdownDto } from './dto/epic-breakdown.dto';
+import { StuckTasksInsightDto } from './dto/stuck-tasks-insight.dto';
 import { SummarizeAiDto } from './dto/summarize-ai.dto';
 import { UpsertAiSettingsDto } from './dto/upsert-ai-settings.dto';
 
@@ -129,5 +130,22 @@ export class AiController {
     return successResponse(
       await this.aiService.applyEpicBreakdown(workspaceId, user.id, epicId, dto),
     );
+  }
+
+  @Post('stuck-tasks/insight')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'ai:stuck-insight',
+    windowSeconds: 60,
+    maxAttempts: 10,
+    includeWorkspaceId: true,
+  })
+  @Roles(...MEMBER_PLUS_ROLES)
+  async stuckTasksInsight(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: StuckTasksInsightDto,
+  ) {
+    return successResponse(await this.aiService.stuckTasksInsight(workspaceId, user.id, dto));
   }
 }

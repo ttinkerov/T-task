@@ -18,6 +18,7 @@ import {
 } from '@/features/boards/lib/workload';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import { formatMinutes, formatMinutesDelta } from '@/shared/lib/format-duration';
+import { StuckTasksCard } from './stuck-tasks-card';
 
 interface AnalyticsPageProps {
   workspaceId: string;
@@ -120,6 +121,8 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
           </p>
         </article>
       </div>
+
+      <StuckTasksCard workspaceId={workspaceId} assigneeId={assigneeFilter || undefined} />
 
       <div className="analytics-filters">
         <div className="analytics-filters__group">

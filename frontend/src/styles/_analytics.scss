@@ -135,3 +135,98 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.stuck-tasks-card {
+  display: grid;
+  gap: 0.85rem;
+  border: 1px solid $color-border-subtle;
+  border-radius: $radius-lg;
+  background: var(--tt-surface);
+  padding: 1.1rem 1.2rem;
+}
+
+.stuck-tasks-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  h2 {
+    margin: 0.15rem 0 0;
+    color: $color-white;
+    font-size: 1.05rem;
+    font-weight: 650;
+  }
+}
+
+.stuck-tasks-card__eyebrow {
+  margin: 0;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: $color-text-muted;
+}
+
+.stuck-tasks-card__hint,
+.stuck-tasks-card__count,
+.stuck-tasks-card__empty {
+  margin: 0;
+  color: $color-text-muted;
+  font-size: 0.8rem;
+}
+
+.stuck-tasks-card__error {
+  margin: 0;
+  color: #f87171;
+  font-size: 0.8rem;
+}
+
+.stuck-tasks-card__controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+
+  label {
+    display: grid;
+    gap: 0.3rem;
+    color: $color-text-muted;
+    font-size: 0.75rem;
+  }
+}
+
+.stuck-tasks-card__table-wrap {
+  overflow-x: auto;
+}
+
+.stuck-tasks-card__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+
+  th,
+  td {
+    border-bottom: 1px solid $color-border-subtle;
+    padding: 0.5rem 0.6rem;
+    text-align: left;
+  }
+
+  th {
+    color: $color-text-muted;
+    font-weight: 550;
+  }
+
+  td {
+    color: $color-white;
+  }
+}
+
+.stuck-tasks-card__insight {
+  white-space: pre-wrap;
+  border-top: 1px solid $color-border-subtle;
+  padding-top: 0.75rem;
+  color: $color-white;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+

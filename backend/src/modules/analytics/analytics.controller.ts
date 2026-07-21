@@ -5,6 +5,7 @@ import { ALL_WORKSPACE_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AnalyticsQueryDto } from './dto/analytics-query.dto';
+import { StuckTasksQueryDto } from './dto/stuck-tasks-query.dto';
 import { AnalyticsService } from './analytics.service';
 
 @Controller('workspaces/:workspaceId/analytics')
@@ -19,5 +20,15 @@ export class AnalyticsController {
     @Query() query: AnalyticsQueryDto,
   ) {
     return successResponse(await this.analyticsService.summary(workspaceId, user.id, query));
+  }
+
+  @Get('stuck-tasks')
+  @Roles(...ALL_WORKSPACE_ROLES)
+  async stuckTasks(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: StuckTasksQueryDto,
+  ) {
+    return successResponse(await this.analyticsService.stuckTasks(workspaceId, user.id, query));
   }
 }

@@ -28,6 +28,7 @@ function createService(
   prisma: ReturnType<typeof makePrisma>,
   providerClient: { chatCompletion: ReturnType<typeof vi.fn> },
   activityService: { record: ReturnType<typeof vi.fn> },
+  analyticsService: { stuckTasks: ReturnType<typeof vi.fn> } = { stuckTasks: vi.fn() },
 ) {
   const service = new AiService(
     prisma as never,
@@ -39,6 +40,7 @@ function createService(
       ),
     } as never,
     providerClient as never,
+    analyticsService as never,
   );
 
   vi.spyOn(
@@ -242,6 +244,47 @@ describe('AiService epic breakdown', () => {
         entityId: 'epic-1',
         metadata: { count: 2 },
       }),
+    );
+  });
+});
+
+describe('AiService.stuckTasksInsight', () => {
+  it('builds insight from stuck tasks facts', async () => {
+    const providerClient = {
+      chatCompletion: vi.fn().mockResolvedValue({
+        content: 'Задачи зависли во «В работе».',
+        model: 'gpt-test',
+      }),
+    };
+    const analyticsService = {
+      stuckTasks: vi.fn().mockResolvedValue({
+        days: 5,
+        count: 1,
+        truncated: false,
+        tasks: [
+          {
+            title: 'Застряла',
+            columnName: 'В работе',
+            daysSinceUpdate: 8,
+            assignee: { name: 'Анна' },
+          },
+        ],
+      }),
+    };
+
+    const service = createService(
+      makePrisma(),
+      providerClient,
+      { record: vi.fn() },
+      analyticsService,
+    );
+
+    const result = await service.stuckTasksInsight('workspace-1', 'user-1', { days: 5 });
+
+    expect(result.basedOnCount).toBe(1);
+    expect(result.insight).toContain('зависли');
+    expect(providerClient.chatCompletion.mock.calls[0][0].messages[1].content).toContain(
+      'Застряла',
     );
   });
 });
