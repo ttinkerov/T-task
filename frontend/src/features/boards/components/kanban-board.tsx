@@ -28,6 +28,8 @@ import { TaskCheckbox } from '@/components/ui/task-checkbox';
 import { useMeQuery } from '@/features/auth/hooks';
 import { useCustomFieldsQuery } from '@/features/custom-fields/hooks';
 import type { CustomFieldDefinition } from '@/features/custom-fields/types';
+import { BulkActionsToolbar } from './bulk-actions-toolbar';
+import { toggleTaskSelection } from '../lib/bulk-selection';
 import { tokenizeMentions } from '@/features/mentions/mention-utils';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import { celebrateTaskComplete } from '@/shared/lib/celebrate';
@@ -87,6 +89,8 @@ export function KanbanBoard({
   const [activeTask, setActiveTask] = useState<BoardTask | null>(null);
   const [activeColumn, setActiveColumn] = useState<BoardColumn | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<string>>(() => new Set());
+  const bulkAnchorIdRef = useRef<string | null>(null);
   const openedInitialTaskRef = useRef<string | null>(null);
   const [filters, setFilters] = useState<BoardFilters>(EMPTY_BOARD_FILTERS);
   const [moveError, setMoveError] = useState('');
@@ -145,7 +149,43 @@ export function KanbanBoard({
     setViewAnchor(new Date());
     setBoardId(null);
     setFilters(EMPTY_BOARD_FILTERS);
+    setBulkSelectedIds(new Set());
+    bulkAnchorIdRef.current = null;
   }, [workspaceId]);
+
+  useEffect(() => {
+    setBulkSelectedIds(new Set());
+    bulkAnchorIdRef.current = null;
+  }, [boardId, viewMode]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setBulkSelectedIds(new Set());
+        bulkAnchorIdRef.current = null;
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  const orderedTaskIds = useMemo(
+    () => filteredColumns.flatMap((column) => column.tasks.map((task) => task.id)),
+    [filteredColumns],
+  );
+
+  const handleToggleSelect = useCallback(
+    (taskId: string, event: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean }) => {
+      const result = toggleTaskSelection(bulkSelectedIds, taskId, orderedTaskIds, {
+        additive: event.metaKey || event.ctrlKey,
+        range: event.shiftKey,
+        anchorId: bulkAnchorIdRef.current,
+      });
+      setBulkSelectedIds(result.next);
+      bulkAnchorIdRef.current = result.anchorId;
+    },
+    [bulkSelectedIds, orderedTaskIds],
+  );
 
   const handleDragStart = (event: DragStartEvent) => {
     setMoveError('');
@@ -252,6 +292,18 @@ export function KanbanBoard({
       ) : null}
       {viewMode === 'BOARD' ? <BoardWorkloadPanel board={board} /> : null}
       {viewMode === 'BOARD' ? <BoardSprintPanel workspaceId={workspaceId} /> : null}
+      {viewMode === 'BOARD' ? (
+        <BulkActionsToolbar
+          workspaceId={workspaceId}
+          boardId={boardId}
+          columns={board.columns}
+          selectedIds={bulkSelectedIds}
+          onClear={() => {
+            setBulkSelectedIds(new Set());
+            bulkAnchorIdRef.current = null;
+          }}
+        />
+      ) : null}
 
       {viewMode === 'BOARD' ? (
         <DndContext
@@ -273,6 +325,9 @@ export function KanbanBoard({
                   canManageAutomations={canManageAutomations}
                   cardFields={cardFields}
                   memberNames={memberNames}
+                  selectedIds={bulkSelectedIds}
+                  selectionActive={bulkSelectedIds.size > 0}
+                  onToggleSelect={handleToggleSelect}
                   onOpenTask={setSelectedTaskId}
                   onCompleteTask={(task) => {
                     const done = findDoneColumn(board.columns);
@@ -413,6 +468,9 @@ function SortableKanbanColumn({
   canManageAutomations,
   cardFields,
   memberNames,
+  selectedIds,
+  selectionActive,
+  onToggleSelect,
   onOpenTask,
   onCompleteTask,
 }: {
@@ -424,6 +482,12 @@ function SortableKanbanColumn({
   canManageAutomations: boolean;
   cardFields: CustomFieldDefinition[];
   memberNames: Map<string, string>;
+  selectedIds: Set<string>;
+  selectionActive: boolean;
+  onToggleSelect: (
+    taskId: string,
+    event: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean },
+  ) => void;
   onOpenTask: (taskId: string) => void;
   onCompleteTask: (task: BoardTask) => void;
 }) {
@@ -449,6 +513,9 @@ function SortableKanbanColumn({
         canManageAutomations={canManageAutomations}
         cardFields={cardFields}
         memberNames={memberNames}
+        selectedIds={selectedIds}
+        selectionActive={selectionActive}
+        onToggleSelect={onToggleSelect}
         dragHandleProps={{ ...attributes, ...listeners }}
         onOpenTask={onOpenTask}
         onCompleteTask={onCompleteTask}
@@ -466,6 +533,9 @@ function KanbanColumn({
   canManageAutomations,
   cardFields,
   memberNames,
+  selectedIds,
+  selectionActive,
+  onToggleSelect,
   dragHandleProps,
   onOpenTask,
   onCompleteTask,
@@ -478,6 +548,12 @@ function KanbanColumn({
   canManageAutomations: boolean;
   cardFields: CustomFieldDefinition[];
   memberNames: Map<string, string>;
+  selectedIds: Set<string>;
+  selectionActive: boolean;
+  onToggleSelect: (
+    taskId: string,
+    event: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean },
+  ) => void;
   dragHandleProps?: React.HTMLAttributes<HTMLElement>;
   onOpenTask: (taskId: string) => void;
   onCompleteTask: (task: BoardTask) => void;
@@ -647,6 +723,9 @@ function KanbanColumn({
               allColumns={allColumns}
               cardFields={cardFields}
               memberNames={memberNames}
+              selected={selectedIds.has(task.id)}
+              selectionActive={selectionActive}
+              onToggleSelect={onToggleSelect}
               onOpen={() => onOpenTask(task.id)}
               onComplete={() => onCompleteTask(task)}
             />
@@ -689,6 +768,9 @@ function KanbanTaskCard({
   allColumns,
   cardFields,
   memberNames,
+  selected,
+  selectionActive,
+  onToggleSelect,
   onOpen,
   onComplete,
 }: {
@@ -697,6 +779,12 @@ function KanbanTaskCard({
   allColumns: BoardColumn[];
   cardFields: CustomFieldDefinition[];
   memberNames: Map<string, string>;
+  selected: boolean;
+  selectionActive: boolean;
+  onToggleSelect: (
+    taskId: string,
+    event: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean },
+  ) => void;
   onOpen: () => void;
   onComplete: () => void;
 }) {
@@ -732,8 +820,15 @@ function KanbanTaskCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`kanban-task-card kanban-task ${agingLevel !== 'none' ? `kanban-task-card--aging-${agingLevel}` : ''} ${isOverdue ? 'kanban-task-card--overdue' : ''} ${task.isEpic ? 'kanban-task-card--epic' : ''} ${isDragging ? 'kanban-task--dragging' : ''}`}
-      onClick={onOpen}
+      className={`kanban-task-card kanban-task ${selected ? 'kanban-task-card--selected' : ''} ${agingLevel !== 'none' ? `kanban-task-card--aging-${agingLevel}` : ''} ${isOverdue ? 'kanban-task-card--overdue' : ''} ${task.isEpic ? 'kanban-task-card--epic' : ''} ${isDragging ? 'kanban-task--dragging' : ''}`}
+      onClick={(event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || selectionActive) {
+          event.preventDefault();
+          onToggleSelect(task.id, event);
+          return;
+        }
+        onOpen();
+      }}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
@@ -742,8 +837,23 @@ function KanbanTaskCard({
       }}
       role="button"
       tabIndex={0}
+      aria-selected={selected}
     >
       <div className="kanban-task-card__body">
+        <input
+          type="checkbox"
+          className="kanban-task-card__select"
+          checked={selected}
+          aria-label={`Выбрать задачу ${task.title}`}
+          onClick={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onToggleSelect(task.id, {
+              shiftKey: (event.nativeEvent as MouseEvent).shiftKey,
+              metaKey: (event.nativeEvent as MouseEvent).metaKey,
+              ctrlKey: (event.nativeEvent as MouseEvent).ctrlKey,
+            })
+          }
+        />
         <TaskCheckbox
           checked={isComplete}
           ariaLabel={isComplete ? 'Задача выполнена' : 'Отметить выполненной'}

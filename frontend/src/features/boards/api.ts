@@ -9,6 +9,8 @@ import type {
   TaskRelationType,
   UpdateColumnAutomationsPayload,
   UpdateTaskPayload,
+  BulkUpdateTasksPayload,
+  BulkUpdateTasksResult,
 } from './types';
 
 function withWorkspace(workspaceId: string) {
@@ -126,6 +128,14 @@ export async function createTask(
 
 export async function updateTask(workspaceId: string, taskId: string, data: UpdateTaskPayload) {
   return apiFetch(`/api/v1/workspaces/${workspaceId}/tasks/${taskId}`, {
+    method: 'PATCH',
+    headers: withWorkspace(workspaceId),
+    body: JSON.stringify(data),
+  });
+}
+
+export async function bulkUpdateTasks(workspaceId: string, data: BulkUpdateTasksPayload) {
+  return apiFetch<BulkUpdateTasksResult>(`/api/v1/workspaces/${workspaceId}/tasks/bulk`, {
     method: 'PATCH',
     headers: withWorkspace(workspaceId),
     body: JSON.stringify(data),

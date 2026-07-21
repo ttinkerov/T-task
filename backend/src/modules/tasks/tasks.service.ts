@@ -19,6 +19,7 @@ import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { BulkUpdateTasksDto } from './dto/bulk-update-tasks.dto';
 import { TaskRelationsService } from './task-relations.service';
 import { buildAutomationTaskUpdate } from './utils/column-automation.util';
 import { computeNextRecurrenceDate, isDoneColumn } from './utils/recurrence.util';
@@ -274,6 +275,220 @@ export class TasksService {
     }
 
     return this.toTask(updated);
+  }
+
+  async bulkUpdate(workspaceId: string, userId: string, dto: BulkUpdateTasksDto) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+
+    const hasAssignee = dto.assigneeId !== undefined;
+    const hasPriority = dto.priority !== undefined;
+    const hasSprint = dto.sprintId !== undefined;
+    const hasColumn = dto.columnId !== undefined;
+    if (!hasAssignee && !hasPriority && !hasSprint && !hasColumn) {
+      throw new BadRequestException('Укажите хотя бы одно поле для массового изменения');
+    }
+
+    const taskIds = [...new Set(dto.taskIds)];
+    const tasks = await this.prisma.task.findMany({
+      where: {
+        id: { in: taskIds },
+        deletedAt: null,
+        column: { board: { workspaceId } },
+      },
+      select: {
+        id: true,
+        columnId: true,
+        position: true,
+        assigneeId: true,
+        completedAt: true,
+        column: { select: { boardId: true, position: true } },
+      },
+    });
+
+    if (tasks.length !== taskIds.length) {
+      throw new BadRequestException('Некоторые задачи не найдены в этом пространстве');
+    }
+
+    if (hasAssignee && dto.assigneeId !== null) {
+      const membership = await this.prisma.workspaceMember.findUnique({
+        where: {
+          workspaceId_userId: { workspaceId, userId: dto.assigneeId! },
+        },
+      });
+      if (!membership) {
+        throw new BadRequestException('Assignee must be a workspace member');
+      }
+    }
+
+    if (hasSprint && dto.sprintId !== null) {
+      const sprint = await this.prisma.sprint.findFirst({
+        where: { id: dto.sprintId!, workspaceId },
+        select: { id: true },
+      });
+      if (!sprint) throw new BadRequestException('Спринт не найден в этом пространстве');
+    }
+
+    let targetColumn: {
+      id: string;
+      boardId: string;
+      name: string;
+      position: number;
+    } | null = null;
+    let boardColumns: Array<{ id: string; name: string; position: number }> = [];
+    let targetIsDone = false;
+
+    if (hasColumn) {
+      const column = await this.prisma.boardColumn.findFirst({
+        where: { id: dto.columnId!, board: { workspaceId } },
+        select: { id: true, boardId: true, name: true, position: true },
+      });
+      if (!column) throw new NotFoundException('Column not found');
+
+      const boardId = column.boardId;
+      if (tasks.some((task) => task.column.boardId !== boardId)) {
+        throw new BadRequestException('Нельзя переносить задачи с разных досок');
+      }
+
+      boardColumns = await this.prisma.boardColumn.findMany({
+        where: { boardId },
+        orderBy: { position: 'asc' },
+        select: { id: true, name: true, position: true },
+      });
+      targetColumn = column;
+      targetIsDone = isDoneColumn(column, boardColumns);
+    }
+
+    const orderedForMove = [...tasks].sort((a, b) => {
+      if (a.column.position !== b.column.position) {
+        return a.column.position - b.column.position;
+      }
+      return a.position - b.position;
+    });
+
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      if (hasColumn && targetColumn) {
+        for (const task of orderedForMove) {
+          const currentColumn = boardColumns.find((column) => column.id === task.columnId);
+          const movingToDone =
+            targetIsDone && Boolean(currentColumn) && !isDoneColumn(currentColumn!, boardColumns);
+          if (movingToDone) {
+            await tx.$executeRaw`SELECT id FROM tasks WHERE id = ${task.id} FOR UPDATE`;
+            await this.taskRelationsService.assertCanComplete(task.id, tx);
+            await this.taskChecklistService.assertDoDSatisfied(task.id, tx);
+          }
+        }
+
+        const selectedSet = new Set(taskIds);
+        const sourceColumnIds = [
+          ...new Set(
+            tasks.filter((task) => task.columnId !== targetColumn.id).map((task) => task.columnId),
+          ),
+        ];
+
+        for (const columnId of sourceColumnIds) {
+          const staying = await tx.task.findMany({
+            where: {
+              columnId,
+              deletedAt: null,
+              id: { notIn: [...selectedSet] },
+            },
+            orderBy: { position: 'asc' },
+            select: { id: true },
+          });
+          await Promise.all(
+            staying.map((item, index) =>
+              tx.task.update({ where: { id: item.id }, data: { position: index } }),
+            ),
+          );
+        }
+
+        const targetStaying = await tx.task.findMany({
+          where: {
+            columnId: targetColumn.id,
+            deletedAt: null,
+            id: { notIn: [...selectedSet] },
+          },
+          orderBy: { position: 'asc' },
+          select: { id: true },
+        });
+        await Promise.all(
+          targetStaying.map((item, index) =>
+            tx.task.update({ where: { id: item.id }, data: { position: index } }),
+          ),
+        );
+
+        const basePosition = targetStaying.length;
+        const now = new Date();
+        await Promise.all(
+          orderedForMove.map((task, index) =>
+            tx.task.update({
+              where: { id: task.id },
+              data: {
+                columnId: targetColumn!.id,
+                position: basePosition + index,
+                ...(targetIsDone ? { overdueDays: 0 } : {}),
+                ...(targetIsDone && !task.completedAt ? { completedAt: now } : {}),
+              },
+            }),
+          ),
+        );
+      }
+
+      if (hasAssignee || hasPriority || hasSprint) {
+        await tx.task.updateMany({
+          where: { id: { in: taskIds } },
+          data: {
+            ...(hasAssignee ? { assigneeId: dto.assigneeId ?? null } : {}),
+            ...(hasPriority ? { priority: dto.priority ?? null } : {}),
+            ...(hasSprint ? { sprintId: dto.sprintId ?? null } : {}),
+          },
+        });
+      }
+    });
+
+    if (hasColumn && targetColumn) {
+      for (const task of tasks) {
+        this.eventEmitter.emit(DomainEvents.TASK_MOVED, {
+          workspaceId,
+          boardId: targetColumn.boardId,
+          taskId: task.id,
+          columnId: dto.columnId,
+          actorId: userId,
+        });
+      }
+
+      if (targetIsDone) {
+        const movedIntoDone = orderedForMove.filter((task) => {
+          const currentColumn = boardColumns.find((column) => column.id === task.columnId);
+          return Boolean(currentColumn) && !isDoneColumn(currentColumn!, boardColumns);
+        });
+        if (movedIntoDone.length > 0) {
+          const recurring = await this.prisma.task.findMany({
+            where: {
+              id: { in: movedIntoDone.map((task) => task.id) },
+              recurrenceRule: { not: TaskRecurrenceRule.NONE },
+            },
+          });
+          for (const task of recurring) {
+            await this.handleRecurrenceCompletion(workspaceId, task, boardColumns);
+          }
+        }
+      }
+    }
+
+    if (hasAssignee) {
+      for (const task of tasks) {
+        this.eventEmitter.emit(DomainEvents.TASK_ASSIGNED, {
+          workspaceId,
+          boardId: task.column.boardId,
+          taskId: task.id,
+          assigneeId: dto.assigneeId ?? null,
+          actorId: userId,
+        });
+      }
+    }
+
+    return { updated: taskIds.length, taskIds };
   }
 
   async move(workspaceId: string, taskId: string, userId: string, dto: MoveTaskDto) {

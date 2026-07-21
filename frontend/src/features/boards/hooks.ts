@@ -24,9 +24,11 @@ import {
   updateColumn,
   updateColumnAutomations,
   updateTask,
+  bulkUpdateTasks,
 } from './api';
 import type {
   BoardView,
+  BulkUpdateTasksPayload,
   TaskRelationType,
   UpdateColumnAutomationsPayload,
   UpdateTaskPayload,
@@ -305,6 +307,20 @@ export function useUpdateTaskMutation(workspaceId: string, boardId?: string | nu
   return useMutation({
     mutationFn: async ({ taskId, data }: { taskId: string; data: UpdateTaskPayload }) => {
       await updateTask(workspaceId, taskId, data);
+    },
+    onSuccess: () => {
+      invalidateBoardAndLists(queryClient, workspaceId, boardId);
+    },
+  });
+}
+
+export function useBulkUpdateTasksMutation(workspaceId: string, boardId?: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: BulkUpdateTasksPayload) => {
+      const response = await bulkUpdateTasks(workspaceId, data);
+      return response.data!;
     },
     onSuccess: () => {
       invalidateBoardAndLists(queryClient, workspaceId, boardId);

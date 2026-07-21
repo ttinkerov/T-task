@@ -120,6 +120,19 @@ export interface UpdateTaskPayload {
   epicId?: string | null;
 }
 
+export interface BulkUpdateTasksPayload {
+  taskIds: string[];
+  assigneeId?: string | null;
+  priority?: TaskPriority | null;
+  sprintId?: string | null;
+  columnId?: string;
+}
+
+export interface BulkUpdateTasksResult {
+  updated: number;
+  taskIds: string[];
+}
+
 export interface TaskComment {
   id: string;
   body: string;

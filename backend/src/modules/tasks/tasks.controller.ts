@@ -8,12 +8,14 @@ import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-us
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
 import {
+  BULK_TASK_MUTATE_RATE_LIMIT,
   MENTION_SOURCE_MUTATE_RATE_LIMIT,
   RateLimit,
 } from '../../common/security/rate-limit.decorator';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { BulkUpdateTasksDto } from './dto/bulk-update-tasks.dto';
 import { TasksService } from './tasks.service';
 
 @Controller('workspaces/:workspaceId/tasks')
@@ -40,6 +42,19 @@ export class TasksController {
   ) {
     const task = await this.tasksService.create(workspaceId, user.id, dto);
     return successResponse(task);
+  }
+
+  @Patch('bulk')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(BULK_TASK_MUTATE_RATE_LIMIT)
+  @Roles(...MEMBER_PLUS_ROLES)
+  async bulkUpdate(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: BulkUpdateTasksDto,
+  ) {
+    const result = await this.tasksService.bulkUpdate(workspaceId, user.id, dto);
+    return successResponse(result);
   }
 
   @Patch(':taskId')

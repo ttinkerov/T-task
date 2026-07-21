@@ -77,3 +77,9 @@ export const MENTION_SOURCE_MUTATE_RATE_LIMIT: RateLimitConfig = {
   windowSeconds: 60,
   maxAttempts: 60,
 };
+
+export const BULK_TASK_MUTATE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'task:bulk-mutate',
+  windowSeconds: 60,
+  maxAttempts: 20,
+};

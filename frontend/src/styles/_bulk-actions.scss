@@ -1,0 +1,56 @@
+@use 'variables' as *;
+
+.bulk-actions-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.35rem 0 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--tt-brand) 35%, $color-border-subtle);
+  border-radius: $radius-md;
+  background: color-mix(in srgb, var(--tt-brand) 8%, var(--tt-surface));
+  padding: 0.55rem 0.7rem;
+
+  strong {
+    margin-right: 0.25rem;
+    color: $color-white;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  select,
+  button {
+    min-height: 2rem;
+    border: 1px solid $color-border-subtle;
+    border-radius: $radius-sm;
+    background: var(--tt-surface);
+    padding: 0.3rem 0.55rem;
+    color: $color-white;
+    font-size: 0.72rem;
+  }
+
+  select:disabled,
+  button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  &__error {
+    color: #f87171;
+    font-size: 0.72rem;
+  }
+}
+
+.kanban-task-card--selected {
+  border-color: var(--tt-brand) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tt-brand) 55%, transparent);
+}
+
+.kanban-task-card__select {
+  flex: 0 0 auto;
+  width: 0.95rem;
+  height: 0.95rem;
+  margin: 0.15rem 0.15rem 0 0;
+  accent-color: var(--tt-brand);
+  cursor: pointer;
+}
