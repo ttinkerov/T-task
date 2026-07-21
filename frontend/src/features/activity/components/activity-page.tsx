@@ -43,6 +43,7 @@ const ACTION_LABELS: Record<string, string> = {
   APP_PURGED: 'удалил(а) приложение навсегда',
   AI_SETTINGS_UPDATED: 'обновил(а) настройки ИИ',
   AI_SETTINGS_DELETED: 'удалил(а) токен ИИ',
+  AI_EPIC_BREAKDOWN_APPLIED: 'разбил(а) эпик на задачи с ИИ',
 };
 
 export function ActivityPage({ workspaceId }: { workspaceId: string }) {

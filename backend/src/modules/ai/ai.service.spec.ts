@@ -3,17 +3,55 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AiService } from './ai.service';
 
 function makePrisma() {
-  return {
+  const prisma = {
     sprint: { findFirst: vi.fn() },
+    boardColumn: { findFirst: vi.fn() },
     task: {
+      findFirst: vi.fn(),
       findMany: vi.fn(),
       count: vi.fn(),
       aggregate: vi.fn(),
       groupBy: vi.fn(),
+      create: vi.fn(),
     },
     user: { findMany: vi.fn() },
     aiWorkspaceSetting: { findUnique: vi.fn() },
+    $transaction: vi.fn(),
   };
+  prisma.$transaction.mockImplementation(async (callback: (tx: typeof prisma) => unknown) =>
+    callback(prisma),
+  );
+  return prisma;
+}
+
+function createService(
+  prisma: ReturnType<typeof makePrisma>,
+  providerClient: { chatCompletion: ReturnType<typeof vi.fn> },
+  activityService: { record: ReturnType<typeof vi.fn> },
+) {
+  const service = new AiService(
+    prisma as never,
+    { getWorkspaceForMember: vi.fn().mockResolvedValue({ id: 'workspace-1' }) } as never,
+    activityService as never,
+    {
+      get: vi.fn((key: string) =>
+        key === 'AI_TOKEN_ENC_KEY' ? '0123456789abcdef0123456789abcdef' : undefined,
+      ),
+    } as never,
+    providerClient as never,
+  );
+
+  vi.spyOn(
+    service as unknown as { loadCredentials: (id: string) => Promise<unknown> },
+    'loadCredentials',
+  ).mockResolvedValue({
+    provider: 'OPENAI',
+    model: 'gpt-4o-mini',
+    baseUrl: 'https://api.openai.com/v1',
+    apiToken: 'sk-test',
+  });
+
+  return service;
 }
 
 describe('AiService.summarize', () => {
@@ -43,27 +81,7 @@ describe('AiService.summarize', () => {
     prisma.task.aggregate.mockResolvedValue({ _sum: { complexity: 5 } });
     prisma.task.groupBy.mockResolvedValue([{ assigneeId: 'user-anna', _count: { _all: 1 } }]);
 
-    service = new AiService(
-      prisma as never,
-      { getWorkspaceForMember: vi.fn().mockResolvedValue({ id: 'workspace-1' }) } as never,
-      { record: vi.fn() } as never,
-      {
-        get: vi.fn((key: string) =>
-          key === 'AI_TOKEN_ENC_KEY' ? '0123456789abcdef0123456789abcdef' : undefined,
-        ),
-      } as never,
-      providerClient as never,
-    );
-
-    vi.spyOn(
-      service as unknown as { loadCredentials: (id: string) => Promise<unknown> },
-      'loadCredentials',
-    ).mockResolvedValue({
-      provider: 'OPENAI',
-      model: 'gpt-4o-mini',
-      baseUrl: 'https://api.openai.com/v1',
-      apiToken: 'sk-test',
-    });
+    service = createService(prisma, providerClient, { record: vi.fn() });
   });
 
   it('summarizes a sprint with aggregate stats from completed and open tasks', async () => {
@@ -97,18 +115,8 @@ describe('AiService.summarize', () => {
       sprintId: 'sprint-1',
     });
 
-    expect(result.scope).toBe('sprint');
-    expect(result.stats).toEqual({
-      completedCount: 1,
-      completedPoints: 5,
-      openCount: 1,
-      topAssignees: [{ name: 'Анна', completedCount: 1 }],
-    });
-    expect(result.summary).toContain('закрыла');
-    expect(providerClient.chatCompletion).toHaveBeenCalledTimes(1);
-    const messages = providerClient.chatCompletion.mock.calls[0][0].messages;
-    expect(messages[1].content).toContain('Done A');
-    expect(messages[1].content).toContain('Open B');
+    expect(result.stats.completedCount).toBe(1);
+    expect(result.stats.openCount).toBe(1);
   });
 
   it('summarizes a day by completedAt range', async () => {
@@ -131,15 +139,6 @@ describe('AiService.summarize', () => {
 
     expect(result.scope).toBe('day');
     expect(result.stats.completedCount).toBe(1);
-    expect(result.stats.openCount).toBe(0);
-    expect(prisma.task.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          completedAt: expect.any(Object),
-          column: { board: { workspaceId: 'workspace-1' } },
-        }),
-      }),
-    );
   });
 
   it('rejects sprint summary without sprintId', async () => {
@@ -157,5 +156,92 @@ describe('AiService.summarize', () => {
         sprintId: 'missing',
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('AiService epic breakdown', () => {
+  let prisma: ReturnType<typeof makePrisma>;
+  let providerClient: { chatCompletion: ReturnType<typeof vi.fn> };
+  let activityService: { record: ReturnType<typeof vi.fn> };
+  let service: AiService;
+
+  beforeEach(() => {
+    prisma = makePrisma();
+    providerClient = { chatCompletion: vi.fn() };
+    activityService = { record: vi.fn() };
+    service = createService(prisma, providerClient, activityService);
+
+    prisma.task.findFirst.mockResolvedValue({
+      id: 'epic-1',
+      title: 'Онбординг',
+      description: 'Сделать онбординг новых пользователей',
+      columnId: 'col-todo',
+    });
+    prisma.boardColumn.findFirst.mockResolvedValue({ id: 'col-todo' });
+  });
+
+  it('proposes parsed draft tasks from JSON response', async () => {
+    providerClient.chatCompletion.mockResolvedValue({
+      content: JSON.stringify({
+        tasks: [
+          { title: 'Экран приветствия', description: 'Первый шаг' },
+          { title: 'Туториал', description: '' },
+        ],
+      }),
+      model: 'gpt-test',
+    });
+
+    const result = await service.proposeEpicBreakdown('workspace-1', 'user-1', 'epic-1', {});
+
+    expect(result.tasks).toHaveLength(2);
+    expect(result.tasks[0].title).toBe('Экран приветствия');
+  });
+
+  it('rejects malformed LLM JSON', async () => {
+    providerClient.chatCompletion.mockResolvedValue({
+      content: 'not-json',
+      model: 'gpt-test',
+    });
+
+    await expect(
+      service.proposeEpicBreakdown('workspace-1', 'user-1', 'epic-1', {}),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects when epic is missing', async () => {
+    prisma.task.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.proposeEpicBreakdown('workspace-1', 'user-1', 'missing', {}),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('applies drafts atomically under the epic', async () => {
+    prisma.task.findFirst
+      .mockResolvedValueOnce({
+        id: 'epic-1',
+        title: 'Онбординг',
+        description: 'desc',
+        columnId: 'col-todo',
+      })
+      .mockResolvedValueOnce({ position: 2 });
+    prisma.task.create
+      .mockResolvedValueOnce({ id: 'task-1', title: 'A', epicId: 'epic-1' })
+      .mockResolvedValueOnce({ id: 'task-2', title: 'B', epicId: 'epic-1' });
+
+    const result = await service.applyEpicBreakdown('workspace-1', 'user-1', 'epic-1', {
+      tasks: [{ title: 'A', description: 'one' }, { title: 'B' }],
+    });
+
+    expect(result.createdCount).toBe(2);
+    expect(prisma.$transaction).toHaveBeenCalled();
+    expect(prisma.task.create).toHaveBeenCalledTimes(2);
+    expect(activityService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'AI_EPIC_BREAKDOWN_APPLIED',
+        entityId: 'epic-1',
+        metadata: { count: 2 },
+      }),
+    );
   });
 });

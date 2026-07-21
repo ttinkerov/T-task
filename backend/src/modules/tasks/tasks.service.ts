@@ -94,6 +94,23 @@ export class TasksService {
       throw new NotFoundException('Column not found');
     }
 
+    let epicId: string | null = null;
+    if (dto.epicId) {
+      const epic = await this.prisma.task.findFirst({
+        where: {
+          id: dto.epicId,
+          isEpic: true,
+          deletedAt: null,
+          column: { board: { workspaceId } },
+        },
+        select: { id: true },
+      });
+      if (!epic) {
+        throw new BadRequestException('Эпик не найден');
+      }
+      epicId = epic.id;
+    }
+
     const lastTask = await this.prisma.task.findFirst({
       where: { columnId: column.id, deletedAt: null },
       orderBy: { position: 'desc' },
@@ -122,6 +139,7 @@ export class TasksService {
           title: dto.title.trim(),
           description: preparedDescription.text,
           position,
+          epicId,
           ...automationUpdate,
         },
         include: taskWithAssignee,

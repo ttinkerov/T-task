@@ -35,11 +35,12 @@ import { TaskRelationsSection } from './task-relations-section';
 import { TaskSubtasksSection } from './task-subtasks-section';
 import { TaskChecklistSection } from '@/features/dod';
 import { TaskTagsSection } from './task-tags-section';
-import { TaskAiAssistant } from '@/features/ai';
+import { TaskAiAssistant, EpicAiBreakdown } from '@/features/ai';
 import { useSprintsQuery } from '@/features/sprints';
 import { useTaskWatchersQuery, useToggleWatchMutation } from '@/features/watchers/hooks';
-import { useBoardQuery } from '../hooks';
+import { invalidateWorkspaceBoards, useBoardQuery } from '../hooks';
 import { Eye, EyeOff } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface TaskDetailDrawerProps {
   workspaceId: string;
@@ -60,6 +61,7 @@ export function TaskDetailDrawer({
   onOpenTask,
   onClose,
 }: TaskDetailDrawerProps) {
+  const queryClient = useQueryClient();
   const { data: session } = useMeQuery();
   const { data: members = [] } = useMembersQuery(workspaceId);
   const { data: sprints = [] } = useSprintsQuery(workspaceId);
@@ -348,6 +350,16 @@ export function TaskDetailDrawer({
                 />
                 Это эпик
               </label>
+              {task.isEpic ? (
+                <EpicAiBreakdown
+                  workspaceId={workspaceId}
+                  epicId={task.id}
+                  onApplied={() => {
+                    invalidateWorkspaceBoards(queryClient, workspaceId);
+                    void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
+                  }}
+                />
+              ) : null}
             </label>
           </div>
 

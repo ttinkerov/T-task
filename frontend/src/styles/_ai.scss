@@ -252,3 +252,68 @@
   line-height: 1.5;
 }
 
+.epic-ai {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+}
+
+.epic-ai__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.epic-ai__panel {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid var(--tt-border);
+  border-radius: $radius-md;
+  background: color-mix(in srgb, var(--tt-surface) 88%, transparent);
+  padding: 0.85rem;
+}
+
+.epic-ai__field {
+  display: grid;
+  gap: 0.35rem;
+
+  span {
+    color: var(--tt-text-muted);
+    font-size: 0.75rem;
+  }
+}
+
+.epic-ai__list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  > li {
+    display: grid;
+    gap: 0.4rem;
+  }
+}
+
+.epic-ai__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.epic-ai__meta,
+.epic-ai__success {
+  margin: 0;
+  color: var(--tt-text-muted);
+  font-size: 0.75rem;
+}
+
+.epic-ai__error {
+  margin: 0;
+  color: #f87171;
+  font-size: 0.8rem;
+}
+
+

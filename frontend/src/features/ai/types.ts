@@ -65,6 +65,29 @@ export type AiSummaryResult = {
   model: string;
 };
 
+export type EpicBreakdownDraft = {
+  title: string;
+  description: string;
+};
+
+export type ProposeEpicBreakdownPayload = {
+  instructions?: string;
+};
+
+export type ProposeEpicBreakdownResult = {
+  tasks: EpicBreakdownDraft[];
+  model: string;
+};
+
+export type ApplyEpicBreakdownPayload = {
+  tasks: EpicBreakdownDraft[];
+};
+
+export type ApplyEpicBreakdownResult = {
+  epicId: string;
+  createdCount: number;
+};
+
 export const AI_PROVIDER_OPTIONS: Array<{ value: AiProvider; label: string }> = [
   { value: 'OPENAI', label: 'OpenAI' },
   { value: 'OPENROUTER', label: 'OpenRouter' },

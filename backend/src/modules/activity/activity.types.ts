@@ -36,6 +36,7 @@ export const ActivityAction = {
   APP_PURGED: 'APP_PURGED',
   AI_SETTINGS_UPDATED: 'AI_SETTINGS_UPDATED',
   AI_SETTINGS_DELETED: 'AI_SETTINGS_DELETED',
+  AI_EPIC_BREAKDOWN_APPLIED: 'AI_EPIC_BREAKDOWN_APPLIED',
 } as const;
 
 export type ActivityAction = (typeof ActivityAction)[keyof typeof ActivityAction];

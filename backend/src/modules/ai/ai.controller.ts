@@ -9,9 +9,14 @@ import {
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
-import { RateLimit } from '../../common/security/rate-limit.decorator';
+import {
+  AI_EPIC_BREAKDOWN_APPLY_RATE_LIMIT,
+  AI_EPIC_BREAKDOWN_RATE_LIMIT,
+  RateLimit,
+} from '../../common/security/rate-limit.decorator';
 import { AiService } from './ai.service';
 import { AiChatDto } from './dto/ai-chat.dto';
+import { ApplyEpicBreakdownDto, ProposeEpicBreakdownDto } from './dto/epic-breakdown.dto';
 import { SummarizeAiDto } from './dto/summarize-ai.dto';
 import { UpsertAiSettingsDto } from './dto/upsert-ai-settings.dto';
 
@@ -94,5 +99,35 @@ export class AiController {
     @Body() dto: SummarizeAiDto,
   ) {
     return successResponse(await this.aiService.summarize(workspaceId, user.id, dto));
+  }
+
+  @Post('epics/:epicId/breakdown')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(AI_EPIC_BREAKDOWN_RATE_LIMIT)
+  @Roles(...MEMBER_PLUS_ROLES)
+  async proposeEpicBreakdown(
+    @Param('workspaceId') workspaceId: string,
+    @Param('epicId') epicId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ProposeEpicBreakdownDto,
+  ) {
+    return successResponse(
+      await this.aiService.proposeEpicBreakdown(workspaceId, user.id, epicId, dto),
+    );
+  }
+
+  @Post('epics/:epicId/breakdown/apply')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(AI_EPIC_BREAKDOWN_APPLY_RATE_LIMIT)
+  @Roles(...MEMBER_PLUS_ROLES)
+  async applyEpicBreakdown(
+    @Param('workspaceId') workspaceId: string,
+    @Param('epicId') epicId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ApplyEpicBreakdownDto,
+  ) {
+    return successResponse(
+      await this.aiService.applyEpicBreakdown(workspaceId, user.id, epicId, dto),
+    );
   }
 }

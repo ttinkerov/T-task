@@ -6,6 +6,10 @@ import type {
   AiSummaryPayload,
   AiSummaryResult,
   AiTestResult,
+  ApplyEpicBreakdownPayload,
+  ApplyEpicBreakdownResult,
+  ProposeEpicBreakdownPayload,
+  ProposeEpicBreakdownResult,
   UpsertAiSettingsPayload,
 } from './types';
 
@@ -55,4 +59,34 @@ export function fetchAiSummary(workspaceId: string, data: AiSummaryPayload) {
     headers: withWorkspace(workspaceId),
     body: JSON.stringify(data),
   });
+}
+
+export function proposeEpicBreakdown(
+  workspaceId: string,
+  epicId: string,
+  data: ProposeEpicBreakdownPayload = {},
+) {
+  return apiFetch<ProposeEpicBreakdownResult>(
+    `/api/v1/workspaces/${workspaceId}/ai/epics/${epicId}/breakdown`,
+    {
+      method: 'POST',
+      headers: withWorkspace(workspaceId),
+      body: JSON.stringify(data),
+    },
+  );
+}
+
+export function applyEpicBreakdown(
+  workspaceId: string,
+  epicId: string,
+  data: ApplyEpicBreakdownPayload,
+) {
+  return apiFetch<ApplyEpicBreakdownResult>(
+    `/api/v1/workspaces/${workspaceId}/ai/epics/${epicId}/breakdown/apply`,
+    {
+      method: 'POST',
+      headers: withWorkspace(workspaceId),
+      body: JSON.stringify(data),
+    },
+  );
 }

@@ -89,3 +89,17 @@ export const IMPORT_RATE_LIMIT: RateLimitConfig = {
   windowSeconds: 60,
   maxAttempts: 5,
 };
+
+export const AI_EPIC_BREAKDOWN_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'ai:epic-breakdown',
+  windowSeconds: 60,
+  maxAttempts: 8,
+  includeWorkspaceId: true,
+};
+
+export const AI_EPIC_BREAKDOWN_APPLY_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'ai:epic-breakdown-apply',
+  windowSeconds: 60,
+  maxAttempts: 10,
+  includeWorkspaceId: true,
+};

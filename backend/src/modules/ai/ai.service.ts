@@ -12,6 +12,7 @@ import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { AiProviderClient } from './ai-provider.client';
 import { AiChatDto } from './dto/ai-chat.dto';
+import { ApplyEpicBreakdownDto, ProposeEpicBreakdownDto } from './dto/epic-breakdown.dto';
 import { SummarizeAiDto } from './dto/summarize-ai.dto';
 import { UpsertAiSettingsDto } from './dto/upsert-ai-settings.dto';
 import { assertSafeAiBaseUrl, sanitizeProviderErrorMessage } from './utils/base-url-guard.util';
@@ -19,12 +20,18 @@ import { resolveDefaultModel, resolveProviderBaseUrl } from './utils/provider-pr
 import { decryptToken, encryptToken, tokenLast4 } from './utils/token-crypto.util';
 
 const SUMMARY_TASK_LIMIT = 60;
+const EPIC_BREAKDOWN_MAX_TASKS = 10;
 
 type SummaryTaskRow = {
   title: string;
   completedAt: Date | null;
   complexity: number | null;
   assignee: { name: string } | null;
+};
+
+type EpicBreakdownDraft = {
+  title: string;
+  description: string;
 };
 
 @Injectable()
@@ -269,6 +276,209 @@ export class AiService {
           : 'Ошибка запроса к ИИ',
       );
     }
+  }
+
+  async proposeEpicBreakdown(
+    workspaceId: string,
+    userId: string,
+    epicId: string,
+    dto: ProposeEpicBreakdownDto,
+  ) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+    const epic = await this.requireEpic(workspaceId, epicId);
+    const credentials = await this.loadCredentials(workspaceId);
+
+    const userPrompt = [
+      `Эпик: ${epic.title}`,
+      `Описание: ${epic.description?.trim() || 'нет'}`,
+      dto.instructions?.trim() ? `Доп. указания: ${dto.instructions.trim()}` : null,
+      'Верни JSON вида {"tasks":[{"title":"...","description":"..."}]} — 3–8 задач.',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    try {
+      const result = await this.providerClient.chatCompletion({
+        baseUrl: credentials.baseUrl,
+        apiToken: credentials.apiToken,
+        model: credentials.model,
+        messages: [
+          {
+            role: 'system',
+            content: [
+              'Ты помощник T-task. Разбиваешь эпик на конкретные задачи для канбан-доски.',
+              'Отвечай ТОЛЬКО валидным JSON без markdown и пояснений.',
+              'Формат: {"tasks":[{"title":"краткий заголовок","description":"1-3 предложения"}]}',
+              `От 3 до ${EPIC_BREAKDOWN_MAX_TASKS} задач на русском.`,
+              'Не выдумывай факты о проекте вне названия и описания эпика.',
+              'title ≤ 200 символов, description ≤ 2000.',
+            ].join(' '),
+          },
+          { role: 'user', content: userPrompt },
+        ],
+      });
+
+      const tasks = this.parseEpicBreakdownResponse(result.content);
+      return { tasks, model: result.model };
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new ServiceUnavailableException('Провайдер ИИ не ответил вовремя');
+      }
+      throw new BadRequestException(
+        error instanceof Error
+          ? sanitizeProviderErrorMessage(error.message)
+          : 'Ошибка запроса к ИИ',
+      );
+    }
+  }
+
+  async applyEpicBreakdown(
+    workspaceId: string,
+    userId: string,
+    epicId: string,
+    dto: ApplyEpicBreakdownDto,
+  ) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+    const epic = await this.requireEpic(workspaceId, epicId);
+
+    const column = await this.prisma.boardColumn.findFirst({
+      where: {
+        id: epic.columnId,
+        board: { workspaceId },
+      },
+      select: { id: true },
+    });
+    if (!column) {
+      throw new NotFoundException('Колонка эпика не найдена');
+    }
+
+    const created = await this.prisma.$transaction(
+      async (tx) => {
+        const lastTask = await tx.task.findFirst({
+          where: { columnId: column.id, deletedAt: null },
+          orderBy: { position: 'desc' },
+          select: { position: true },
+        });
+        let nextPosition = (lastTask?.position ?? -1) + 1;
+        const tasks = [];
+
+        for (const draft of dto.tasks) {
+          const title = draft.title.trim();
+          if (!title) continue;
+          const task = await tx.task.create({
+            data: {
+              columnId: column.id,
+              title: title.slice(0, 200),
+              description: draft.description?.trim()
+                ? draft.description.trim().slice(0, 2000)
+                : null,
+              position: nextPosition,
+              epicId: epic.id,
+            },
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              columnId: true,
+              epicId: true,
+              position: true,
+            },
+          });
+          nextPosition += 1;
+          tasks.push(task);
+        }
+
+        if (tasks.length === 0) {
+          throw new BadRequestException('Нет задач для создания');
+        }
+
+        return tasks;
+      },
+      { maxWait: 10_000, timeout: 60_000 },
+    );
+
+    await this.activityService.record({
+      workspaceId,
+      actorId: userId,
+      action: ActivityAction.AI_EPIC_BREAKDOWN_APPLIED,
+      entityType: ActivityEntityType.TASK,
+      entityId: epic.id,
+      entityName: epic.title,
+      metadata: { count: created.length },
+    });
+
+    return {
+      epicId: epic.id,
+      createdCount: created.length,
+      tasks: created,
+    };
+  }
+
+  private async requireEpic(workspaceId: string, epicId: string) {
+    const epic = await this.prisma.task.findFirst({
+      where: {
+        id: epicId,
+        isEpic: true,
+        deletedAt: null,
+        column: { board: { workspaceId } },
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        columnId: true,
+      },
+    });
+    if (!epic) {
+      throw new NotFoundException('Эпик не найден');
+    }
+    return epic;
+  }
+
+  private parseEpicBreakdownResponse(content: string): EpicBreakdownDraft[] {
+    const cleaned = content
+      .trim()
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      throw new BadRequestException('ИИ вернул некорректный формат, попробуйте ещё раз');
+    }
+
+    const rawTasks = Array.isArray(parsed)
+      ? parsed
+      : parsed && typeof parsed === 'object' && Array.isArray((parsed as { tasks?: unknown }).tasks)
+        ? (parsed as { tasks: unknown[] }).tasks
+        : null;
+
+    if (!rawTasks) {
+      throw new BadRequestException('ИИ вернул некорректный формат, попробуйте ещё раз');
+    }
+
+    const tasks: EpicBreakdownDraft[] = [];
+    for (const item of rawTasks) {
+      if (!item || typeof item !== 'object') continue;
+      const record = item as { title?: unknown; description?: unknown };
+      const title = typeof record.title === 'string' ? record.title.trim() : '';
+      if (!title) continue;
+      const description = typeof record.description === 'string' ? record.description.trim() : '';
+      tasks.push({
+        title: title.slice(0, 200),
+        description: description.slice(0, 2000),
+      });
+      if (tasks.length >= EPIC_BREAKDOWN_MAX_TASKS) break;
+    }
+
+    if (tasks.length === 0) {
+      throw new BadRequestException('ИИ не предложил ни одной задачи, попробуйте ещё раз');
+    }
+
+    return tasks;
   }
 
   private async loadSprintSummaryContext(workspaceId: string, sprintId: string) {

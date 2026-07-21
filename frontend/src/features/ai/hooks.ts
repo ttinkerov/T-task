@@ -1,13 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  applyEpicBreakdown,
   deleteAiSettings,
   fetchAiSettings,
   fetchAiSummary,
+  proposeEpicBreakdown,
   sendAiChat,
   testAiConnection,
   upsertAiSettings,
 } from './api';
-import type { AiChatPayload, AiSummaryPayload, UpsertAiSettingsPayload } from './types';
+import type {
+  AiChatPayload,
+  AiSummaryPayload,
+  ApplyEpicBreakdownPayload,
+  ProposeEpicBreakdownPayload,
+  UpsertAiSettingsPayload,
+} from './types';
 
 export const aiKeys = {
   all: ['ai'] as const,
@@ -72,6 +80,24 @@ export function useAiSummaryMutation(workspaceId: string) {
   return useMutation({
     mutationFn: async (data: AiSummaryPayload) => {
       const response = await fetchAiSummary(workspaceId, data);
+      return response.data!;
+    },
+  });
+}
+
+export function useProposeEpicBreakdownMutation(workspaceId: string, epicId: string) {
+  return useMutation({
+    mutationFn: async (data: ProposeEpicBreakdownPayload = {}) => {
+      const response = await proposeEpicBreakdown(workspaceId, epicId, data);
+      return response.data!;
+    },
+  });
+}
+
+export function useApplyEpicBreakdownMutation(workspaceId: string, epicId: string) {
+  return useMutation({
+    mutationFn: async (data: ApplyEpicBreakdownPayload) => {
+      const response = await applyEpicBreakdown(workspaceId, epicId, data);
       return response.data!;
     },
   });
