@@ -83,3 +83,9 @@ export const BULK_TASK_MUTATE_RATE_LIMIT: RateLimitConfig = {
   windowSeconds: 60,
   maxAttempts: 20,
 };
+
+export const IMPORT_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'import:tasks',
+  windowSeconds: 60,
+  maxAttempts: 5,
+};

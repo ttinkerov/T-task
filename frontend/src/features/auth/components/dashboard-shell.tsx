@@ -28,6 +28,7 @@ import {
   Sparkles,
   Tags,
   Trash2,
+  Upload,
   UserRound,
   Bookmark,
 } from 'lucide-react';
@@ -192,6 +193,7 @@ export function DashboardShell({
           { href: '/dashboard/calendar', label: 'Календарь', icon: CalendarDays },
           { href: '/dashboard/custom-fields', label: 'Поля', icon: Settings },
           { href: '/dashboard/dod', label: 'DoD', icon: ListChecks },
+          { href: '/dashboard/import', label: 'Импорт', icon: Upload },
           { href: '/dashboard/tags', label: 'Теги', icon: Tags },
           {
             href: '/dashboard/activity',

@@ -1,0 +1,158 @@
+@use 'variables' as *;
+
+.import-page {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 64rem;
+
+  &__header {
+    h1 {
+      color: $color-white;
+      font-size: clamp(1.5rem, 3vw, 2.25rem);
+      font-weight: 680;
+      letter-spacing: -0.035em;
+    }
+
+    p {
+      max-width: 44rem;
+      margin-top: 0.35rem;
+      color: $color-text-muted;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+  }
+
+  &__block {
+    display: grid;
+    gap: 0.85rem;
+    border: 1px solid var(--tt-border);
+    border-radius: $radius-lg;
+    background: var(--tt-surface);
+    padding: 1.25rem;
+
+    h2 {
+      margin: 0;
+      color: $color-white;
+      font-size: 1rem;
+      font-weight: 650;
+    }
+  }
+
+  &__file {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: fit-content;
+    border: 1px dashed $color-border-subtle;
+    border-radius: $radius-md;
+    padding: 0.75rem 1rem;
+    color: $color-text-muted;
+    font-size: 0.875rem;
+    cursor: pointer;
+
+    input {
+      max-width: 14rem;
+      color: $color-white;
+      font-size: 0.8rem;
+    }
+
+    span {
+      color: $color-white;
+      font-weight: 550;
+    }
+  }
+
+  &__meta {
+    margin: 0;
+    color: $color-text-muted;
+    font-size: 0.85rem;
+  }
+
+  &__hint {
+    margin: 0;
+    color: $color-text-muted;
+    font-size: 0.8rem;
+  }
+
+  &__error {
+    margin: 0;
+    color: #f87171;
+    font-size: 0.8rem;
+  }
+
+  &__mappings {
+    display: grid;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: grid;
+      grid-template-columns: minmax(8rem, 14rem) minmax(12rem, 1fr);
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    @media (max-width: 640px) {
+      li {
+        grid-template-columns: 1fr;
+      }
+    }
+  }
+
+  &__status {
+    color: $color-white;
+    font-size: 0.875rem;
+    font-weight: 550;
+  }
+
+  &__table-wrap {
+    overflow-x: auto;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+
+    th,
+    td {
+      border-bottom: 1px solid $color-border-subtle;
+      padding: 0.55rem 0.65rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: $color-text-muted;
+      font-weight: 550;
+    }
+
+    td {
+      color: $color-white;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  &__result-list {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: $color-text-muted;
+    font-size: 0.8rem;
+
+    strong {
+      color: $color-white;
+      font-weight: 550;
+    }
+  }
+}

@@ -28,6 +28,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { SprintsModule } from './modules/sprints/sprints.module';
 import { WatchersModule } from './modules/watchers/watchers.module';
 import { DodModule } from './modules/dod/dod.module';
+import { ImportModule } from './modules/import/import.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { DodModule } from './modules/dod/dod.module';
     SprintsModule,
     WatchersModule,
     DodModule,
+    ImportModule,
   ],
   providers: [MailNotificationsListener],
 })
