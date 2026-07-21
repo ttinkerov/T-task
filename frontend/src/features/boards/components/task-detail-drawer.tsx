@@ -4,6 +4,7 @@ import { TaskAttachmentsSection } from '@/features/attachments';
 import { FormEvent, useEffect, useState } from 'react';
 import { useMeQuery } from '@/features/auth/hooks';
 import { MentionText, MentionTextarea } from '@/features/mentions';
+import { useShortcutHandlers } from '@/features/shell/hooks/use-shortcut-handlers';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import {
   useCommentsQuery,
@@ -119,11 +120,28 @@ export function TaskDetailDrawer({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key !== 'Escape') return;
+      if (document.querySelector('.shortcuts-help-overlay')) return;
+      onClose();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [onClose]);
+
+  useShortcutHandlers({
+    'assign-me': () => {
+      const myId = session?.user.id;
+      if (!myId) return;
+      setAssigneeId(myId);
+      void updateMutation.mutateAsync({
+        taskId: task.id,
+        data: { assigneeId: myId },
+      });
+    },
+    'focus-comment': () => {
+      document.getElementById('task-comment-input')?.focus();
+    },
+  });
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -585,6 +603,7 @@ export function TaskDetailDrawer({
 
           <form onSubmit={handleAddComment} className="task-drawer__comment-form">
             <MentionTextarea
+              id="task-comment-input"
               value={commentBody}
               onChange={setCommentBody}
               members={members}

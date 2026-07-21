@@ -1,0 +1,80 @@
+@use 'variables' as *;
+
+.shortcuts-help-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, #000 45%, transparent);
+  padding: 1rem;
+}
+
+.shortcuts-help {
+  width: min(28rem, 100%);
+  border: 1px solid $color-border-subtle;
+  border-radius: $radius-lg;
+  background: var(--tt-surface);
+  box-shadow: var(--tt-shadow-lg);
+  padding: 1rem 1.1rem 1.15rem;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+
+    h2 {
+      margin: 0.15rem 0 0;
+      color: $color-white;
+      font-size: 1.15rem;
+    }
+  }
+
+  &__eyebrow {
+    margin: 0;
+    color: var(--tt-brand);
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  &__list {
+    display: grid;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      border: 1px solid $color-border-subtle;
+      border-radius: $radius-sm;
+      padding: 0.55rem 0.7rem;
+      color: $color-text-muted;
+      font-size: 0.8rem;
+    }
+
+    kbd {
+      border: 1px solid $color-border-subtle;
+      border-radius: 0.35rem;
+      background: color-mix(in srgb, var(--tt-brand) 12%, var(--tt-surface));
+      padding: 0.15rem 0.45rem;
+      color: $color-white;
+      font-family: inherit;
+      font-size: 0.72rem;
+      font-weight: 650;
+    }
+  }
+
+  &__hint {
+    margin: 0.75rem 0 0;
+    color: $color-text-dim;
+    font-size: 0.72rem;
+  }
+}

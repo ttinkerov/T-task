@@ -9,6 +9,7 @@ interface MentionTextareaProps {
   onChange: (value: string) => void;
   members: WorkspaceMember[];
   className?: string;
+  id?: string;
   rows?: number;
   maxLength?: number;
   placeholder?: string;
@@ -22,6 +23,7 @@ export function MentionTextarea({
   onChange,
   members,
   className,
+  id,
   rows,
   maxLength,
   placeholder,
@@ -87,6 +89,7 @@ export function MentionTextarea({
   return (
     <div className="mention-editor">
       <textarea
+        id={id}
         ref={textareaRef}
         value={value}
         onChange={(event) => {

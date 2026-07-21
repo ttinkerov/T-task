@@ -30,6 +30,15 @@ import { useCustomFieldsQuery } from '@/features/custom-fields/hooks';
 import type { CustomFieldDefinition } from '@/features/custom-fields/types';
 import { BulkActionsToolbar } from './bulk-actions-toolbar';
 import { toggleTaskSelection } from '../lib/bulk-selection';
+import { useCreateTaskShortcutListener } from '@/features/shell/hooks/use-shortcut-handlers';
+
+const FOCUS_CREATE_KEY = 'ttask:focus-create';
+
+function focusCreateTaskInput() {
+  const input = document.querySelector<HTMLInputElement>('.kanban-column__add-input');
+  input?.focus();
+  input?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
 import { tokenizeMentions } from '@/features/mentions/mention-utils';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import { celebrateTaskComplete } from '@/shared/lib/celebrate';
@@ -168,6 +177,22 @@ export function KanbanBoard({
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
+
+  useCreateTaskShortcutListener(() => {
+    if (viewMode !== 'BOARD') return;
+    focusCreateTaskInput();
+  });
+
+  useEffect(() => {
+    if (viewMode !== 'BOARD' || !boardId) return;
+    try {
+      if (window.sessionStorage.getItem(FOCUS_CREATE_KEY) !== '1') return;
+      window.sessionStorage.removeItem(FOCUS_CREATE_KEY);
+      window.requestAnimationFrame(() => focusCreateTaskInput());
+    } catch {
+      // ignore
+    }
+  }, [boardId, viewMode]);
 
   const orderedTaskIds = useMemo(
     () => filteredColumns.flatMap((column) => column.tasks.map((task) => task.id)),

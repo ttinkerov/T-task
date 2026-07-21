@@ -14,6 +14,7 @@ import {
   FormInput,
   Home,
   Kanban,
+  Keyboard,
   LayoutDashboard,
   ListChecks,
   ListTodo,
@@ -40,12 +41,18 @@ import { usePinnedSavedFiltersQuery } from '@/features/saved-filters/hooks';
 import { AppSidebar, type NavGroup } from '@/features/shell/components/app-sidebar';
 import { CommandPalette, type CommandItem } from '@/features/shell/components/command-palette';
 import { MobileBottomNav } from '@/features/shell/components/mobile-bottom-nav';
+import { ShortcutsHelp } from '@/features/shell/components/shortcuts-help';
+import {
+  dispatchShortcut,
+  useShortcutHandlers,
+} from '@/features/shell/hooks/use-shortcut-handlers';
 import { useCanManageTrash } from '@/features/trash/hooks';
 import { WorkspaceSwitcher } from '@/features/workspaces/components/workspace-switcher';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { useWorkspaceRealtime } from '@/shared/realtime';
 
 const COLLAPSE_KEY = 'ttask:sidebar-collapsed';
+const FOCUS_CREATE_KEY = 'ttask:focus-create';
 
 export function DashboardShell({
   children,
@@ -66,6 +73,7 @@ export function DashboardShell({
   const [collapsed, setCollapsed] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -92,10 +100,29 @@ export function DashboardShell({
         event.preventDefault();
         setCmdOpen((open) => !open);
       }
+      if (event.key === 'Escape' && shortcutsOpen) {
+        setShortcutsOpen(false);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [shortcutsOpen]);
+
+  useShortcutHandlers({
+    'create-task': () => {
+      if (pathname.startsWith('/dashboard/board')) {
+        dispatchShortcut('create-task');
+        return;
+      }
+      try {
+        window.sessionStorage.setItem(FOCUS_CREATE_KEY, '1');
+      } catch {
+        // ignore
+      }
+      router.push('/dashboard/board');
+    },
+    'shortcuts-help': () => setShortcutsOpen(true),
+  });
 
   const toggleCollapsed = () => {
     setCollapsed((value) => {
@@ -209,6 +236,35 @@ export function DashboardShell({
         hint: 'B',
       },
       {
+        id: 'cmd-create-task',
+        label: 'Создать задачу',
+        icon: Kanban,
+        group: 'Быстрые действия',
+        hint: 'C',
+        keywords: ['create', 'new', 'задача'],
+        action: () => {
+          if (pathname.startsWith('/dashboard/board')) {
+            dispatchShortcut('create-task');
+            return;
+          }
+          try {
+            window.sessionStorage.setItem(FOCUS_CREATE_KEY, '1');
+          } catch {
+            // ignore
+          }
+          router.push('/dashboard/board');
+        },
+      },
+      {
+        id: 'cmd-shortcuts',
+        label: 'Шорткаты',
+        icon: Keyboard,
+        group: 'Быстрые действия',
+        hint: '?',
+        keywords: ['keyboard', 'hotkeys', 'справка'],
+        action: () => setShortcutsOpen(true),
+      },
+      {
         id: 'cmd-theme',
         label: 'Переключить тему',
         icon: Settings,
@@ -234,7 +290,7 @@ export function DashboardShell({
         },
       },
     ];
-  }, [navGroups]);
+  }, [navGroups, pathname, router]);
 
   if (isLoading) {
     return (
@@ -382,6 +438,7 @@ export function DashboardShell({
         items={commandItems}
         workspaceId={workspaceId}
       />
+      <ShortcutsHelp open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </div>
   );
 }
