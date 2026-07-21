@@ -3,6 +3,8 @@ import type {
   AiChatPayload,
   AiChatResult,
   AiSettings,
+  AiSummaryPayload,
+  AiSummaryResult,
   AiTestResult,
   UpsertAiSettingsPayload,
 } from './types';
@@ -41,6 +43,14 @@ export function testAiConnection(workspaceId: string) {
 
 export function sendAiChat(workspaceId: string, data: AiChatPayload) {
   return apiFetch<AiChatResult>(`/api/v1/workspaces/${workspaceId}/ai/chat`, {
+    method: 'POST',
+    headers: withWorkspace(workspaceId),
+    body: JSON.stringify(data),
+  });
+}
+
+export function fetchAiSummary(workspaceId: string, data: AiSummaryPayload) {
+  return apiFetch<AiSummaryResult>(`/api/v1/workspaces/${workspaceId}/ai/summary`, {
     method: 'POST',
     headers: withWorkspace(workspaceId),
     body: JSON.stringify(data),

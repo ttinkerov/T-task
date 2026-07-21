@@ -40,6 +40,31 @@ export type AiTestResult = {
   sample: string;
 };
 
+export type AiSummaryScope = 'sprint' | 'day';
+
+export type AiSummaryPayload = {
+  scope: AiSummaryScope;
+  sprintId?: string;
+  date?: string;
+};
+
+export type AiSummaryResult = {
+  summary: string;
+  scope: AiSummaryScope;
+  period: {
+    from: string;
+    to: string;
+    label: string;
+  };
+  stats: {
+    completedCount: number;
+    completedPoints: number;
+    openCount: number;
+    topAssignees: Array<{ name: string; completedCount: number }>;
+  };
+  model: string;
+};
+
 export const AI_PROVIDER_OPTIONS: Array<{ value: AiProvider; label: string }> = [
   { value: 'OPENAI', label: 'OpenAI' },
   { value: 'OPENROUTER', label: 'OpenRouter' },

@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useMemo, useState } from 'react';
+import { AiSummaryPanel } from '@/features/ai';
 import {
   useCloseSprintMutation,
   useCreateSprintMutation,
@@ -178,6 +179,16 @@ export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
             {velocity.averageVelocity > 0 ? `${velocity.averageVelocity} SP` : '—'}
           </p>
         </div>
+      ) : null}
+
+      {active ? (
+        <AiSummaryPanel
+          key={active.id}
+          workspaceId={workspaceId}
+          scope="sprint"
+          sprintId={active.id}
+          compact
+        />
       ) : null}
     </div>
   );

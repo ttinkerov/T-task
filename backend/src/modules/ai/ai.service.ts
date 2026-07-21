@@ -12,10 +12,20 @@ import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { AiProviderClient } from './ai-provider.client';
 import { AiChatDto } from './dto/ai-chat.dto';
+import { SummarizeAiDto } from './dto/summarize-ai.dto';
 import { UpsertAiSettingsDto } from './dto/upsert-ai-settings.dto';
 import { assertSafeAiBaseUrl, sanitizeProviderErrorMessage } from './utils/base-url-guard.util';
 import { resolveDefaultModel, resolveProviderBaseUrl } from './utils/provider-presets';
 import { decryptToken, encryptToken, tokenLast4 } from './utils/token-crypto.util';
+
+const SUMMARY_TASK_LIMIT = 60;
+
+type SummaryTaskRow = {
+  title: string;
+  completedAt: Date | null;
+  complexity: number | null;
+  assignee: { name: string } | null;
+};
 
 @Injectable()
 export class AiService {
@@ -197,6 +207,291 @@ export class AiService {
     }
   }
 
+  async summarize(workspaceId: string, userId: string, dto: SummarizeAiDto) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+
+    if (dto.scope === 'sprint' && !dto.sprintId) {
+      throw new BadRequestException('Для саммари спринта укажите sprintId');
+    }
+
+    const credentials = await this.loadCredentials(workspaceId);
+    const context =
+      dto.scope === 'sprint'
+        ? await this.loadSprintSummaryContext(workspaceId, dto.sprintId!)
+        : await this.loadDaySummaryContext(workspaceId, dto.date);
+
+    const prompt = this.buildSummaryPrompt({
+      scope: dto.scope,
+      label: context.label,
+      periodFrom: context.from,
+      periodTo: context.to,
+      stats: context.stats,
+      tasks: context.tasks,
+    });
+
+    try {
+      const result = await this.providerClient.chatCompletion({
+        baseUrl: credentials.baseUrl,
+        apiToken: credentials.apiToken,
+        model: credentials.model,
+        messages: [
+          {
+            role: 'system',
+            content: [
+              'Ты помощник T-task. Пиши краткое саммари на русском по фактам из контекста.',
+              'Структура: что сделано; кто отличился; риски/хвосты (для спринта).',
+              'Не выдумывай задачи, людей и цифры. Если данных мало — скажи об этом прямо.',
+              'Без вступлений вроде «Конечно» — сразу по делу, 5–12 коротких пунктов или абзацев.',
+            ].join(' '),
+          },
+          { role: 'user', content: prompt },
+        ],
+      });
+
+      return {
+        summary: result.content.trim(),
+        scope: dto.scope,
+        period: {
+          from: context.from.toISOString(),
+          to: context.to.toISOString(),
+          label: context.label,
+        },
+        stats: context.stats,
+        model: result.model,
+      };
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new ServiceUnavailableException('Провайдер ИИ не ответил вовремя');
+      }
+      throw new BadRequestException(
+        error instanceof Error
+          ? sanitizeProviderErrorMessage(error.message)
+          : 'Ошибка запроса к ИИ',
+      );
+    }
+  }
+
+  private async loadSprintSummaryContext(workspaceId: string, sprintId: string) {
+    const sprint = await this.prisma.sprint.findFirst({
+      where: { id: sprintId, workspaceId },
+      select: {
+        id: true,
+        name: true,
+        startDate: true,
+        endDate: true,
+      },
+    });
+    if (!sprint) {
+      throw new NotFoundException('Спринт не найден');
+    }
+
+    const completedWhere = {
+      sprintId: sprint.id,
+      deletedAt: null,
+      completedAt: { not: null },
+    } as const;
+    const openWhere = {
+      sprintId: sprint.id,
+      deletedAt: null,
+      completedAt: null,
+    } as const;
+
+    const [completedTasks, openTasks, completedCount, openCount, pointsAgg, assigneeGroups] =
+      await Promise.all([
+        this.prisma.task.findMany({
+          where: completedWhere,
+          select: {
+            title: true,
+            completedAt: true,
+            complexity: true,
+            assignee: { select: { name: true } },
+          },
+          orderBy: { completedAt: 'desc' },
+          take: SUMMARY_TASK_LIMIT,
+        }),
+        this.prisma.task.findMany({
+          where: openWhere,
+          select: {
+            title: true,
+            completedAt: true,
+            complexity: true,
+            assignee: { select: { name: true } },
+          },
+          orderBy: { updatedAt: 'desc' },
+          take: 20,
+        }),
+        this.prisma.task.count({ where: completedWhere }),
+        this.prisma.task.count({ where: openWhere }),
+        this.prisma.task.aggregate({
+          where: completedWhere,
+          _sum: { complexity: true },
+        }),
+        this.prisma.task.groupBy({
+          by: ['assigneeId'],
+          where: completedWhere,
+          _count: { _all: true },
+          orderBy: { _count: { assigneeId: 'desc' } },
+          take: 5,
+        }),
+      ]);
+
+    const stats = {
+      completedCount,
+      completedPoints: pointsAgg._sum.complexity ?? 0,
+      openCount,
+      topAssignees: await this.resolveTopAssignees(assigneeGroups),
+    };
+
+    return {
+      label: sprint.name,
+      from: startOfDay(sprint.startDate),
+      to: endOfDay(sprint.endDate),
+      tasks: [...completedTasks, ...openTasks],
+      stats,
+    };
+  }
+
+  private async loadDaySummaryContext(workspaceId: string, dateRaw?: string) {
+    const base = dateRaw ? parseDateOnly(dateRaw) : new Date();
+    if (Number.isNaN(base.getTime())) {
+      throw new BadRequestException('Некорректная дата');
+    }
+    const from = startOfDay(base);
+    const to = endOfDay(base);
+
+    const completedWhere = {
+      deletedAt: null,
+      completedAt: { gte: from, lte: to },
+      column: { board: { workspaceId } },
+    };
+
+    const [tasks, completedCount, pointsAgg, assigneeGroups] = await Promise.all([
+      this.prisma.task.findMany({
+        where: completedWhere,
+        select: {
+          title: true,
+          completedAt: true,
+          complexity: true,
+          assignee: { select: { name: true } },
+        },
+        orderBy: { completedAt: 'desc' },
+        take: SUMMARY_TASK_LIMIT,
+      }),
+      this.prisma.task.count({ where: completedWhere }),
+      this.prisma.task.aggregate({
+        where: completedWhere,
+        _sum: { complexity: true },
+      }),
+      this.prisma.task.groupBy({
+        by: ['assigneeId'],
+        where: completedWhere,
+        _count: { _all: true },
+        orderBy: { _count: { assigneeId: 'desc' } },
+        take: 5,
+      }),
+    ]);
+
+    return {
+      label: `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}`,
+      from,
+      to,
+      tasks,
+      stats: {
+        completedCount,
+        completedPoints: pointsAgg._sum.complexity ?? 0,
+        openCount: 0,
+        topAssignees: await this.resolveTopAssignees(assigneeGroups),
+      },
+    };
+  }
+
+  private async resolveTopAssignees(
+    groups: Array<{ assigneeId: string | null; _count: { _all: number } }>,
+  ) {
+    const ids = groups.map((group) => group.assigneeId).filter((id): id is string => Boolean(id));
+    const users =
+      ids.length === 0
+        ? []
+        : await this.prisma.user.findMany({
+            where: { id: { in: ids } },
+            select: { id: true, name: true },
+          });
+    const nameById = new Map(users.map((user) => [user.id, user.name]));
+
+    return groups.map((group) => ({
+      name: group.assigneeId
+        ? (nameById.get(group.assigneeId) ?? 'Неизвестный')
+        : 'Без исполнителя',
+      completedCount: group._count._all,
+    }));
+  }
+
+  private buildSummaryPrompt(input: {
+    scope: 'sprint' | 'day';
+    label: string;
+    periodFrom: Date;
+    periodTo: Date;
+    stats: {
+      completedCount: number;
+      completedPoints: number;
+      openCount: number;
+      topAssignees: Array<{ name: string; completedCount: number }>;
+    };
+    tasks: SummaryTaskRow[];
+  }) {
+    const completed = input.tasks.filter((task) => task.completedAt);
+    const open = input.tasks.filter((task) => !task.completedAt);
+    const lines = [
+      input.scope === 'sprint' ? `Спринт: ${input.label}` : `День: ${input.label}`,
+      `Период: ${input.periodFrom.toISOString()} — ${input.periodTo.toISOString()}`,
+      `Закрыто задач: ${input.stats.completedCount}`,
+      `Story points закрытых: ${input.stats.completedPoints}`,
+    ];
+
+    if (input.scope === 'sprint') {
+      lines.push(`Открыто в спринте: ${input.stats.openCount}`);
+    }
+
+    if (input.stats.topAssignees.length > 0) {
+      lines.push(
+        `Топ исполнителей: ${input.stats.topAssignees
+          .map((item) => `${item.name} (${item.completedCount})`)
+          .join(', ')}`,
+      );
+    }
+
+    lines.push('Закрытые задачи (выборка):');
+    if (completed.length === 0) {
+      lines.push('- (нет)');
+    } else {
+      for (const task of completed.slice(0, SUMMARY_TASK_LIMIT)) {
+        const points = task.complexity != null ? ` [${task.complexity} SP]` : '';
+        const who = task.assignee?.name ? ` — ${task.assignee.name}` : '';
+        lines.push(`- ${task.title}${points}${who}`);
+      }
+      if (input.stats.completedCount > completed.length) {
+        lines.push(`- … и ещё ${input.stats.completedCount - completed.length}`);
+      }
+    }
+
+    if (input.scope === 'sprint') {
+      lines.push('Ещё открытые (выборка):');
+      if (open.length === 0) {
+        lines.push('- (нет)');
+      } else {
+        for (const task of open.slice(0, 20)) {
+          const points = task.complexity != null ? ` [${task.complexity} SP]` : '';
+          lines.push(`- ${task.title}${points}`);
+        }
+        if (input.stats.openCount > open.length) {
+          lines.push(`- … и ещё ${input.stats.openCount - open.length}`);
+        }
+      }
+    }
+
+    return lines.join('\n');
+  }
+
   private async loadCredentials(workspaceId: string) {
     const setting = await this.prisma.aiWorkspaceSetting.findUnique({
       where: { workspaceId },
@@ -291,4 +586,23 @@ export class AiService {
       updatedAt: setting.updatedAt.toISOString(),
     };
   }
+}
+
+function startOfDay(date: Date): Date {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
+function endOfDay(date: Date): Date {
+  const result = new Date(date);
+  result.setHours(23, 59, 59, 999);
+  return result;
+}
+
+/** Parse YYYY-MM-DD as local calendar day (avoids UTC midnight shift). */
+function parseDateOnly(value: string): Date {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
+  if (!match) return new Date(value);
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12, 0, 0, 0);
 }

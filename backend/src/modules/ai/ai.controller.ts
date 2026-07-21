@@ -12,6 +12,7 @@ import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard'
 import { RateLimit } from '../../common/security/rate-limit.decorator';
 import { AiService } from './ai.service';
 import { AiChatDto } from './dto/ai-chat.dto';
+import { SummarizeAiDto } from './dto/summarize-ai.dto';
 import { UpsertAiSettingsDto } from './dto/upsert-ai-settings.dto';
 
 @Controller('workspaces/:workspaceId/ai')
@@ -76,5 +77,22 @@ export class AiController {
     @Body() dto: AiChatDto,
   ) {
     return successResponse(await this.aiService.chat(workspaceId, user.id, dto));
+  }
+
+  @Post('summary')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit({
+    keyPrefix: 'ai:summary',
+    windowSeconds: 60,
+    maxAttempts: 10,
+    includeWorkspaceId: true,
+  })
+  @Roles(...MEMBER_PLUS_ROLES)
+  async summarize(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: SummarizeAiDto,
+  ) {
+    return successResponse(await this.aiService.summarize(workspaceId, user.id, dto));
   }
 }

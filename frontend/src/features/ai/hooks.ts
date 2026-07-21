@@ -2,11 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   deleteAiSettings,
   fetchAiSettings,
+  fetchAiSummary,
   sendAiChat,
   testAiConnection,
   upsertAiSettings,
 } from './api';
-import type { AiChatPayload, UpsertAiSettingsPayload } from './types';
+import type { AiChatPayload, AiSummaryPayload, UpsertAiSettingsPayload } from './types';
 
 export const aiKeys = {
   all: ['ai'] as const,
@@ -62,6 +63,15 @@ export function useAiChatMutation(workspaceId: string) {
   return useMutation({
     mutationFn: async (data: AiChatPayload) => {
       const response = await sendAiChat(workspaceId, data);
+      return response.data!;
+    },
+  });
+}
+
+export function useAiSummaryMutation(workspaceId: string) {
+  return useMutation({
+    mutationFn: async (data: AiSummaryPayload) => {
+      const response = await fetchAiSummary(workspaceId, data);
       return response.data!;
     },
   });
