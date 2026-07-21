@@ -173,6 +173,7 @@ model Workspace {
   notifications Notification[]
   aiSetting     AiWorkspaceSetting?
   sprints       Sprint[]
+  dodTemplates  DodTemplate[]
 
   @@map("workspaces")
 }
@@ -302,6 +303,7 @@ model Task {
   notifications Notification[]
   taskTags TaskTag[]
   subtasks Subtask[]
+  checklistItems TaskChecklistItem[]
   attachments TaskAttachment[]
   dealLinks DealTask[]
   watchers TaskWatcher[]
@@ -312,6 +314,51 @@ model Task {
   @@index([sprintId])
   @@index([epicId])
   @@map("tasks")
+}
+
+model DodTemplate {
+  id              String            @id @default(cuid())
+  workspaceId     String            @map("workspace_id")
+  name            String
+  gatesCompletion Boolean           @default(true) @map("gates_completion")
+  position        Int
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  workspace Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  items     DodTemplateItem[]
+
+  @@index([workspaceId])
+  @@map("dod_templates")
+}
+
+model DodTemplateItem {
+  id         String @id @default(cuid())
+  templateId String @map("template_id")
+  text       String
+  position   Int
+
+  template DodTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@map("dod_template_items")
+}
+
+model TaskChecklistItem {
+  id               String   @id @default(cuid())
+  taskId           String   @map("task_id")
+  text             String
+  completed        Boolean  @default(false)
+  required         Boolean  @default(true)
+  position         Int
+  sourceTemplateId String?  @map("source_template_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("task_checklist_items")
 }
 
 model Sprint {

@@ -14,6 +14,7 @@ import { BoardsService } from '../boards/boards.service';
 import { extractMentionUserIds } from '../mentions/mention-parser.util';
 import { MentionsService } from '../mentions/mentions.service';
 import { WatchersService } from '../watchers/watchers.service';
+import { TaskChecklistService } from '../dod/task-checklist.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
@@ -37,6 +38,7 @@ export class TasksService {
     private readonly taskRelationsService: TaskRelationsService,
     private readonly mentionsService: MentionsService,
     private readonly watchersService: WatchersService,
+    private readonly taskChecklistService: TaskChecklistService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -339,6 +341,7 @@ export class TasksService {
       if (completionAttempt) {
         await tx.$executeRaw`SELECT id FROM tasks WHERE id = ${taskId} FOR UPDATE`;
         await this.taskRelationsService.assertCanComplete(taskId, tx);
+        await this.taskChecklistService.assertDoDSatisfied(taskId, tx);
       }
 
       const currentTask = await tx.task.findUniqueOrThrow({ where: { id: taskId } });
@@ -610,12 +613,17 @@ export class TasksService {
         },
       });
 
-      const [tags, subtasks, customFields] = await Promise.all([
+      const [tags, subtasks, checklistItems, customFields] = await Promise.all([
         tx.taskTag.findMany({ where: { taskId: source.id }, select: { tagId: true } }),
         tx.subtask.findMany({
           where: { taskId: source.id },
           orderBy: { position: 'asc' },
           select: { title: true, position: true },
+        }),
+        tx.taskChecklistItem.findMany({
+          where: { taskId: source.id },
+          orderBy: { position: 'asc' },
+          select: { text: true, required: true, position: true, sourceTemplateId: true },
         }),
         tx.customFieldValue.findMany({
           where: { taskId: source.id },
@@ -635,6 +643,18 @@ export class TasksService {
             title: entry.title,
             completed: false,
             position: entry.position,
+          })),
+        });
+      }
+      if (checklistItems.length > 0) {
+        await tx.taskChecklistItem.createMany({
+          data: checklistItems.map((entry) => ({
+            taskId: copy.id,
+            text: entry.text,
+            required: entry.required,
+            completed: false,
+            position: entry.position,
+            sourceTemplateId: entry.sourceTemplateId,
           })),
         });
       }

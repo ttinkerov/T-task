@@ -27,6 +27,7 @@ function makePrisma() {
 describe('TasksService completion dependencies', () => {
   let prisma: ReturnType<typeof makePrisma>;
   let relationsService: { assertCanComplete: ReturnType<typeof vi.fn> };
+  let checklistService: { assertDoDSatisfied: ReturnType<typeof vi.fn> };
   let service: TasksService;
 
   beforeEach(() => {
@@ -36,6 +37,9 @@ describe('TasksService completion dependencies', () => {
         .fn()
         .mockRejectedValue(new ConflictException('Сначала завершите блокирующие задачи')),
     };
+    checklistService = {
+      assertDoDSatisfied: vi.fn().mockResolvedValue(undefined),
+    };
     service = new TasksService(
       prisma as never,
       { getWorkspaceForMember: vi.fn().mockResolvedValue({ id: 'workspace-1' }) } as never,
@@ -43,6 +47,7 @@ describe('TasksService completion dependencies', () => {
       relationsService as never,
       { prepare: vi.fn(), notify: vi.fn() } as never,
       { notifyWatchers: vi.fn() } as never,
+      checklistService as never,
       { emit: vi.fn() } as never,
     );
     prisma.task.findFirst.mockResolvedValue({
@@ -112,6 +117,32 @@ describe('TasksService completion dependencies', () => {
     expect(prisma.task.update).not.toHaveBeenCalled();
   });
 
+  it('prevents moving to done when Definition of Done items are open', async () => {
+    relationsService.assertCanComplete.mockResolvedValue(undefined);
+    checklistService.assertDoDSatisfied.mockRejectedValue(
+      new ConflictException('Не выполнены пункты Definition of Done: Code review'),
+    );
+    prisma.boardColumn.findFirst
+      .mockResolvedValueOnce({
+        id: 'column-done',
+        boardId: 'board-1',
+        name: 'Готово',
+        position: 2,
+        automations: [],
+      })
+      .mockResolvedValueOnce({ id: 'column-todo', boardId: 'board-1' });
+
+    await expect(
+      service.move('workspace-1', 'task-b', 'user-1', {
+        columnId: 'column-done',
+        position: 0,
+      }),
+    ).rejects.toThrow(/Definition of Done/);
+
+    expect(checklistService.assertDoDSatisfied).toHaveBeenCalledWith('task-b', prisma);
+    expect(prisma.task.update).not.toHaveBeenCalled();
+  });
+
   it('rejects moving a task onto a column from another board', async () => {
     prisma.boardColumn.findFirst
       .mockResolvedValueOnce({
@@ -165,6 +196,7 @@ describe('TasksService description mentions', () => {
       { assertCanComplete: vi.fn() } as never,
       mentions as never,
       { notifyWatchers: vi.fn() } as never,
+      { assertDoDSatisfied: vi.fn().mockResolvedValue(undefined) } as never,
       { emit: vi.fn() } as never,
     );
 

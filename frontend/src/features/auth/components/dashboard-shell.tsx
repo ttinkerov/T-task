@@ -15,6 +15,7 @@ import {
   Home,
   Kanban,
   LayoutDashboard,
+  ListChecks,
   ListTodo,
   LogOut,
   Milestone,
@@ -163,6 +164,7 @@ export function DashboardShell({
           { href: '/dashboard/apps', label: 'Приложения', icon: AppWindow },
           { href: '/dashboard/calendar', label: 'Календарь', icon: CalendarDays },
           { href: '/dashboard/custom-fields', label: 'Поля', icon: Settings },
+          { href: '/dashboard/dod', label: 'DoD', icon: ListChecks },
           { href: '/dashboard/tags', label: 'Теги', icon: Tags },
           {
             href: '/dashboard/activity',

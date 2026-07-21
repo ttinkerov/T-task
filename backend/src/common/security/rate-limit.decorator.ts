@@ -60,6 +60,12 @@ export const CUSTOM_FIELD_MUTATE_RATE_LIMIT: RateLimitConfig = {
   maxAttempts: 60,
 };
 
+export const DOD_MUTATE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'dod:mutate',
+  windowSeconds: 60,
+  maxAttempts: 60,
+};
+
 export const NOTIFICATION_MUTATE_RATE_LIMIT: RateLimitConfig = {
   keyPrefix: 'notification:mutate',
   windowSeconds: 60,

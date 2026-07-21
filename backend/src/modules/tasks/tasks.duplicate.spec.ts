@@ -15,6 +15,10 @@ describe('TasksService.duplicate', () => {
       findMany: vi.fn(),
       createMany: vi.fn(),
     },
+    taskChecklistItem: {
+      findMany: vi.fn(),
+      createMany: vi.fn(),
+    },
     customFieldValue: {
       findMany: vi.fn(),
       createMany: vi.fn(),
@@ -41,6 +45,7 @@ describe('TasksService.duplicate', () => {
       { assertCanComplete: vi.fn() } as never,
       { prepare: vi.fn(), notify: vi.fn() } as never,
       { notifyWatchers: vi.fn() } as never,
+      { assertDoDSatisfied: vi.fn().mockResolvedValue(undefined) } as never,
       { emit: vi.fn() } as never,
     );
   });
@@ -90,6 +95,7 @@ describe('TasksService.duplicate', () => {
       { title: 'Шаг', completed: true, position: 0 },
       { title: 'Шаг 2', completed: false, position: 1 },
     ]);
+    prisma.taskChecklistItem.findMany.mockResolvedValue([]);
     prisma.customFieldValue.findMany.mockResolvedValue([{ fieldId: 'field-1', value: 'ok' }]);
 
     const result = await service.duplicate('ws-1', 'task-1', 'user-1');

@@ -32,6 +32,7 @@ import { TaskCustomFieldsSection } from './task-custom-fields-section';
 import { TaskDealsSection } from './task-deals-section';
 import { TaskRelationsSection } from './task-relations-section';
 import { TaskSubtasksSection } from './task-subtasks-section';
+import { TaskChecklistSection } from '@/features/dod';
 import { TaskTagsSection } from './task-tags-section';
 import { TaskAiAssistant } from '@/features/ai';
 import { useSprintsQuery } from '@/features/sprints';
@@ -521,6 +522,7 @@ export function TaskDetailDrawer({
         <TaskTagsSection workspaceId={workspaceId} taskId={task.id} selected={task.tags ?? []} />
 
         <TaskSubtasksSection workspaceId={workspaceId} taskId={task.id} />
+        <TaskChecklistSection workspaceId={workspaceId} taskId={task.id} />
 
         <TaskAttachmentsSection workspaceId={workspaceId} taskId={task.id} />
 

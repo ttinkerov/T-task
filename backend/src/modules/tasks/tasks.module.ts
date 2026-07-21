@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { BoardsModule } from '../boards/boards.module';
+import { DodModule } from '../dod/dod.module';
 import { MentionsModule } from '../mentions/mentions.module';
 import { WatchersModule } from '../watchers/watchers.module';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
@@ -19,7 +20,7 @@ import { TasksController } from './tasks.controller';
 import { TasksService } from './tasks.service';
 
 @Module({
-  imports: [WorkspacesModule, BoardsModule, MentionsModule, WatchersModule],
+  imports: [WorkspacesModule, BoardsModule, MentionsModule, WatchersModule, DodModule],
   controllers: [
     TasksController,
     TaskRelationsController,
