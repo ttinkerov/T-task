@@ -183,13 +183,13 @@ export const PRIORITY_OPTIONS: { value: TaskPriority | ''; label: string }[] = [
 ];
 
 export const COMPLEXITY_OPTIONS: { value: number | ''; label: string }[] = [
-  { value: '', label: 'Не указана' },
-  { value: 1, label: '1' },
-  { value: 2, label: '2' },
-  { value: 3, label: '3' },
-  { value: 5, label: '5' },
-  { value: 8, label: '8' },
-  { value: 13, label: '13' },
+  { value: '', label: 'Не указаны' },
+  { value: 1, label: '1 SP' },
+  { value: 2, label: '2 SP' },
+  { value: 3, label: '3 SP' },
+  { value: 5, label: '5 SP' },
+  { value: 8, label: '8 SP' },
+  { value: 13, label: '13 SP' },
 ];
 
 export const TIME_ESTIMATE_OPTIONS: { value: number | ''; label: string }[] = [

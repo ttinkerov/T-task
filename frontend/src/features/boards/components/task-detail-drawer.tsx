@@ -349,7 +349,7 @@ export function TaskDetailDrawer({
             </label>
 
             <label className="task-drawer__field">
-              <span>Сложность</span>
+              <span>Очки (SP)</span>
               <select
                 value={complexity}
                 onChange={(event) =>

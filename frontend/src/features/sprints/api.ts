@@ -1,5 +1,5 @@
 import { apiFetch } from '@/shared/api/client';
-import type { CreateSprintPayload, Sprint, SprintBurndown } from './types';
+import type { CreateSprintPayload, Sprint, SprintBurndown, SprintVelocity } from './types';
 
 function withWorkspace(workspaceId: string) {
   return { 'x-workspace-id': workspaceId };
@@ -31,4 +31,10 @@ export function fetchSprintBurndown(workspaceId: string, sprintId: string) {
     `/api/v1/workspaces/${workspaceId}/sprints/${sprintId}/burndown`,
     { headers: withWorkspace(workspaceId) },
   );
+}
+
+export function fetchSprintVelocity(workspaceId: string) {
+  return apiFetch<SprintVelocity>(`/api/v1/workspaces/${workspaceId}/sprints/velocity`, {
+    headers: withWorkspace(workspaceId),
+  });
 }

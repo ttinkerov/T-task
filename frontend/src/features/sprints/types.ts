@@ -14,7 +14,22 @@ export type SprintBurndown = {
   sprintId: string;
   name: string;
   total: number;
-  days: Array<{ date: string; remaining: number; ideal: number }>;
+  totalPoints: number;
+  days: Array<{ date: string; remaining: number; remainingPoints: number; ideal: number }>;
+};
+
+export type SprintVelocityItem = {
+  sprintId: string;
+  name: string;
+  closedAt: string | null;
+  active: boolean;
+  committedPoints: number;
+  completedPoints: number;
+};
+
+export type SprintVelocity = {
+  sprints: SprintVelocityItem[];
+  averageVelocity: number;
 };
 
 export type CreateSprintPayload = {

@@ -71,7 +71,7 @@ export class SprintsService {
     const sprint = await this.requireSprint(workspaceId, sprintId, userId);
     const tasks = await this.prisma.task.findMany({
       where: { sprintId, deletedAt: null },
-      select: { id: true, createdAt: true, completedAt: true },
+      select: { id: true, createdAt: true, completedAt: true, complexity: true },
     });
 
     const start = startOfDay(sprint.startDate);
@@ -80,24 +80,33 @@ export class SprintsService {
     const last = today.getTime() < end.getTime() ? today : end;
     const totalDays = Math.max(1, Math.floor((end.getTime() - start.getTime()) / 86_400_000) + 1);
     const total = tasks.length;
+    const totalPoints = tasks.reduce((sum, task) => sum + (task.complexity ?? 0), 0);
 
-    const days: Array<{ date: string; remaining: number; ideal: number }> = [];
+    const days: Array<{
+      date: string;
+      remaining: number;
+      remainingPoints: number;
+      ideal: number;
+    }> = [];
     for (
       let cursor = new Date(start);
       cursor.getTime() <= last.getTime();
       cursor.setDate(cursor.getDate() + 1)
     ) {
       const dayEnd = endOfDay(cursor);
-      const remaining = tasks.filter((task) => {
+      const openTasks = tasks.filter((task) => {
         if (task.createdAt.getTime() > dayEnd.getTime()) return false;
         if (!task.completedAt) return true;
         return task.completedAt.getTime() > dayEnd.getTime();
-      }).length;
+      });
+      const remaining = openTasks.length;
+      const remainingPoints = openTasks.reduce((sum, task) => sum + (task.complexity ?? 0), 0);
       const dayIndex = Math.floor((startOfDay(cursor).getTime() - start.getTime()) / 86_400_000);
       const ideal = Math.max(0, Math.round(total * (1 - dayIndex / Math.max(1, totalDays - 1))));
       days.push({
         date: startOfDay(cursor).toISOString().slice(0, 10),
         remaining,
+        remainingPoints,
         ideal: Number.isFinite(ideal) ? ideal : total,
       });
     }
@@ -106,8 +115,72 @@ export class SprintsService {
       sprintId: sprint.id,
       name: sprint.name,
       total,
+      totalPoints,
       days,
     };
+  }
+
+  async velocity(workspaceId: string, userId: string) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+
+    const sprints = await this.prisma.sprint.findMany({
+      where: { workspaceId },
+      orderBy: { startDate: 'desc' },
+      take: 8,
+    });
+
+    if (sprints.length === 0) {
+      return { sprints: [], averageVelocity: 0 };
+    }
+
+    const sprintIds = sprints.map((sprint) => sprint.id);
+    const [committedGroups, completedGroups] = await Promise.all([
+      this.prisma.task.groupBy({
+        by: ['sprintId'],
+        where: { sprintId: { in: sprintIds }, deletedAt: null },
+        _sum: { complexity: true },
+      }),
+      this.prisma.task.groupBy({
+        by: ['sprintId'],
+        where: {
+          sprintId: { in: sprintIds },
+          deletedAt: null,
+          completedAt: { not: null },
+        },
+        _sum: { complexity: true },
+      }),
+    ]);
+
+    const committedBySprint = new Map(
+      committedGroups.map((group) => [group.sprintId, group._sum.complexity ?? 0]),
+    );
+    const completedBySprint = new Map(
+      completedGroups.map((group) => [group.sprintId, group._sum.complexity ?? 0]),
+    );
+
+    const now = Date.now();
+    const items = [...sprints].reverse().map((sprint) => {
+      const active =
+        !sprint.closedAt && sprint.startDate.getTime() <= now && sprint.endDate.getTime() >= now;
+      return {
+        sprintId: sprint.id,
+        name: sprint.name,
+        closedAt: sprint.closedAt?.toISOString() ?? null,
+        active,
+        committedPoints: committedBySprint.get(sprint.id) ?? 0,
+        completedPoints: completedBySprint.get(sprint.id) ?? 0,
+      };
+    });
+
+    const closed = items.filter((item) => item.closedAt);
+    const averageVelocity =
+      closed.length === 0
+        ? 0
+        : Math.round(
+            (closed.reduce((sum, item) => sum + item.completedPoints, 0) / closed.length) * 10,
+          ) / 10;
+
+    return { sprints: items, averageVelocity };
   }
 
   private async requireSprint(workspaceId: string, sprintId: string, userId: string) {

@@ -628,3 +628,48 @@
 .board-sprint-panel__chart { margin-top:0.75rem; }
 .board-sprint-panel__chart svg { width:100%; max-width:420px; height:80px; }
 .board-sprint-panel__meta { margin:0.25rem 0 0; font-size:0.75rem; color:var(--tt-text-muted); }
+.board-sprint-panel__meta--points { margin-top:0.65rem; color:var(--tt-text); font-weight:600; }
+.board-sprint-panel__velocity { position:relative; margin-top:0.85rem; }
+.board-sprint-panel__bars {
+  position:relative;
+  display:flex;
+  align-items:flex-end;
+  gap:0.45rem;
+  min-height:5.5rem;
+  margin-top:0.45rem;
+  padding-bottom:1.1rem;
+}
+.board-sprint-panel__bar-col {
+  display:flex;
+  flex:1;
+  flex-direction:column;
+  align-items:center;
+  gap:0.25rem;
+  min-width:0;
+}
+.board-sprint-panel__bar-track {
+  position:relative;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  width:100%;
+  height:4.25rem;
+}
+.board-sprint-panel__bar {
+  display:block;
+  width:42%;
+  max-width:1.1rem;
+  border-radius:0.25rem 0.25rem 0 0;
+}
+.board-sprint-panel__bar--committed {
+  margin-right:1px;
+  background:color-mix(in srgb, var(--tt-border) 80%, transparent);
+}
+.board-sprint-panel__bar--completed {
+  background:var(--tt-brand);
+}
+.board-sprint-panel__bar-label {
+  color:var(--tt-text-muted);
+  font-size:0.62rem;
+  font-weight:650;
+}

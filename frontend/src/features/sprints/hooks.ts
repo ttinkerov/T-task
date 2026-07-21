@@ -1,5 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { closeSprint, createSprint, fetchSprintBurndown, fetchSprints } from './api';
+import {
+  closeSprint,
+  createSprint,
+  fetchSprintBurndown,
+  fetchSprintVelocity,
+  fetchSprints,
+} from './api';
 import type { CreateSprintPayload } from './types';
 
 export const sprintKeys = {
@@ -7,6 +13,7 @@ export const sprintKeys = {
   list: (workspaceId: string) => [...sprintKeys.all, workspaceId] as const,
   burndown: (workspaceId: string, sprintId: string) =>
     [...sprintKeys.all, workspaceId, 'burndown', sprintId] as const,
+  velocity: (workspaceId: string) => [...sprintKeys.all, workspaceId, 'velocity'] as const,
 };
 
 export function useSprintsQuery(workspaceId: string | null) {
@@ -29,6 +36,7 @@ export function useCreateSprintMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: sprintKeys.list(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: sprintKeys.velocity(workspaceId) });
     },
   });
 }
@@ -42,6 +50,7 @@ export function useCloseSprintMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: sprintKeys.list(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: sprintKeys.velocity(workspaceId) });
     },
   });
 }
@@ -54,5 +63,16 @@ export function useSprintBurndownQuery(workspaceId: string | null, sprintId: str
       return response.data!;
     },
     enabled: Boolean(workspaceId && sprintId),
+  });
+}
+
+export function useSprintVelocityQuery(workspaceId: string | null) {
+  return useQuery({
+    queryKey: sprintKeys.velocity(workspaceId ?? ''),
+    queryFn: async () => {
+      const response = await fetchSprintVelocity(workspaceId!);
+      return response.data!;
+    },
+    enabled: Boolean(workspaceId),
   });
 }

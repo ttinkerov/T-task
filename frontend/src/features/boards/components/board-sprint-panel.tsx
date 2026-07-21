@@ -5,11 +5,13 @@ import {
   useCloseSprintMutation,
   useCreateSprintMutation,
   useSprintBurndownQuery,
+  useSprintVelocityQuery,
   useSprintsQuery,
 } from '@/features/sprints';
 
 export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
   const { data: sprints = [] } = useSprintsQuery(workspaceId);
+  const { data: velocity } = useSprintVelocityQuery(workspaceId);
   const createMutation = useCreateSprintMutation(workspaceId);
   const closeMutation = useCloseSprintMutation(workspaceId);
   const active =
@@ -24,6 +26,20 @@ export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
     if (!burndown?.days.length) return 1;
     return Math.max(1, ...burndown.days.map((day) => Math.max(day.remaining, day.ideal)));
   }, [burndown]);
+
+  const activePoints = useMemo(() => {
+    if (!active || !velocity) return null;
+    return velocity.sprints.find((item) => item.sprintId === active.id) ?? null;
+  }, [active, velocity]);
+
+  const velocityMax = useMemo(() => {
+    if (!velocity?.sprints.length) return 1;
+    return Math.max(
+      1,
+      velocity.averageVelocity,
+      ...velocity.sprints.map((item) => Math.max(item.completedPoints, item.committedPoints)),
+    );
+  }, [velocity]);
 
   const handleCreate = async (event: FormEvent) => {
     event.preventDefault();
@@ -93,6 +109,15 @@ export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
         </form>
       ) : null}
 
+      {activePoints ? (
+        <p className="board-sprint-panel__meta board-sprint-panel__meta--points">
+          Очки: {activePoints.completedPoints} / {activePoints.committedPoints} SP
+          {velocity && velocity.averageVelocity > 0
+            ? ` · velocity ${velocity.averageVelocity}`
+            : ''}
+        </p>
+      ) : null}
+
       {burndown && burndown.days.length > 0 ? (
         <div className="board-sprint-panel__chart" aria-label="Burndown">
           <svg viewBox={`0 0 ${burndown.days.length * 24} 80`} role="img">
@@ -117,6 +142,40 @@ export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
           </svg>
           <p className="board-sprint-panel__meta">
             Осталось {burndown.days.at(-1)?.remaining ?? 0} из {burndown.total}
+            {typeof burndown.totalPoints === 'number'
+              ? ` · ${burndown.days.at(-1)?.remainingPoints ?? 0}/${burndown.totalPoints} SP`
+              : ''}
+          </p>
+        </div>
+      ) : null}
+
+      {velocity && velocity.sprints.length > 0 ? (
+        <div className="board-sprint-panel__velocity" aria-label="Velocity">
+          <p className="board-sprint-panel__eyebrow">Velocity</p>
+          <div className="board-sprint-panel__bars">
+            {velocity.sprints.map((item) => {
+              const completedHeight = Math.max(4, (item.completedPoints / velocityMax) * 100);
+              const committedHeight = Math.max(4, (item.committedPoints / velocityMax) * 100);
+              return (
+                <div key={item.sprintId} className="board-sprint-panel__bar-col" title={item.name}>
+                  <div className="board-sprint-panel__bar-track">
+                    <span
+                      className="board-sprint-panel__bar board-sprint-panel__bar--committed"
+                      style={{ height: `${committedHeight}%` }}
+                    />
+                    <span
+                      className="board-sprint-panel__bar board-sprint-panel__bar--completed"
+                      style={{ height: `${completedHeight}%` }}
+                    />
+                  </div>
+                  <span className="board-sprint-panel__bar-label">{item.completedPoints}</span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="board-sprint-panel__meta">
+            Средняя velocity по закрытым спринтам:{' '}
+            {velocity.averageVelocity > 0 ? `${velocity.averageVelocity} SP` : '—'}
           </p>
         </div>
       ) : null}

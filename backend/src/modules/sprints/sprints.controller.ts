@@ -59,6 +59,15 @@ export class SprintsController {
     return successResponse(await this.sprintsService.remove(workspaceId, sprintId, user.id));
   }
 
+  @Get('velocity')
+  @Roles(...ALL_WORKSPACE_ROLES)
+  async velocity(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(await this.sprintsService.velocity(workspaceId, user.id));
+  }
+
   @Get(':sprintId/burndown')
   @Roles(...ALL_WORKSPACE_ROLES)
   async burndown(
