@@ -1,0 +1,298 @@
+@use 'variables' as *;
+
+.roadmap {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+
+    h1 {
+      margin: 0.1rem 0 0.25rem;
+      color: $color-white;
+      font-size: 1.45rem;
+    }
+
+    p {
+      margin: 0;
+      color: $color-text-muted;
+      font-size: 0.8rem;
+    }
+
+    > strong {
+      border-radius: 999px;
+      background: var(--tt-brand-muted);
+      padding: 0.45rem 0.7rem;
+      color: var(--tt-brand);
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+  }
+
+  &__eyebrow {
+    margin: 0 !important;
+    color: var(--tt-brand) !important;
+    font-size: 0.65rem !important;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  &__status {
+    margin: 0;
+    color: $color-text-muted;
+    font-size: 0.85rem;
+
+    &--error {
+      color: #f87171;
+    }
+  }
+
+  &__empty {
+    border: 1px solid $color-border-subtle;
+    border-radius: $radius-md;
+    background: var(--tt-surface);
+    padding: 2rem 1.25rem;
+    text-align: center;
+
+    h2 {
+      margin: 0 0 0.35rem;
+      color: $color-white;
+      font-size: 1.05rem;
+    }
+
+    p {
+      margin: 0;
+      color: $color-text-muted;
+      font-size: 0.8rem;
+    }
+  }
+
+  &__scroll {
+    overflow: auto;
+    border: 1px solid $color-border-subtle;
+    border-radius: $radius-md;
+    background: var(--tt-surface);
+  }
+
+  &__grid {
+    display: grid;
+    min-width: 48rem;
+    grid-template-columns: minmax(12rem, 16rem) minmax(32rem, 1fr);
+  }
+
+  &__axis-spacer {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    border-bottom: 1px solid $color-border-subtle;
+    border-right: 1px solid $color-border-subtle;
+    background: var(--tt-surface);
+  }
+
+  &__axis {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    border-bottom: 1px solid $color-border-subtle;
+    min-height: 2.4rem;
+  }
+
+  &__month {
+    display: grid;
+    place-items: center;
+    border-right: 1px solid $color-border-subtle;
+    color: $color-text-muted;
+    font-size: 0.68rem;
+    font-weight: 650;
+    text-transform: capitalize;
+
+    &:last-child {
+      border-right: 0;
+    }
+  }
+
+  &__lane-meta {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    display: grid;
+    gap: 0.15rem;
+    align-content: center;
+    min-height: 3.25rem;
+    border: 0;
+    border-bottom: 1px solid $color-border-subtle;
+    border-right: 1px solid $color-border-subtle;
+    background: var(--tt-surface);
+    padding: 0.55rem 0.75rem;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    strong {
+      overflow: hidden;
+      color: $color-white;
+      font-size: 0.78rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    span {
+      color: $color-text-muted;
+      font-size: 0.65rem;
+    }
+
+    &:hover {
+      background: var(--tt-hover);
+    }
+  }
+
+  &__track {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 3.25rem;
+    border-bottom: 1px solid $color-border-subtle;
+    background-image: repeating-linear-gradient(
+      to right,
+      transparent,
+      transparent calc(100% / var(--roadmap-months, 3) - 1px),
+      #{$color-border-subtle} calc(100% / var(--roadmap-months, 3) - 1px),
+      #{$color-border-subtle} calc(100% / var(--roadmap-months, 3))
+    );
+    padding: 0.35rem 0;
+  }
+
+  &__today {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    width: 2px;
+    background: var(--tt-brand);
+    pointer-events: none;
+    transform: translateX(-1px);
+  }
+
+  &__bar {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    min-height: 1.7rem;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0.45rem;
+    background: color-mix(in srgb, var(--tt-brand) 35%, var(--tt-surface));
+    padding: 0 0.55rem;
+    color: $color-white;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      filter: brightness(1.08);
+    }
+
+    &--priority-LOW {
+      background: color-mix(in srgb, #60a5fa 40%, var(--tt-surface));
+    }
+
+    &--priority-MEDIUM {
+      background: color-mix(in srgb, #fbbf24 40%, var(--tt-surface));
+    }
+
+    &--priority-HIGH {
+      background: color-mix(in srgb, #fb923c 45%, var(--tt-surface));
+    }
+
+    &--priority-URGENT {
+      background: color-mix(in srgb, #f87171 50%, var(--tt-surface));
+    }
+  }
+
+  &__bar-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: color-mix(in srgb, #fff 18%, transparent);
+    pointer-events: none;
+  }
+
+  &__bar-label {
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    font-size: 0.68rem;
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__out-of-range {
+    margin-left: 0.75rem;
+    color: $color-text-dim;
+    font-size: 0.68rem;
+  }
+
+  &__undated {
+    display: grid;
+    gap: 0.5rem;
+
+    h2 {
+      margin: 0;
+      color: $color-text-muted;
+      font-size: 0.72rem;
+      font-weight: 650;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    > div {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+      gap: 0.45rem;
+    }
+  }
+
+  &__undated-item {
+    display: grid;
+    gap: 0.2rem;
+    border: 1px solid $color-border-subtle;
+    border-radius: $radius-sm;
+    background: var(--tt-surface);
+    padding: 0.65rem 0.75rem;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    strong {
+      color: $color-white;
+      font-size: 0.8rem;
+    }
+
+    span {
+      color: $color-text-muted;
+      font-size: 0.68rem;
+    }
+
+    &:hover {
+      border-color: var(--tt-brand);
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .roadmap {
+    &__header {
+      flex-direction: column;
+    }
+
+    &__grid {
+      min-width: 36rem;
+      grid-template-columns: minmax(9rem, 11rem) minmax(24rem, 1fr);
+    }
+  }
+}
