@@ -269,6 +269,14 @@ export class WorkspacesService {
       throw new NotFoundException('Member not found');
     }
 
+    if (targetMember.role === WorkspaceRole.OWNER && actorMembership.role !== WorkspaceRole.OWNER) {
+      throw new ForbiddenException('Only owner can change another owner role');
+    }
+
+    if (targetMember.role === WorkspaceRole.ADMIN && actorMembership.role !== WorkspaceRole.OWNER) {
+      throw new ForbiddenException('Only owner can change an admin role');
+    }
+
     try {
       assertCanAssignRole(actorMembership.role, dto.role);
     } catch {
