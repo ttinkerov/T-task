@@ -103,3 +103,30 @@ export const AI_EPIC_BREAKDOWN_APPLY_RATE_LIMIT: RateLimitConfig = {
   maxAttempts: 10,
   includeWorkspaceId: true,
 };
+
+/** CSV export is DB/CPU heavy — stricter than list endpoints. */
+export const EXPORT_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'export:csv',
+  windowSeconds: 60,
+  maxAttempts: 10,
+  includeWorkspaceId: true,
+};
+
+export const SEARCH_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'search:query',
+  windowSeconds: 60,
+  maxAttempts: 60,
+};
+
+export const ANALYTICS_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'analytics:read',
+  windowSeconds: 60,
+  maxAttempts: 30,
+  includeWorkspaceId: true,
+};
+
+export const ALL_TASKS_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'all-tasks:list',
+  windowSeconds: 60,
+  maxAttempts: 60,
+};
