@@ -4,6 +4,8 @@ const MAX_ANSWER_LENGTH = 5000;
 const MAX_MULTIPLE_CHOICE_OPTIONS = 20;
 import { FormFieldType, Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { PUBLIC_FORM_SUBMIT_WORKSPACE_RATE_LIMIT } from '../../common/security/rate-limit.decorator';
+import { RateLimitService } from '../../common/security/rate-limit.service';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { ActivityService } from '../activity/activity.service';
@@ -19,6 +21,7 @@ export class FormsService {
     private readonly prisma: PrismaService,
     private readonly workspacesService: WorkspacesService,
     private readonly activityService: ActivityService,
+    private readonly rateLimitService: RateLimitService,
   ) {}
 
   async list(workspaceId: string, userId: string) {
@@ -272,6 +275,12 @@ export class FormsService {
     if (!form) {
       throw new NotFoundException('Form not found');
     }
+
+    // Workspace budget cannot be spoofed via X-Forwarded-For (applied after form lookup).
+    await this.rateLimitService.consume(
+      `ws:${form.workspaceId}`,
+      PUBLIC_FORM_SUBMIT_WORKSPACE_RATE_LIMIT,
+    );
 
     const normalized = this.validateAnswers(form.fields, answers);
 

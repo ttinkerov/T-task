@@ -8,6 +8,11 @@ export interface RateLimitConfig {
   maxAttempts: number;
   /** Also enforce a shared budget keyed by route param workspaceId. */
   includeWorkspaceId?: boolean;
+  /**
+   * Also enforce a budget keyed by a route param (e.g. public form `token`).
+   * Unspoofable unlike client-controlled Forwarded IP.
+   */
+  includeRouteParam?: string;
 }
 
 export const RateLimit = (config: RateLimitConfig) => SetMetadata(RATE_LIMIT_KEY, config);
@@ -22,12 +27,22 @@ export const PUBLIC_FORM_GET_RATE_LIMIT: RateLimitConfig = {
   keyPrefix: 'public-form:get',
   windowSeconds: 60,
   maxAttempts: 60,
+  includeRouteParam: 'token',
 };
 
+/** Per-IP + per-form token (route param). Token budget survives IP spoofing. */
 export const PUBLIC_FORM_SUBMIT_RATE_LIMIT: RateLimitConfig = {
   keyPrefix: 'public-form:submit',
   windowSeconds: 60,
   maxAttempts: 10,
+  includeRouteParam: 'token',
+};
+
+/** Shared budget across all public forms in a workspace (applied after form lookup). */
+export const PUBLIC_FORM_SUBMIT_WORKSPACE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'public-form:submit-ws',
+  windowSeconds: 60,
+  maxAttempts: 60,
 };
 
 export const CALENDAR_FEED_GET_RATE_LIMIT: RateLimitConfig = {
