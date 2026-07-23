@@ -21,10 +21,8 @@ export class SearchService {
         where: {
           deletedAt: null,
           column: { board: { workspaceId } },
-          OR: [
-            { title: { contains: term, mode: 'insensitive' } },
-            { description: { contains: term, mode: 'insensitive' } },
-          ],
+          // Title-only: description ILIKE scans large TEXT without an index.
+          title: { contains: term, mode: 'insensitive' },
         },
         select: {
           id: true,

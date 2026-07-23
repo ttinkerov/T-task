@@ -75,11 +75,8 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
     return scopedTasks.filter((task) => (task.assigneeId ?? 'unassigned') === drilldownId);
   }, [drilldownId, scopedTasks]);
 
-  if (boardLoading || !board) {
-    return <p className="text-sm text-muted-foreground">Загрузка аналитики...</p>;
-  }
-
   const periodLabel = getPeriodLabel(period, customFrom, customTo);
+  const workloadLoading = boardLoading || !board;
 
   return (
     <div className="analytics-page">
@@ -105,25 +102,28 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
         <article className="glass-card" style={{ padding: '0.9rem' }}>
           <p className="text-sm text-muted-foreground">Throughput</p>
           <p style={{ fontSize: '1.5rem', fontWeight: 700 }}>
-            {summaryQuery.data?.throughput ?? '—'}
+            {summaryQuery.isLoading ? '…' : (summaryQuery.data?.throughput ?? '—')}
           </p>
         </article>
         <article className="glass-card" style={{ padding: '0.9rem' }}>
           <p className="text-sm text-muted-foreground">Avg cycle (ч)</p>
           <p style={{ fontSize: '1.5rem', fontWeight: 700 }}>
-            {summaryQuery.data?.avgCycleTimeHours ?? '—'}
+            {summaryQuery.isLoading ? '…' : (summaryQuery.data?.avgCycleTimeHours ?? '—')}
           </p>
         </article>
         <article className="glass-card" style={{ padding: '0.9rem' }}>
           <p className="text-sm text-muted-foreground">Overdue</p>
           <p style={{ fontSize: '1.5rem', fontWeight: 700 }}>
-            {summaryQuery.data?.overdueCount ?? '—'}
+            {summaryQuery.isLoading ? '…' : (summaryQuery.data?.overdueCount ?? '—')}
           </p>
         </article>
       </div>
 
       <StuckTasksCard workspaceId={workspaceId} assigneeId={assigneeFilter || undefined} />
 
+      {workloadLoading ? (
+        <p className="text-sm text-muted-foreground">Загрузка нагрузки по доске...</p>
+      ) : null}
       <div className="analytics-filters">
         <div className="analytics-filters__group">
           <span className="analytics-filters__label">Период</span>

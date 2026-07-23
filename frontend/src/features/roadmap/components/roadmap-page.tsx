@@ -113,6 +113,7 @@ export function RoadmapPage({
         title: task.title,
         columnName: `${task.board.name} · ${task.column.name}`,
         completed: Boolean(task.completedAt),
+        isEpic: Boolean(task.isEpic),
       })),
     [items],
   );

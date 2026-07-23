@@ -35,6 +35,7 @@ export class TaskAttachmentsService {
     const items = await this.prisma.taskAttachment.findMany({
       where: { taskId },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
     return items.map((item) => this.serialize(item));
   }

@@ -17,6 +17,7 @@ import { useAllTasksQuery } from '../hooks';
 import {
   EMPTY_ALL_TASKS_FILTERS,
   type AllTask,
+  type AllTasksBoard,
   type AllTasksFilters,
   type AllTasksQuery,
   type AllTasksSort,
@@ -81,6 +82,17 @@ export function AllTasksPage({
   };
   const { data, isLoading, isFetching, isError } = useAllTasksQuery(workspaceId, query);
   const { data: members = [] } = useMembersQuery(workspaceId);
+  const [filterBoards, setFilterBoards] = useState<AllTasksBoard[]>([]);
+  const [filterTags, setFilterTags] = useState<{ id: string; name: string; color: string }[]>([]);
+
+  useEffect(() => {
+    if (data?.boards?.length) {
+      setFilterBoards(data.boards);
+    }
+    if (data?.tags) {
+      setFilterTags(data.tags);
+    }
+  }, [data?.boards, data?.tags]);
 
   useEffect(() => {
     if (!initialTaskId || !data?.items.some((task) => task.id === initialTaskId)) {
@@ -98,11 +110,12 @@ export function AllTasksPage({
         title: task.title,
         columnName: `${task.board.name} · ${task.column.name}`,
         completed: Boolean(task.completedAt),
+        isEpic: Boolean(task.isEpic),
       })),
     [data?.items],
   );
   const availableColumns =
-    data?.boards.find((board) => board.id === filters.boardId)?.columns ?? [];
+    filterBoards.find((board) => board.id === filters.boardId)?.columns ?? [];
 
   const changeFilters = (next: AllTasksFilters) => {
     setFilters(next);
@@ -171,7 +184,7 @@ export function AllTasksPage({
         <input
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
-          placeholder="Поиск по названию и описанию..."
+          placeholder="Поиск по названию..."
           aria-label="Поиск задач"
         />
         <select
@@ -182,7 +195,7 @@ export function AllTasksPage({
           aria-label="Фильтр по доске"
         >
           <option value="">Все доски</option>
-          {data?.boards.map((board) => (
+          {filterBoards.map((board) => (
             <option key={board.id} value={board.id}>
               {board.name}
             </option>
@@ -220,7 +233,7 @@ export function AllTasksPage({
           aria-label="Фильтр по тегу"
         >
           <option value="">Все теги</option>
-          {(data?.tags ?? []).map((tag) => (
+          {filterTags.map((tag) => (
             <option key={tag.id} value={tag.id}>
               {tag.name}
             </option>

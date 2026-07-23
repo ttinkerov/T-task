@@ -26,6 +26,7 @@ export class AllTasksService {
     const limit = query.limit ?? 50;
     const where = this.buildWhere(workspaceId, query);
     const orderBy = this.buildOrderBy(query);
+    const includeMeta = page === 1;
 
     const [total, tasks, boards, tags] = await Promise.all([
       this.prisma.task.count({ where }),
@@ -47,7 +48,7 @@ export class AllTasksService {
           },
           subtasks: {
             orderBy: { position: 'asc' },
-            select: { id: true, title: true, completed: true, position: true },
+            select: { completed: true },
           },
           column: {
             select: {
@@ -58,24 +59,34 @@ export class AllTasksService {
           },
         },
       }),
-      this.prisma.board.findMany({
-        where: { workspaceId },
-        orderBy: { name: 'asc' },
-        select: {
-          id: true,
-          name: true,
-          columns: {
-            where: { deletedAt: null },
-            orderBy: { position: 'asc' },
-            select: { id: true, name: true },
-          },
-        },
-      }),
-      this.prisma.tag.findMany({
-        where: { workspaceId },
-        orderBy: { name: 'asc' },
-        select: { id: true, name: true, color: true },
-      }),
+      includeMeta
+        ? this.prisma.board.findMany({
+            where: { workspaceId },
+            orderBy: { name: 'asc' },
+            select: {
+              id: true,
+              name: true,
+              columns: {
+                where: { deletedAt: null },
+                orderBy: { position: 'asc' },
+                select: { id: true, name: true },
+              },
+            },
+          })
+        : Promise.resolve(
+            [] as Array<{
+              id: string;
+              name: string;
+              columns: Array<{ id: string; name: string }>;
+            }>,
+          ),
+      includeMeta
+        ? this.prisma.tag.findMany({
+            where: { workspaceId },
+            orderBy: { name: 'asc' },
+            select: { id: true, name: true, color: true },
+          })
+        : Promise.resolve([] as Array<{ id: string; name: string; color: string }>),
     ]);
 
     return {
@@ -119,10 +130,8 @@ export class AllTasksService {
       ...(query.due === AllTasksDueFilter.NO_DUE ? { dueDate: null } : {}),
       ...(search
         ? {
-            OR: [
-              { title: { contains: search, mode: 'insensitive' } },
-              { description: { contains: search, mode: 'insensitive' } },
-            ],
+            // Title-only: description ILIKE is expensive on large TEXT without an index.
+            title: { contains: search, mode: 'insensitive' },
           }
         : {}),
     };

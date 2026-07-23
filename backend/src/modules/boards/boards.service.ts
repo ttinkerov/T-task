@@ -148,6 +148,7 @@ export class BoardsService {
       orderBy: { createdAt: 'asc' },
       include: {
         columns: {
+          where: { deletedAt: null },
           orderBy: { position: 'asc' },
           include: {
             automations: {
@@ -161,6 +162,7 @@ export class BoardsService {
             tasks: {
               where: { deletedAt: null },
               orderBy: { position: 'asc' },
+              take: 500,
               select: {
                 id: true,
                 title: true,
@@ -196,7 +198,8 @@ export class BoardsService {
                 },
                 subtasks: {
                   orderBy: { position: 'asc' },
-                  select: { id: true, title: true, completed: true, position: true },
+                  // Cards only need completion progress; titles load in the drawer.
+                  select: { completed: true },
                 },
               },
             },
@@ -535,10 +538,10 @@ export class BoardsService {
       tag: { id: string; name: string; color: string };
     }[];
     subtasks?: {
-      id: string;
-      title: string;
+      id?: string;
+      title?: string;
       completed: boolean;
-      position: number;
+      position?: number;
     }[];
   }) {
     return {
@@ -577,11 +580,11 @@ export class BoardsService {
         value: entry.value,
       })),
       tags: (task.taskTags ?? []).map((entry) => entry.tag),
-      subtasks: (task.subtasks ?? []).map((entry) => ({
-        id: entry.id,
-        title: entry.title,
+      subtasks: (task.subtasks ?? []).map((entry, index) => ({
+        id: entry.id ?? `subtask-${index}`,
+        title: entry.title ?? '',
         completed: entry.completed,
-        position: entry.position,
+        position: entry.position ?? index,
       })),
     };
   }

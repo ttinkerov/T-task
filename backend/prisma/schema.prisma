@@ -309,8 +309,12 @@ model Task {
   watchers TaskWatcher[]
 
   @@index([columnId])
+  @@index([columnId, deletedAt])
   @@index([assigneeId])
   @@index([deletedAt])
+  @@index([dueDate])
+  @@index([completedAt])
+  @@index([updatedAt])
   @@index([sprintId])
   @@index([epicId])
   @@map("tasks")

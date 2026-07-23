@@ -41,23 +41,28 @@ export class TrashService {
     } as const;
 
     const skip = (opts.page - 1) * opts.limit;
+    // Need skip+limit from each stream to merge-sort correctly across types.
     const take = skip + opts.limit;
+    const trashSelect = { id: true, title: true, deletedAt: true } as const;
 
     const [tasks, deals, apps, taskCount, dealCount, appCount] = await Promise.all([
       this.prisma.task.findMany({
         where: taskWhere,
         orderBy: { deletedAt: 'desc' },
         take,
+        select: trashSelect,
       }),
       this.prisma.deal.findMany({
         where: dealWhere,
         orderBy: { deletedAt: 'desc' },
         take,
+        select: trashSelect,
       }),
       this.prisma.workspaceExternalApp.findMany({
         where: appWhere,
         orderBy: { deletedAt: 'desc' },
         take,
+        select: trashSelect,
       }),
       this.prisma.task.count({ where: taskWhere }),
       this.prisma.deal.count({ where: dealWhere }),

@@ -1,12 +1,13 @@
 'use client';
 
 import { TaskAttachmentsSection } from '@/features/attachments';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useMeQuery } from '@/features/auth/hooks';
 import { MentionText, MentionTextarea } from '@/features/mentions';
 import { useShortcutHandlers } from '@/features/shell/hooks/use-shortcut-handlers';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import {
+  boardKeys,
   useCommentsQuery,
   useCreateCommentMutation,
   useDeleteCommentMutation,
@@ -24,6 +25,7 @@ import {
   RECURRENCE_WEEKDAY_OPTIONS,
   TIME_ESTIMATE_OPTIONS,
   type BoardTask,
+  type BoardView,
   type TaskRelationCandidate,
   type TaskPriority,
   type TaskRecurrenceAction,
@@ -38,7 +40,7 @@ import { TaskTagsSection } from './task-tags-section';
 import { TaskAiAssistant, EpicAiBreakdown } from '@/features/ai';
 import { useSprintsQuery } from '@/features/sprints';
 import { useTaskWatchersQuery, useToggleWatchMutation } from '@/features/watchers/hooks';
-import { invalidateWorkspaceBoards, useBoardQuery } from '../hooks';
+import { invalidateWorkspaceBoards } from '../hooks';
 import { Eye, EyeOff } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -65,7 +67,18 @@ export function TaskDetailDrawer({
   const { data: session } = useMeQuery();
   const { data: members = [] } = useMembersQuery(workspaceId);
   const { data: sprints = [] } = useSprintsQuery(workspaceId);
-  const { data: board } = useBoardQuery(workspaceId);
+  const cachedBoard = queryClient.getQueryData<BoardView>(boardKeys.detail(workspaceId, 'default'));
+  const epicOptions = useMemo(() => {
+    const fromCandidates = relationCandidates.filter(
+      (candidate) => candidate.isEpic && candidate.id !== task.id,
+    );
+    if (fromCandidates.length > 0) {
+      return fromCandidates.map((candidate) => ({ id: candidate.id, title: candidate.title }));
+    }
+    return (cachedBoard?.columns.flatMap((column) => column.tasks) ?? [])
+      .filter((item) => item.isEpic && item.id !== task.id)
+      .map((item) => ({ id: item.id, title: item.title }));
+  }, [cachedBoard, relationCandidates, task.id]);
   const { data: watchState } = useTaskWatchersQuery(workspaceId, task.id);
   const toggleWatchMutation = useToggleWatchMutation(workspaceId, task.id);
   const updateMutation = useUpdateTaskMutation(workspaceId);
@@ -331,13 +344,11 @@ export function TaskDetailDrawer({
                 disabled={isEpic}
               >
                 <option value="">Без эпика</option>
-                {(board?.columns.flatMap((column) => column.tasks) ?? [])
-                  .filter((item) => item.isEpic && item.id !== task.id)
-                  .map((epic) => (
-                    <option key={epic.id} value={epic.id}>
-                      {epic.title}
-                    </option>
-                  ))}
+                {epicOptions.map((epic) => (
+                  <option key={epic.id} value={epic.id}>
+                    {epic.title}
+                  </option>
+                ))}
               </select>
               <label className="forms-editor__checkbox" style={{ marginTop: '0.5rem' }}>
                 <input

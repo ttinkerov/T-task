@@ -137,6 +137,7 @@ export function KanbanBoard({
           title: task.title,
           columnName: column.name,
           completed: Boolean(task.completedAt) || isDoneColumn(column, board.columns),
+          isEpic: Boolean(task.isEpic),
         })),
       ) ?? [],
     [board],

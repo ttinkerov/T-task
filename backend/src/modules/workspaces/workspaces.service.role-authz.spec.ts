@@ -24,7 +24,12 @@ describe('WorkspacesService.updateMemberRole authz', () => {
 
   beforeEach(() => {
     prisma = makePrisma();
-    service = new WorkspacesService(prisma as never, { record: vi.fn() } as never, {} as never);
+    service = new WorkspacesService(
+      prisma as never,
+      { record: vi.fn() } as never,
+      {} as never,
+      { getClient: () => ({ get: vi.fn(), setex: vi.fn(), del: vi.fn() }) } as never,
+    );
 
     vi.spyOn(service as never, 'getMembership' as never).mockImplementation((async (
       _workspaceId: string,

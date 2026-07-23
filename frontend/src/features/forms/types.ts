@@ -34,6 +34,9 @@ export interface FormChoiceStat {
 
 export interface FormResponsesView {
   total: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
   stats: FormChoiceStat[];
   responses: {
     id: string;

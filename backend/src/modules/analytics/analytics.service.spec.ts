@@ -89,3 +89,38 @@ describe('AnalyticsService.stuckTasks', () => {
     );
   });
 });
+
+describe('AnalyticsService.summary', () => {
+  let prisma: ReturnType<typeof makePrisma>;
+  let service: AnalyticsService;
+
+  beforeEach(() => {
+    prisma = makePrisma();
+    service = new AnalyticsService(
+      prisma as never,
+      { getWorkspaceForMember: vi.fn().mockResolvedValue({ id: 'workspace-1' }) } as never,
+    );
+  });
+
+  it('uses count for throughput and a capped sample for cycle time', async () => {
+    prisma.task.count.mockResolvedValueOnce(42).mockResolvedValueOnce(3);
+    prisma.task.findMany.mockResolvedValue([
+      {
+        createdAt: new Date('2026-07-01T00:00:00.000Z'),
+        completedAt: new Date('2026-07-02T12:00:00.000Z'),
+      },
+    ]);
+
+    const result = await service.summary('workspace-1', 'user-1', {});
+
+    expect(result.throughput).toBe(42);
+    expect(result.overdueCount).toBe(3);
+    expect(prisma.task.count).toHaveBeenCalledTimes(2);
+    expect(prisma.task.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 2000,
+        select: { createdAt: true, completedAt: true },
+      }),
+    );
+  });
+});

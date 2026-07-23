@@ -217,18 +217,39 @@ export class FormsService {
     return this.getForm(workspaceId, formId, userId);
   }
 
-  async getResponses(workspaceId: string, formId: string, userId: string) {
+  async getResponses(workspaceId: string, formId: string, userId: string, page = 1, limit = 50) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
     const form = await this.findFormInWorkspace(workspaceId, formId);
 
-    const responses = await this.prisma.formResponse.findMany({
-      where: { formId },
-      orderBy: { createdAt: 'desc' },
-    });
+    const pageNumber = Math.max(page, 1);
+    const take = Math.min(Math.max(limit, 1), 100);
+    const skip = (pageNumber - 1) * take;
+    const includeStats = pageNumber === 1;
+
+    const [total, responses, statsSample] = await Promise.all([
+      this.prisma.formResponse.count({ where: { formId } }),
+      this.prisma.formResponse.findMany({
+        where: { formId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      includeStats
+        ? this.prisma.formResponse.findMany({
+            where: { formId },
+            orderBy: { createdAt: 'desc' },
+            take: 2000,
+            select: { answers: true },
+          })
+        : Promise.resolve([] as Array<{ answers: Prisma.JsonValue }>),
+    ]);
 
     return {
-      total: responses.length,
-      stats: this.buildStats(form.fields, responses),
+      total,
+      page: pageNumber,
+      limit: take,
+      totalPages: Math.max(1, Math.ceil(total / take)),
+      stats: includeStats ? this.buildStats(form.fields, statsSample) : [],
       responses: responses.map((response) => ({
         id: response.id,
         answers: response.answers,

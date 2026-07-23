@@ -106,15 +106,32 @@ describe('AllTasksService', () => {
       page: 2,
       limit: 20,
       totalPages: 1,
-      boards: [
-        {
-          id: 'board-1',
-          name: 'Продукт',
-          columns: [{ id: 'column-1', name: 'В работе' }],
-        },
-      ],
+      boards: [],
       tags: [],
     });
+  });
+
+  it('loads boards and tags metadata only on the first page', async () => {
+    await service.list('workspace-1', 'user-1', {
+      page: 1,
+      limit: 20,
+      sortBy: AllTasksSort.CREATED_AT,
+      sortOrder: SortOrder.DESC,
+    });
+    expect(prisma.board.findMany).toHaveBeenCalled();
+    expect(prisma.tag.findMany).toHaveBeenCalled();
+
+    prisma.board.findMany.mockClear();
+    prisma.tag.findMany.mockClear();
+
+    await service.list('workspace-1', 'user-1', {
+      page: 2,
+      limit: 20,
+      sortBy: AllTasksSort.CREATED_AT,
+      sortOrder: SortOrder.DESC,
+    });
+    expect(prisma.board.findMany).not.toHaveBeenCalled();
+    expect(prisma.tag.findMany).not.toHaveBeenCalled();
   });
 
   it('applies search, assignee, priority, completion, board, and overdue filters', async () => {
@@ -140,10 +157,7 @@ describe('AllTasksService', () => {
         dueDate: { lt: expect.any(Date) },
         columnId: 'column-1',
         column: { board: { workspaceId: 'workspace-1', id: 'board-1' } },
-        OR: [
-          { title: { contains: 'релиз', mode: 'insensitive' } },
-          { description: { contains: 'релиз', mode: 'insensitive' } },
-        ],
+        title: { contains: 'релиз', mode: 'insensitive' },
       }),
     });
   });

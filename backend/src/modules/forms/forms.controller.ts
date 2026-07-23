@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
 import { Scopes } from '../../common/auth/decorators/scopes.decorator';
@@ -8,6 +8,7 @@ import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-us
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { CreateFormFieldDto } from './dto/create-form-field.dto';
 import { CreateFormDto } from './dto/create-form.dto';
+import { ListFormResponsesQueryDto } from './dto/list-form-responses-query.dto';
 import { UpdateFormDto } from './dto/update-form.dto';
 import { UpdateFormFieldDto } from './dto/update-form-field.dto';
 import { FormsService } from './forms.service';
@@ -115,8 +116,15 @@ export class FormsController {
     @Param('workspaceId') workspaceId: string,
     @Param('formId') formId: string,
     @CurrentUser() user: AuthenticatedUser,
+    @Query() query: ListFormResponsesQueryDto,
   ) {
-    const data = await this.formsService.getResponses(workspaceId, formId, user.id);
+    const data = await this.formsService.getResponses(
+      workspaceId,
+      formId,
+      user.id,
+      query.page,
+      query.limit,
+    );
     return successResponse(data);
   }
 }

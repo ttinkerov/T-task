@@ -158,6 +158,7 @@ export interface TaskRelationCandidate {
   title: string;
   columnName: string;
   completed: boolean;
+  isEpic?: boolean;
 }
 
 export interface BoardFilters {

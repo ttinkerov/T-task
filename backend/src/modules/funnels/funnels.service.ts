@@ -71,6 +71,7 @@ export class FunnelsService {
             deals: {
               where: { deletedAt: null },
               orderBy: { position: 'asc' },
+              take: 200,
               select: {
                 id: true,
                 title: true,

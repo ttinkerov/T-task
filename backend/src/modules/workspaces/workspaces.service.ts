@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -10,6 +11,7 @@ import { WorkspaceRole, Prisma, TeamSize, WorkspaceUseCase } from '@prisma/clien
 import { generateRefreshToken, hashToken } from '../../common/auth/utils/token.util';
 import { DomainEvents } from '../../common/events/domain-events';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { RedisService } from '../../infrastructure/redis/redis.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
 import { InviteMemberDto } from './dto/invite-member.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
@@ -21,13 +23,17 @@ import { ActivityService } from '../activity/activity.service';
 import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
 
 const INVITATION_TTL_DAYS = 7;
+const MEMBERSHIP_CACHE_TTL_SECONDS = 45;
 
 @Injectable()
 export class WorkspacesService {
+  private readonly logger = new Logger(WorkspacesService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly activityService: ActivityService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly redis: RedisService,
   ) {}
 
   async listForUser(userId: string) {
@@ -119,6 +125,7 @@ export class WorkspacesService {
       return updated;
     });
 
+    await this.invalidateMembershipCache(workspaceId, userId);
     const membership = await this.getMembership(workspaceId, userId);
 
     return {
@@ -317,6 +324,11 @@ export class WorkspacesService {
       return member;
     });
 
+    await this.invalidateMembershipCache(workspaceId, updated.userId);
+    if (dto.role === WorkspaceRole.OWNER && actorUserId !== updated.userId) {
+      await this.invalidateMembershipCache(workspaceId, actorUserId);
+    }
+
     await this.activityService.record({
       workspaceId,
       actorId: actorUserId,
@@ -404,6 +416,8 @@ export class WorkspacesService {
         metadata: { previousRole: targetMember.role },
       });
     });
+
+    await this.invalidateMembershipCache(workspaceId, targetMember.userId);
 
     return { success: true };
   }
@@ -667,7 +681,61 @@ export class WorkspacesService {
     }
   }
 
+  private membershipCacheKey(workspaceId: string, userId: string) {
+    return `ws:membership:${workspaceId}:${userId}`;
+  }
+
+  private async invalidateMembershipCache(workspaceId: string, userId: string) {
+    try {
+      await this.redis.getClient().del(this.membershipCacheKey(workspaceId, userId));
+    } catch (error) {
+      this.logger.warn(
+        `Membership cache invalidate failed: ${error instanceof Error ? error.message : 'unknown'}`,
+      );
+    }
+  }
+
   private async getMembership(workspaceId: string, userId: string) {
+    const cacheKey = this.membershipCacheKey(workspaceId, userId);
+
+    try {
+      const cached = await this.redis.getClient().get(cacheKey);
+      if (cached) {
+        const membership = JSON.parse(cached) as {
+          role: WorkspaceRole;
+          userId: string;
+          workspace: { deletedAt: string | Date | null };
+        };
+        if (membership.workspace.deletedAt) {
+          throw new NotFoundException('Workspace not found');
+        }
+        return membership as Awaited<ReturnType<WorkspacesService['loadMembership']>>;
+      }
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.warn(
+        `Membership cache read failed: ${error instanceof Error ? error.message : 'unknown'}`,
+      );
+    }
+
+    const membership = await this.loadMembership(workspaceId, userId);
+
+    try {
+      await this.redis
+        .getClient()
+        .setex(cacheKey, MEMBERSHIP_CACHE_TTL_SECONDS, JSON.stringify(membership));
+    } catch (error) {
+      this.logger.warn(
+        `Membership cache write failed: ${error instanceof Error ? error.message : 'unknown'}`,
+      );
+    }
+
+    return membership;
+  }
+
+  private async loadMembership(workspaceId: string, userId: string) {
     const membership = await this.prisma.workspaceMember.findUnique({
       where: {
         workspaceId_userId: { workspaceId, userId },

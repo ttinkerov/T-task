@@ -35,14 +35,13 @@ export class AnalyticsService {
       ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
     };
 
-    const [completed, overdueCount, openCycleSamples] = await Promise.all([
-      this.prisma.task.findMany({
-        where: {
-          ...taskWhere,
-          completedAt: { gte: from, lte: to },
-        },
-        select: { createdAt: true, completedAt: true },
-      }),
+    const completedWhere: Prisma.TaskWhereInput = {
+      ...taskWhere,
+      completedAt: { gte: from, lte: to, not: null },
+    };
+
+    const [throughput, overdueCount, cycleSamples] = await Promise.all([
+      this.prisma.task.count({ where: completedWhere }),
       this.prisma.task.count({
         where: {
           ...taskWhere,
@@ -51,16 +50,13 @@ export class AnalyticsService {
         },
       }),
       this.prisma.task.findMany({
-        where: {
-          ...taskWhere,
-          completedAt: { gte: from, lte: to, not: null },
-        },
+        where: completedWhere,
         select: { createdAt: true, completedAt: true },
         take: 2000,
       }),
     ]);
 
-    const cycleHours = openCycleSamples
+    const cycleHours = cycleSamples
       .filter((task) => task.completedAt)
       .map((task) => (task.completedAt!.getTime() - task.createdAt.getTime()) / (1000 * 60 * 60))
       .filter((hours) => Number.isFinite(hours) && hours >= 0)
@@ -79,7 +75,7 @@ export class AnalyticsService {
     return {
       from: from.toISOString(),
       to: to.toISOString(),
-      throughput: completed.length,
+      throughput,
       avgCycleTimeHours,
       medianCycleTimeHours,
       overdueCount,
@@ -102,6 +98,7 @@ export class AnalyticsService {
         id: true,
         name: true,
         columns: {
+          where: { deletedAt: null },
           select: { id: true, name: true, position: true },
           orderBy: { position: 'asc' },
         },

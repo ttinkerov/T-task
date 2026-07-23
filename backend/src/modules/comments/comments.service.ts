@@ -23,7 +23,8 @@ export class CommentsService {
 
     const comments = await this.prisma.comment.findMany({
       where: { taskId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
       include: {
         author: {
           select: { id: true, name: true, email: true, avatarUrl: true },
@@ -31,7 +32,7 @@ export class CommentsService {
       },
     });
 
-    return comments.map((comment) => this.toComment(comment));
+    return comments.reverse().map((comment) => this.toComment(comment));
   }
 
   async create(workspaceId: string, taskId: string, userId: string, dto: CreateCommentDto) {
