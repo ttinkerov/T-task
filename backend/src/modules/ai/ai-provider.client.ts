@@ -1,7 +1,5 @@
-import {
-  assertSafeAiBaseUrlResolved,
-  sanitizeProviderErrorMessage,
-} from './utils/base-url-guard.util';
+import { resolveSafeAiEndpoint, sanitizeProviderErrorMessage } from './utils/base-url-guard.util';
+import { pinnedHttpsRequest } from './utils/pinned-https-request.util';
 
 export type ChatMessage = {
   role: 'system' | 'user' | 'assistant';
@@ -29,17 +27,18 @@ export class AiProviderClient {
     messages: ChatMessage[];
     timeoutMs?: number;
   }): Promise<ChatCompletionResult> {
-    const safeBase = await assertSafeAiBaseUrlResolved(params.baseUrl);
-    const url = `${safeBase.replace(/\/+$/, '')}/chat/completions`;
+    const endpoint = await resolveSafeAiEndpoint(params.baseUrl);
+    const url = `${endpoint.baseUrl.replace(/\/+$/, '')}/chat/completions`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), params.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
     try {
-      const response = await fetch(url, {
+      const response = await pinnedHttpsRequest(url, endpoint.pinned, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${params.apiToken}`,
           'Content-Type': 'application/json',
+          Accept: 'application/json',
         },
         body: JSON.stringify({
           model: params.model,
@@ -48,14 +47,10 @@ export class AiProviderClient {
           max_tokens: MAX_COMPLETION_TOKENS,
         }),
         signal: controller.signal,
-        redirect: 'error',
+        maxResponseBytes: MAX_RESPONSE_BYTES,
       });
 
-      const rawText = await response.text();
-      if (rawText.length > MAX_RESPONSE_BYTES) {
-        throw new Error('Ответ провайдера слишком большой');
-      }
-
+      const rawText = response.text;
       let payload: {
         error?: { message?: string };
         choices?: Array<{ message?: { content?: string } }>;
@@ -67,13 +62,13 @@ export class AiProviderClient {
         payload = rawText ? (JSON.parse(rawText) as typeof payload) : {};
       } catch {
         throw new Error(
-          response.ok
+          response.status >= 200 && response.status < 300
             ? 'Провайдер вернул некорректный JSON'
             : `Ошибка провайдера (${response.status})`,
         );
       }
 
-      if (!response.ok) {
+      if (response.status < 200 || response.status >= 300) {
         const message = sanitizeProviderErrorMessage(
           payload.error?.message?.trim() || `Ошибка провайдера (${response.status})`,
         );

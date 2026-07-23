@@ -8,6 +8,16 @@ const BLOCKED_HOSTS = new Set([
   'instance-data',
 ]);
 
+export type PinnedIp = {
+  address: string;
+  family: 4 | 6;
+};
+
+export type SafeAiEndpoint = {
+  baseUrl: string;
+  pinned: PinnedIp;
+};
+
 /** Normalize hostname / IP for private-range checks (handles IPv4-mapped IPv6). */
 export function normalizeHostForIpCheck(hostname: string): string {
   const bare =
@@ -55,6 +65,16 @@ export function isBlockedIpAddress(ipOrHost: string): boolean {
     if (value === '::1' || value === '::') return true;
     if (value.startsWith('fc') || value.startsWith('fd')) return true; // ULA
     if (value.startsWith('fe80')) return true; // link-local
+
+    // Deprecated IPv4-compatible form ::a9fe:a9fe → 169.254.169.254 (not ::ffff:)
+    const compatMatch = value.match(/^::([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
+    if (compatMatch?.[1] && compatMatch[2]) {
+      const hi = Number.parseInt(compatMatch[1], 16);
+      const lo = Number.parseInt(compatMatch[2], 16);
+      const ipv4 = `${(hi >> 8) & 255}.${hi & 255}.${(lo >> 8) & 255}.${lo & 255}`;
+      if (isBlockedIpAddress(ipv4)) return true;
+    }
+
     return false;
   }
 
@@ -101,19 +121,27 @@ export function assertSafeAiBaseUrl(rawUrl: string): string {
   return `${url.origin}${path}`;
 }
 
-/** Resolve DNS and reject private / metadata addresses (mitigates DNS rebinding). */
-export async function assertSafeAiBaseUrlResolved(rawUrl: string): Promise<string> {
-  const normalized = assertSafeAiBaseUrl(rawUrl);
-  const hostname = new URL(normalized).hostname;
+/**
+ * Resolve DNS once, reject private/metadata addresses, and return a pinned IP
+ * so the outbound HTTPS client can skip a second (rebinding-prone) lookup.
+ */
+export async function resolveSafeAiEndpoint(rawUrl: string): Promise<SafeAiEndpoint> {
+  const baseUrl = assertSafeAiBaseUrl(rawUrl);
+  const hostname = new URL(baseUrl).hostname;
+  const normalized = normalizeHostForIpCheck(hostname);
+  const literalFamily = isIP(normalized);
 
-  if (isIP(normalizeHostForIpCheck(hostname))) {
+  if (literalFamily === 4 || literalFamily === 6) {
     if (isBlockedIpAddress(hostname)) {
       throw new Error('Base URL указывает на недопустимый хост');
     }
-    return normalized;
+    return {
+      baseUrl,
+      pinned: { address: normalized, family: literalFamily },
+    };
   }
 
-  let records: Array<{ address: string }>;
+  let records: Array<{ address: string; family: number }>;
   try {
     records = await lookup(hostname, { all: true, verbatim: true });
   } catch {
@@ -130,7 +158,36 @@ export async function assertSafeAiBaseUrlResolved(rawUrl: string): Promise<strin
     }
   }
 
-  return normalized;
+  const preferred =
+    records.find((record) => record.family === 4) ??
+    records.find((record) => isIP(record.address) === 4) ??
+    records[0];
+  const family = (isIP(preferred.address) || preferred.family) as 4 | 6;
+  if (family !== 4 && family !== 6) {
+    throw new Error('Не удалось разрешить host base URL');
+  }
+
+  return {
+    baseUrl,
+    pinned: { address: preferred.address, family },
+  };
+}
+
+/** @deprecated Prefer resolveSafeAiEndpoint — keeps URL-only API for callers that ignore pinning. */
+export async function assertSafeAiBaseUrlResolved(rawUrl: string): Promise<string> {
+  const endpoint = await resolveSafeAiEndpoint(rawUrl);
+  return endpoint.baseUrl;
+}
+
+/** dns.lookup-compatible function that always returns the validated address. */
+export function createPinnedLookup(pinned: PinnedIp) {
+  return (
+    _hostname: string,
+    _options: unknown,
+    callback: (err: NodeJS.ErrnoException | null, address: string, family: number) => void,
+  ): void => {
+    callback(null, pinned.address, pinned.family);
+  };
 }
 
 export function sanitizeProviderErrorMessage(message: string): string {
@@ -138,6 +195,8 @@ export function sanitizeProviderErrorMessage(message: string): string {
     .replace(/sk-[a-zA-Z0-9_-]+/gi, '[redacted]')
     .replace(/Bearer\s+\S+/gi, 'Bearer [redacted]')
     .replace(/api[_-]?key["']?\s*[:=]\s*["']?[\w-]+/gi, 'api_key=[redacted]')
+    .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, '[ip]')
+    .replace(/\[[0-9a-f:]+\]/gi, '[ip]')
     .trim()
     .slice(0, 180);
   return cleaned || 'Ошибка провайдера';
