@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseEnvelopeInterceptor } from './common/interceptors/response-envelope.interceptor';
+import { assertSecureRuntime } from './common/security/assert-secure-runtime.util';
 
 const REQUEST_BODY_LIMIT = '100kb';
 
@@ -14,13 +15,16 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bodyParser: false });
 
   const configService = app.get(ConfigService);
+  const nodeEnv = configService.get<string>('NODE_ENV', 'development');
+  assertSecureRuntime(nodeEnv);
+
   const port = configService.get<number>('BACKEND_PORT', 3001);
   const corsOrigins = configService
     .get<string>('CORS_ORIGIN', 'http://localhost')
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
-  const isProduction = configService.get<string>('NODE_ENV') === 'production';
+  const isProduction = nodeEnv === 'production';
 
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
 

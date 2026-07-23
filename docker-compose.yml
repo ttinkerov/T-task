@@ -62,6 +62,8 @@ services:
     env_file:
       - .env
     environment:
+      # Local stack only — production must use docker-compose.prod.yml (NODE_ENV=production).
+      ALLOW_INSECURE_DEV: 'true'
       DATABASE_URL: postgresql://${POSTGRES_USER:-ttask}:${POSTGRES_PASSWORD:-ttask_secret}@pgbouncer:5432/${POSTGRES_DB:-ttask}?schema=public&pgbouncer=true&connection_limit=10
       DIRECT_DATABASE_URL: postgresql://${POSTGRES_USER:-ttask}:${POSTGRES_PASSWORD:-ttask_secret}@postgres:5432/${POSTGRES_DB:-ttask}?schema=public
       REDIS_URL: redis://redis:6379
