@@ -23,6 +23,10 @@ import { BulkUpdateTasksDto } from './dto/bulk-update-tasks.dto';
 import { TaskRelationsService } from './task-relations.service';
 import { buildAutomationTaskUpdate } from './utils/column-automation.util';
 import { computeNextRecurrenceDate, isDoneColumn } from './utils/recurrence.util';
+import {
+  normalizeDescriptionDocInput,
+  descriptionDocFromPlain,
+} from './utils/description-doc.util';
 
 const taskWithAssignee = {
   assignee: {
@@ -138,6 +142,11 @@ export class TasksService {
           columnId: column.id,
           title: dto.title.trim(),
           description: preparedDescription.text,
+          descriptionDoc: preparedDescription.text
+            ? (descriptionDocFromPlain(
+                preparedDescription.text,
+              ) as unknown as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
           position,
           epicId,
           ...automationUpdate,
@@ -165,12 +174,42 @@ export class TasksService {
 
   async update(workspaceId: string, taskId: string, userId: string, dto: UpdateTaskDto) {
     const task = await this.assertTaskInWorkspace(workspaceId, taskId, userId);
-    const preparedDescription =
-      dto.description !== undefined && dto.description?.trim()
-        ? await this.mentionsService.prepare(workspaceId, userId, dto.description.trim())
-        : { text: dto.description?.trim() || null, recipientIds: [] };
+
+    let descriptionUpdate:
+      | {
+          description: string | null;
+          descriptionDoc: Prisma.InputJsonValue | typeof Prisma.JsonNull;
+        }
+      | undefined;
+    let mentionRecipientIds: string[] = [];
+    let mentionPreview: string | null = null;
+
+    if (dto.descriptionDoc !== undefined || dto.description !== undefined) {
+      let normalized;
+      try {
+        normalized = normalizeDescriptionDocInput(dto.descriptionDoc, dto.description);
+      } catch {
+        throw new BadRequestException('Некорректный формат описания');
+      }
+      if (normalized !== 'unchanged') {
+        const preparedDescription =
+          normalized.plain !== null
+            ? await this.mentionsService.prepare(workspaceId, userId, normalized.plain)
+            : { text: null, recipientIds: [] as string[] };
+        descriptionUpdate = {
+          description: preparedDescription.text,
+          descriptionDoc:
+            normalized.doc === null
+              ? Prisma.JsonNull
+              : (normalized.doc as unknown as Prisma.InputJsonValue),
+        };
+        mentionRecipientIds = preparedDescription.recipientIds;
+        mentionPreview = preparedDescription.text;
+      }
+    }
+
     const previousMentionIds = new Set(extractMentionUserIds(task.description));
-    const newRecipientIds = preparedDescription.recipientIds.filter(
+    const newRecipientIds = mentionRecipientIds.filter(
       (recipientId) => !previousMentionIds.has(recipientId),
     );
 
@@ -223,7 +262,12 @@ export class TasksService {
         where: { id: task.id },
         data: {
           ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
-          ...(dto.description !== undefined ? { description: preparedDescription.text } : {}),
+          ...(descriptionUpdate
+            ? {
+                description: descriptionUpdate.description,
+                descriptionDoc: descriptionUpdate.descriptionDoc,
+              }
+            : {}),
           ...(dto.priority !== undefined ? { priority: dto.priority } : {}),
           ...(dto.complexity !== undefined ? { complexity: dto.complexity } : {}),
           ...(dto.timeEstimateMinutes !== undefined
@@ -259,7 +303,7 @@ export class TasksService {
         include: taskWithAssignee,
       });
 
-      if (dto.description !== undefined) {
+      if (descriptionUpdate !== undefined) {
         await this.mentionsService.notify(
           tx,
           {
@@ -267,7 +311,7 @@ export class TasksService {
             actorId: userId,
             taskId,
             sourceType: MentionSourceType.TASK_DESCRIPTION,
-            preview: preparedDescription.text ?? saved.title,
+            preview: mentionPreview ?? saved.title,
           },
           newRecipientIds,
         );
@@ -700,6 +744,7 @@ export class TasksService {
       columnId: string;
       title: string;
       description: string | null;
+      descriptionDoc?: Prisma.JsonValue | null;
       priority: TaskPriority | null;
       complexity: number | null;
       timeEstimateMinutes: number | null;
@@ -748,6 +793,10 @@ export class TasksService {
             columnId: originColumnId,
             title: task.title,
             description: task.description,
+            descriptionDoc:
+              task.descriptionDoc == null
+                ? Prisma.JsonNull
+                : (task.descriptionDoc as Prisma.InputJsonValue),
             priority: task.priority,
             complexity: task.complexity,
             timeEstimateMinutes: task.timeEstimateMinutes,
@@ -820,6 +869,10 @@ export class TasksService {
           columnId: source.columnId,
           title: `${source.title} (копия)`.slice(0, 200),
           description: source.description,
+          descriptionDoc:
+            source.descriptionDoc === null
+              ? Prisma.JsonNull
+              : (source.descriptionDoc as Prisma.InputJsonValue),
           priority: source.priority,
           complexity: source.complexity,
           timeEstimateMinutes: source.timeEstimateMinutes,
@@ -1036,6 +1089,7 @@ export class TasksService {
     id: string;
     title: string;
     description: string | null;
+    descriptionDoc?: import('@prisma/client').Prisma.JsonValue | null;
     priority: TaskPriority | null;
     complexity: number | null;
     timeEstimateMinutes: number | null;

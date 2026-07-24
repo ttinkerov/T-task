@@ -9,6 +9,7 @@ import {
   useTaskChecklistQuery,
   useUpdateChecklistItemMutation,
 } from '../hooks';
+import { FieldHint } from '@/features/boards/components/field-hint';
 
 export function TaskChecklistSection({
   workspaceId,
@@ -35,7 +36,10 @@ export function TaskChecklistSection({
       aria-labelledby="task-checklist-title"
     >
       <div className="task-checklist__header">
-        <h3 id="task-checklist-title">Definition of Done</h3>
+        <h3 id="task-checklist-title" className="task-drawer__section-title">
+          Definition of Done
+          <FieldHint text="Критерии готовности. Обязательные пункты блокируют перевод в «Готово»." />
+        </h3>
         <span>
           {completed}/{items.length}
           {requiredOpen > 0 ? ` · ${requiredOpen} обяз.` : ''}

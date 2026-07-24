@@ -7,6 +7,7 @@ import {
   useTaskRelationsQuery,
 } from '../hooks';
 import type { TaskRelationCandidate, TaskRelationType } from '../types';
+import { FieldHint } from './field-hint';
 
 const RELATION_OPTIONS: Array<{
   value: TaskRelationType;
@@ -101,7 +102,10 @@ export function TaskRelationsSection({
     <section className="task-relations" aria-labelledby="task-relations-title">
       <div className="task-relations__heading">
         <div>
-          <h3 id="task-relations-title">Связи</h3>
+          <h3 id="task-relations-title" className="task-drawer__section-title">
+            Связи
+            <FieldHint text="Зависимости между задачами: блокирует, ожидает или просто связана." />
+          </h3>
           <p>Покажите порядок выполнения и зависимость между задачами.</p>
         </div>
         <span>{relations.length}</span>

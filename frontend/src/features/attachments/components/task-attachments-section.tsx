@@ -8,6 +8,9 @@ import {
   useUploadAttachmentMutation,
 } from '../hooks';
 import { ATTACHMENT_ACCEPT, ATTACHMENT_MAX_BYTES, type TaskAttachment } from '../types';
+import { FieldHint } from '@/features/boards/components/field-hint';
+
+const EMPTY_ATTACHMENTS: TaskAttachment[] = [];
 
 export function TaskAttachmentsSection({
   workspaceId,
@@ -17,7 +20,8 @@ export function TaskAttachmentsSection({
   taskId: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { data: attachments = [], isLoading } = useAttachmentsQuery(workspaceId, taskId);
+  const { data, isLoading } = useAttachmentsQuery(workspaceId, taskId);
+  const attachments = data ?? EMPTY_ATTACHMENTS;
   const uploadMutation = useUploadAttachmentMutation(workspaceId, taskId);
   const deleteMutation = useDeleteAttachmentMutation(workspaceId, taskId);
   const [error, setError] = useState('');
@@ -29,6 +33,11 @@ export function TaskAttachmentsSection({
 
     const loadThumbs = async () => {
       const images = attachments.filter((item) => item.isImage);
+      if (images.length === 0) {
+        setThumbnails((prev) => (Object.keys(prev).length === 0 ? prev : {}));
+        return;
+      }
+
       const next: Record<string, string> = {};
 
       await Promise.all(
@@ -83,7 +92,10 @@ export function TaskAttachmentsSection({
   return (
     <section className="task-subtasks task-attachments" aria-labelledby="task-attachments-title">
       <div className="task-subtasks__header">
-        <h3 id="task-attachments-title">Вложения</h3>
+        <h3 id="task-attachments-title" className="task-drawer__section-title">
+          Вложения
+          <FieldHint text="Файлы к задаче: изображения, PDF или TXT до 5 МБ." />
+        </h3>
         <span>{attachments.length}</span>
       </div>
 

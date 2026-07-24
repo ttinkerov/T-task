@@ -9,6 +9,7 @@ import {
   useTaskDealsQuery,
   useUnlinkTaskDealMutation,
 } from '@/features/crm/hooks';
+import { FieldHint } from './field-hint';
 
 export function TaskDealsSection({ workspaceId, taskId }: { workspaceId: string; taskId: string }) {
   const { data: links = [], isLoading } = useTaskDealsQuery(workspaceId, taskId);
@@ -36,7 +37,10 @@ export function TaskDealsSection({ workspaceId, taskId }: { workspaceId: string;
   return (
     <section className="task-subtasks" aria-labelledby="task-deals-title">
       <div className="task-subtasks__header">
-        <h3 id="task-deals-title">Сделки</h3>
+        <h3 id="task-deals-title" className="task-drawer__section-title">
+          Сделки
+          <FieldHint text="Связь задачи с CRM-сделкой: видно, к какому клиенту/продаже она относится." />
+        </h3>
         <span>{links.length}</span>
       </div>
 

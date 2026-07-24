@@ -16,6 +16,7 @@ import { UpdateColumnAutomationsDto } from './dto/update-column-automations.dto'
 import { createDefaultBoard } from './utils/create-default-board.util';
 import { ActivityService } from '../activity/activity.service';
 import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
+import { resolveDescriptionDocForApi } from '../tasks/utils/description-doc.util';
 
 @Injectable()
 export class BoardsService {
@@ -505,6 +506,7 @@ export class BoardsService {
     id: string;
     title: string;
     description?: string | null;
+    descriptionDoc?: import('@prisma/client').Prisma.JsonValue | null;
     priority: import('@prisma/client').TaskPriority | null;
     complexity: number | null;
     timeEstimateMinutes: number | null;
@@ -548,6 +550,9 @@ export class BoardsService {
       id: task.id,
       title: task.title,
       description: task.description ?? null,
+      // Only return stored structured docs — never invent ephemeral docs on every board serialize
+      // (that churns object identity and forces heavy React reconciles).
+      descriptionDoc: resolveDescriptionDocForApi(task.descriptionDoc ?? null, null),
       priority: task.priority,
       complexity: task.complexity,
       timeEstimateMinutes: task.timeEstimateMinutes,

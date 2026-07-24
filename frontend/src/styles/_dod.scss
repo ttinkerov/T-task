@@ -149,12 +149,13 @@
 
   &__apply {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.4rem;
 
     select,
     button {
       min-height: 2rem;
+      min-width: 0;
       border: 1px solid $color-border-subtle;
       border-radius: $radius-sm;
       background: var(--tt-surface);
@@ -165,6 +166,7 @@
 
     button {
       cursor: pointer;
+      white-space: nowrap;
 
       &:disabled {
         opacity: 0.5;
@@ -220,12 +222,13 @@
 
   &__create {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.4rem;
 
     input,
     button {
       min-height: 2rem;
+      min-width: 0;
       border: 1px solid $color-border-subtle;
       border-radius: $radius-sm;
       background: var(--tt-surface);
@@ -236,6 +239,7 @@
 
     button {
       cursor: pointer;
+      white-space: nowrap;
 
       &:disabled {
         opacity: 0.5;

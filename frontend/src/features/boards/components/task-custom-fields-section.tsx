@@ -8,6 +8,7 @@ import {
 } from '@/features/custom-fields/hooks';
 import type { CustomFieldDefinition, CustomFieldValue } from '@/features/custom-fields/types';
 import type { TaskCustomFieldValue } from '../types';
+import { FieldHint } from './field-hint';
 
 interface TaskCustomFieldsSectionProps {
   workspaceId: string;
@@ -42,7 +43,10 @@ export function TaskCustomFieldsSection({
   if (fieldsQuery.isLoading) {
     return (
       <section className="task-custom-fields" aria-labelledby="task-custom-fields-title">
-        <h3 id="task-custom-fields-title">Кастомные поля</h3>
+        <h3 id="task-custom-fields-title" className="task-drawer__section-title">
+          Кастомные поля
+          <FieldHint text="Дополнительные поля команды: текст, число, дата, список и т.д." />
+        </h3>
         <p className="text-sm text-muted-foreground" role="status">
           Загрузка полей…
         </p>
@@ -56,7 +60,10 @@ export function TaskCustomFieldsSection({
 
   return (
     <section className="task-custom-fields" aria-labelledby="task-custom-fields-title">
-      <h3 id="task-custom-fields-title">Кастомные поля</h3>
+      <h3 id="task-custom-fields-title" className="task-drawer__section-title">
+        Кастомные поля
+        <FieldHint text="Дополнительные поля команды: текст, число, дата, список и т.д." />
+      </h3>
       <div className="task-custom-fields__list">
         {definitions.map((definition) => (
           <CustomFieldEditor

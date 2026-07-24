@@ -275,11 +275,15 @@
 }
 
 .task-drawer {
-  border-left: 1px solid var(--tt-glass-border) !important;
-  background: var(--tt-glass) !important;
-  backdrop-filter: blur(24px) saturate(1.2);
-  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border-left: 1px solid var(--tt-border-subtle) !important;
+  background: var(--tt-surface) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: var(--tt-shadow-lg);
+}
+
+[data-theme='dark'] .task-drawer {
+  background: color-mix(in srgb, var(--tt-surface-muted) 78%, white 22%) !important;
 }
 
 .task-drawer-overlay {

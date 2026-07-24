@@ -7,6 +7,7 @@ import {
   useSubtasksQuery,
   useUpdateSubtaskMutation,
 } from '@/features/subtasks/hooks';
+import { FieldHint } from './field-hint';
 
 export function TaskSubtasksSection({
   workspaceId,
@@ -26,7 +27,10 @@ export function TaskSubtasksSection({
   return (
     <section className="task-subtasks" aria-labelledby="task-subtasks-title">
       <div className="task-subtasks__header">
-        <h3 id="task-subtasks-title">Подзадачи</h3>
+        <h3 id="task-subtasks-title" className="task-drawer__section-title">
+          Подзадачи
+          <FieldHint text="Мелкие шаги внутри задачи. Прогресс считается по отмеченным пунктам." />
+        </h3>
         <span>
           {completed}/{subtasks.length}
         </span>

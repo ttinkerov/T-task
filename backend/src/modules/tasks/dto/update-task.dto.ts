@@ -7,6 +7,7 @@ import {
   IsString,
   IsArray,
   IsBoolean,
+  IsObject,
   ArrayMinSize,
   ArrayMaxSize,
   Max,
@@ -29,6 +30,12 @@ export class UpdateTaskDto {
   @IsString()
   @MaxLength(2000)
   description?: string | null;
+
+  /** Notion-style block document for the task description. */
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsObject()
+  descriptionDoc?: Record<string, unknown> | null;
 
   @IsOptional()
   @ValidateIf((_, value) => value !== null)

@@ -16,6 +16,7 @@ interface MentionTextareaProps {
   required?: boolean;
   autoFocus?: boolean;
   'aria-label'?: string;
+  onKeyDown?: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
 }
 
 export function MentionTextarea({
@@ -30,6 +31,7 @@ export function MentionTextarea({
   required,
   autoFocus,
   'aria-label': ariaLabel,
+  onKeyDown,
 }: MentionTextareaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const listboxId = useId();
@@ -69,21 +71,29 @@ export function MentionTextarea({
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (!trigger || suggestions.length === 0) return;
-
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      setActiveIndex((current) => (current + 1) % suggestions.length);
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      setActiveIndex((current) => (current - 1 + suggestions.length) % suggestions.length);
-    } else if (event.key === 'Enter' || event.key === 'Tab') {
-      event.preventDefault();
-      selectMember(suggestions[activeIndex]);
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      setTrigger(null);
+    if (trigger && suggestions.length > 0) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setActiveIndex((current) => (current + 1) % suggestions.length);
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setActiveIndex((current) => (current - 1 + suggestions.length) % suggestions.length);
+        return;
+      }
+      if (event.key === 'Enter' || event.key === 'Tab') {
+        event.preventDefault();
+        selectMember(suggestions[activeIndex]);
+        return;
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setTrigger(null);
+        return;
+      }
     }
+    onKeyDown?.(event);
   };
 
   return (

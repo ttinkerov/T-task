@@ -269,6 +269,7 @@ model Task {
   columnId                 String               @map("column_id")
   title                    String
   description              String?
+  descriptionDoc           Json?                @map("description_doc")
   priority                 TaskPriority?
   complexity               Int?
   timeEstimateMinutes      Int?                 @map("time_estimate_minutes")

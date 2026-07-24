@@ -8,6 +8,7 @@
   background: $color-bg-elevated;
   border-left: 1px solid $color-border-subtle;
   box-shadow: var(--tt-shadow);
+  overflow: hidden;
 
   @media (max-width: 767px) {
     width: 100%;
@@ -18,6 +19,10 @@
     border-radius: 16px 16px 0 0;
     padding-bottom: env(safe-area-inset-bottom);
   }
+}
+
+[data-theme='dark'] .task-drawer {
+  background: color-mix(in srgb, var(--tt-surface-muted) 78%, white 22%);
 }
 
 .task-drawer-overlay {
@@ -60,8 +65,35 @@
   flex-direction: column;
   gap: 1rem;
   padding: 1.25rem;
-  overflow-y: auto;
+}
+
+.task-drawer__body {
   flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+
+  > .task-tags,
+  > .task-subtasks,
+  > .task-custom-fields,
+  > .task-relations,
+  > .task-drawer__comments {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0.95rem 1.25rem;
+    border-top: 1px solid $color-border-subtle;
+  }
+
+  > .task-checklist {
+    box-sizing: border-box;
+    min-width: 0;
+    margin: 0.75rem 1.25rem;
+    width: auto;
+  }
 }
 
 .task-drawer__field {
@@ -69,7 +101,16 @@
   flex-direction: column;
   gap: 0.375rem;
 
-  span {
+  .task-drawer__section-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .task-drawer__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
     font-size: 0.75rem;
     font-weight: 500;
     color: $color-text-muted;
@@ -84,16 +125,25 @@
 
 .task-drawer__grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0.75rem;
 }
 
 .task-drawer__actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
   margin-top: auto;
-  padding-top: 0.5rem;
+  padding-top: 0.75rem;
+
+  > .btn-ghost,
+  > .btn-primary {
+    width: 100%;
+    min-width: 0;
+    padding: 0.55rem 0.65rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
 }
 
 .task-drawer__danger {
@@ -108,8 +158,9 @@
 .task-relations {
   display: grid;
   gap: 0.75rem;
-  border-top: 1px solid $color-border-subtle;
-  padding: 1rem 1.25rem;
+  border-top: none;
+  padding: 0;
+  min-width: 0;
 
   &__heading {
     display: flex;
@@ -248,7 +299,7 @@
 
   &__form {
     display: grid;
-    grid-template-columns: minmax(7rem, 0.7fr) minmax(0, 1.3fr);
+    grid-template-columns: 1fr;
     gap: 0.55rem;
     border-radius: $radius-sm;
     background: var(--tt-hover);
@@ -257,6 +308,7 @@
     label {
       display: grid;
       gap: 0.3rem;
+      min-width: 0;
 
       > span {
         color: $color-text-muted;
@@ -266,14 +318,15 @@
     }
 
     > p {
-      align-self: center;
+      align-self: start;
       color: $color-text-muted;
       font-size: 0.625rem;
       line-height: 1.35;
     }
 
     > button {
-      justify-self: end;
+      justify-self: stretch;
+      width: 100%;
     }
   }
 
@@ -294,13 +347,11 @@
 }
 
 .task-drawer__comments {
-  border-top: 1px solid $color-border-subtle;
-  padding: 1rem 1.25rem 1.25rem;
+  border-top: none;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  max-height: 40%;
-  overflow-y: auto;
 }
 
 @media (max-width: 420px) {
@@ -327,6 +378,9 @@
 }
 
 .task-drawer__comments-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   font-size: 0.8125rem;
   font-weight: 600;
   color: $color-text-muted;
@@ -600,10 +654,12 @@
 
 .task-deals__form {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.4rem;
 
-  select {
+  select,
+  button {
+    width: 100%;
     min-width: 0;
   }
 }
@@ -825,6 +881,9 @@
 }
 
 .task-drawer__recurrence-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -944,8 +1003,9 @@
 .task-custom-fields {
   display: grid;
   gap: 0.75rem;
-  border-top: 1px solid $color-border-subtle;
-  padding: 1rem 1.25rem;
+  border-top: none;
+  padding: 0;
+  min-width: 0;
 
   h3 {
     color: $color-white;

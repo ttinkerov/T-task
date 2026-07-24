@@ -2,6 +2,7 @@
 
 import type { TaskTag } from '@/features/boards/types';
 import { useSetTaskTagsMutation, useTagsQuery } from '@/features/tags/hooks';
+import { FieldHint } from './field-hint';
 
 export function TaskTagsSection({
   workspaceId,
@@ -25,7 +26,10 @@ export function TaskTagsSection({
 
   return (
     <section className="task-tags" aria-labelledby="task-tags-title">
-      <h3 id="task-tags-title">Теги</h3>
+      <h3 id="task-tags-title" className="task-drawer__section-title">
+        Теги
+        <FieldHint text="Метки для группировки и фильтрации задач на доске." />
+      </h3>
       {tags.length === 0 ? (
         <p className="task-tags__empty">Тегов пока нет. Создайте их в разделе «Теги».</p>
       ) : (

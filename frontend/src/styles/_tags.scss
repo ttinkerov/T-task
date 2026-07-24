@@ -138,9 +138,9 @@
 
 .task-tags,
 .task-subtasks {
-  margin-top: 1rem;
-  border-top: 1px solid $color-border-subtle;
-  padding-top: 0.9rem;
+  margin-top: 0;
+  border-top: none;
+  padding-top: 0;
 
   h3 {
     margin: 0 0 0.55rem;
@@ -221,6 +221,7 @@
     input,
     button {
       min-height: 2rem;
+      min-width: 0;
       border: 1px solid $color-border-subtle;
       border-radius: $radius-sm;
       background: var(--tt-surface);
@@ -231,6 +232,7 @@
 
     button {
       cursor: pointer;
+      white-space: nowrap;
     }
   }
 }

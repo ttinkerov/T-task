@@ -1,3 +1,5 @@
+import type { DescriptionDoc } from '@/features/task-description';
+
 export type TeamSize = 'SOLO' | 'SMALL' | 'MEDIUM' | 'LARGE';
 
 export type WorkspaceUseCase =
@@ -40,6 +42,7 @@ export interface BoardTask {
   id: string;
   title: string;
   description: string | null;
+  descriptionDoc?: DescriptionDoc | null;
   priority: TaskPriority | null;
   complexity: number | null;
   timeEstimateMinutes: number | null;
@@ -105,6 +108,7 @@ export interface BoardSummary {
 export interface UpdateTaskPayload {
   title?: string;
   description?: string | null;
+  descriptionDoc?: DescriptionDoc | null;
   priority?: TaskPriority | null;
   complexity?: number | null;
   timeEstimateMinutes?: number | null;
