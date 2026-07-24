@@ -3,9 +3,14 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { io, type Socket } from 'socket.io-client';
+import { boardKeys } from '@/features/boards/hooks';
 import { getApiBaseUrl } from '@/shared/lib/env';
 
-const REALTIME_EVENTS = ['task.moved', 'task.assigned', 'comment.created'] as const;
+type RealtimePayload = {
+  workspaceId?: string;
+  boardId?: string;
+  taskId?: string;
+};
 
 export function useWorkspaceRealtime(workspaceId: string | null) {
   const queryClient = useQueryClient();
@@ -25,25 +30,86 @@ export function useWorkspaceRealtime(workspaceId: string | null) {
       socket.emit('workspace:join', { workspaceId });
     });
 
-    let timer: number | null = null;
-    const invalidate = () => {
-      if (timer) window.clearTimeout(timer);
-      timer = window.setTimeout(() => {
-        void queryClient.invalidateQueries({ queryKey: ['boards'] });
-        void queryClient.invalidateQueries({ queryKey: ['notifications'] });
-        void queryClient.invalidateQueries({ queryKey: ['all-tasks'] });
-      }, 250);
+    const boardTimers = new Map<string, number>();
+    let notificationsTimer: number | null = null;
+    let allTasksTimer: number | null = null;
+
+    const schedule = (key: string, map: Map<string, number>, run: () => void) => {
+      const existing = map.get(key);
+      if (existing) window.clearTimeout(existing);
+      map.set(
+        key,
+        window.setTimeout(() => {
+          map.delete(key);
+          run();
+        }, 800),
+      );
     };
 
-    for (const event of REALTIME_EVENTS) {
-      socket.on(event, invalidate);
-    }
+    const invalidateBoard = (boardId?: string) => {
+      if (boardId) {
+        schedule(boardId, boardTimers, () => {
+          void queryClient.invalidateQueries({
+            queryKey: boardKeys.detail(workspaceId, boardId),
+          });
+        });
+        return;
+      }
+      schedule('workspace', boardTimers, () => {
+        void queryClient.invalidateQueries({
+          queryKey: boardKeys.workspace(workspaceId),
+        });
+      });
+    };
+
+    const invalidateNotifications = () => {
+      if (notificationsTimer) window.clearTimeout(notificationsTimer);
+      notificationsTimer = window.setTimeout(() => {
+        notificationsTimer = null;
+        void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      }, 800);
+    };
+
+    const invalidateAllTasks = () => {
+      if (allTasksTimer) window.clearTimeout(allTasksTimer);
+      allTasksTimer = window.setTimeout(() => {
+        allTasksTimer = null;
+        void queryClient.invalidateQueries({
+          queryKey: ['all-tasks', workspaceId],
+        });
+      }, 800);
+    };
+
+    const onTaskBoardEvent = (payload: RealtimePayload) => {
+      invalidateBoard(payload.boardId);
+      invalidateAllTasks();
+      invalidateNotifications();
+    };
+
+    const onCommentCreated = (payload: RealtimePayload) => {
+      if (payload.taskId) {
+        void queryClient.invalidateQueries({
+          queryKey: boardKeys.comments(workspaceId, payload.taskId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: boardKeys.task(workspaceId, payload.taskId),
+        });
+      }
+      invalidateNotifications();
+    };
+
+    socket.on('task.moved', onTaskBoardEvent);
+    socket.on('task.assigned', onTaskBoardEvent);
+    socket.on('comment.created', onCommentCreated);
 
     return () => {
-      if (timer) window.clearTimeout(timer);
-      for (const event of REALTIME_EVENTS) {
-        socket.off(event, invalidate);
-      }
+      for (const timer of boardTimers.values()) window.clearTimeout(timer);
+      boardTimers.clear();
+      if (notificationsTimer) window.clearTimeout(notificationsTimer);
+      if (allTasksTimer) window.clearTimeout(allTasksTimer);
+      socket.off('task.moved', onTaskBoardEvent);
+      socket.off('task.assigned', onTaskBoardEvent);
+      socket.off('comment.created', onCommentCreated);
       socket.disconnect();
       socketRef.current = null;
     };

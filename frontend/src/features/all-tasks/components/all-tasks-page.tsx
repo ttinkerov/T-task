@@ -2,7 +2,6 @@
 
 import {
   PRIORITY_OPTIONS,
-  TaskDetailDrawer,
   TaskDisplayView,
   TaskViewToolbar,
   type BoardColumn,
@@ -16,8 +15,17 @@ import {
 import { SavedFiltersControl } from '@/features/saved-filters';
 import { downloadExport } from '@/features/workspace-tools/api';
 import { useMembersQuery } from '@/features/workspaces/hooks';
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAllTasksQuery } from '../hooks';
+
+const TaskDetailDrawer = dynamic(
+  () =>
+    import('@/features/boards/components/task-detail-drawer').then((mod) => ({
+      default: mod.TaskDetailDrawer,
+    })),
+  { ssr: false },
+);
 import {
   EMPTY_ALL_TASKS_FILTERS,
   type AllTask,

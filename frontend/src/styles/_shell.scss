@@ -13,6 +13,16 @@
     grid-template-columns: $sidebar-collapsed 1fr;
   }
 
+  /* Opaque chrome while scrolling dense boards — avoids backdrop-filter GPU thrash. */
+  &--board {
+    .app-sidebar,
+    .app-topbar,
+    .mobile-nav {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+
   @media (max-width: $breakpoint-lg) {
     grid-template-columns: 1fr;
     grid-template-rows: $topbar-height 1fr auto;

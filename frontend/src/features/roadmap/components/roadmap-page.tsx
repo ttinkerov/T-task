@@ -1,8 +1,8 @@
 'use client';
 
 import { useAllTasksQuery, EMPTY_ALL_TASKS_FILTERS, type AllTask } from '@/features/all-tasks';
-import { TaskDetailDrawer } from '@/features/boards';
 import { useSprintsQuery } from '@/features/sprints';
+import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import {
   addMonths,
@@ -15,6 +15,14 @@ import {
   todayMarkerPct,
 } from '../lib/roadmap-utils';
 import type { RoadmapEpic } from '../types';
+
+const TaskDetailDrawer = dynamic(
+  () =>
+    import('@/features/boards/components/task-detail-drawer').then((mod) => ({
+      default: mod.TaskDetailDrawer,
+    })),
+  { ssr: false },
+);
 
 const MONTH_OPTIONS = [3, 6] as const;
 

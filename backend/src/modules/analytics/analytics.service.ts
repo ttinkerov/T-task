@@ -8,6 +8,7 @@ import { StuckTasksQueryDto } from './dto/stuck-tasks-query.dto';
 
 const STUCK_TASKS_LIMIT = 50;
 const DEFAULT_STUCK_DAYS = 5;
+const WORKLOAD_TASKS_LIMIT = 5000;
 
 @Injectable()
 export class AnalyticsService {
@@ -79,6 +80,59 @@ export class AnalyticsService {
       avgCycleTimeHours,
       medianCycleTimeHours,
       overdueCount,
+    };
+  }
+
+  /** Slim task rows for workload charts — avoids loading a full board payload. */
+  async workload(workspaceId: string, userId: string, query: AnalyticsQueryDto) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+
+    const board = await this.prisma.board.findFirst({
+      where: {
+        workspaceId,
+        ...(query.boardId ? { id: query.boardId } : {}),
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    });
+
+    if (!board) {
+      return { boardId: null as string | null, tasks: [], truncated: false };
+    }
+
+    const tasks = await this.prisma.task.findMany({
+      where: {
+        deletedAt: null,
+        column: { boardId: board.id },
+        ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
+      },
+      select: {
+        id: true,
+        title: true,
+        assigneeId: true,
+        dueDate: true,
+        timeEstimateMinutes: true,
+        actualMinutes: true,
+        column: { select: { name: true } },
+        assignee: { select: { id: true, name: true, email: true, avatarUrl: true } },
+      },
+      orderBy: { position: 'asc' },
+      take: WORKLOAD_TASKS_LIMIT,
+    });
+
+    return {
+      boardId: board.id,
+      truncated: tasks.length >= WORKLOAD_TASKS_LIMIT,
+      tasks: tasks.map((task) => ({
+        id: task.id,
+        title: task.title,
+        assigneeId: task.assigneeId,
+        dueDate: task.dueDate?.toISOString() ?? null,
+        timeEstimateMinutes: task.timeEstimateMinutes,
+        actualMinutes: task.actualMinutes,
+        columnName: task.column.name,
+        assignee: task.assignee,
+      })),
     };
   }
 

@@ -79,7 +79,11 @@ export function useBoardsQuery(workspaceId: string | null) {
   });
 }
 
-export function useBoardQuery(workspaceId: string | null, boardId?: string | null) {
+export function useBoardQuery(
+  workspaceId: string | null,
+  boardId?: string | null,
+  options?: { staleTime?: number },
+) {
   return useQuery({
     queryKey: boardKeys.detail(workspaceId ?? '', boardId ?? 'default'),
     queryFn: async () => {
@@ -91,7 +95,7 @@ export function useBoardQuery(workspaceId: string | null, boardId?: string | nul
       return response.data;
     },
     enabled: Boolean(workspaceId) && (boardId === undefined || Boolean(boardId)),
-    staleTime: 60_000,
+    staleTime: options?.staleTime ?? 60_000,
   });
 }
 

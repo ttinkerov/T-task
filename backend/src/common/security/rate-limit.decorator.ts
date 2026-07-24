@@ -151,3 +151,17 @@ export const ALL_TASKS_RATE_LIMIT: RateLimitConfig = {
   windowSeconds: 60,
   maxAttempts: 60,
 };
+
+export const BOARD_GET_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'board:get',
+  windowSeconds: 60,
+  maxAttempts: 60,
+  includeWorkspaceId: true,
+};
+
+export const FUNNEL_GET_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'funnel:get',
+  windowSeconds: 60,
+  maxAttempts: 60,
+  includeWorkspaceId: true,
+};

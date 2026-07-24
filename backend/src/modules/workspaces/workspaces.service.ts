@@ -53,6 +53,34 @@ export class WorkspacesService {
     return this.toWorkspaceSummary(membership);
   }
 
+  /**
+   * Cached membership for auth guards (Redis TTL).
+   * Returns null when the user is not a member / workspace is deleted.
+   * Throws ForbiddenException when workspace is archived for non-admins.
+   */
+  async resolveGuardMembership(
+    workspaceId: string,
+    userId: string,
+  ): Promise<{
+    workspaceId: string;
+    role: WorkspaceRole;
+    scopes: string[];
+  } | null> {
+    try {
+      const membership = await this.getMembership(workspaceId, userId);
+      return {
+        workspaceId,
+        role: membership.role,
+        scopes: membership.scopes ?? [],
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
   async create(userId: string, dto: CreateWorkspaceDto) {
     const slug = await createUniqueWorkspaceSlug(this.prisma, dto.name);
 

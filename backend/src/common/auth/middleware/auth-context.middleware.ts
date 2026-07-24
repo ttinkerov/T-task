@@ -2,7 +2,6 @@ import { Injectable, NestMiddleware } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
 import { TokenExtractorService } from '../services/token-extractor.service';
 import { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
-import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 
 export type RequestWithAuth = Request & {
   user?: AuthenticatedUser;
@@ -11,10 +10,7 @@ export type RequestWithAuth = Request & {
 
 @Injectable()
 export class AuthContextMiddleware implements NestMiddleware {
-  constructor(
-    private readonly tokenExtractor: TokenExtractorService,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly tokenExtractor: TokenExtractorService) {}
 
   async use(request: RequestWithAuth, _response: Response, next: NextFunction): Promise<void> {
     const token = this.tokenExtractor.extractAccessToken(request);
@@ -25,23 +21,9 @@ export class AuthContextMiddleware implements NestMiddleware {
     }
 
     try {
-      const payload = await this.tokenExtractor.verifyAccessTokenAsync(token);
-      const user = await this.prisma.user.findFirst({
-        where: {
-          id: payload.sub,
-          deletedAt: null,
-        },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-        },
-      });
-
-      if (user) {
-        request.authPayload = { sub: payload.sub, email: payload.email };
-        request.user = user;
-      }
+      // Sync verify only — Redis deny + user load happen once in JwtStrategy.
+      const payload = this.tokenExtractor.verifyAccessToken(token);
+      request.authPayload = { sub: payload.sub, email: payload.email };
     } catch {
       // Guard will enforce auth on protected routes.
     }

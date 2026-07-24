@@ -16,15 +16,21 @@ import {
 
 interface BoardFiltersBarProps {
   workspaceId: string;
+  boardId?: string | null;
   filters: BoardFilters;
   onChange: (filters: BoardFilters) => void;
 }
 
-export function BoardFiltersBar({ workspaceId, filters, onChange }: BoardFiltersBarProps) {
+export function BoardFiltersBar({
+  workspaceId,
+  boardId = null,
+  filters,
+  onChange,
+}: BoardFiltersBarProps) {
   const { data: members = [] } = useMembersQuery(workspaceId);
   const { data: tags = [] } = useTagsQuery(workspaceId);
   const { data: sprints = [] } = useSprintsQuery(workspaceId);
-  const { data: board } = useBoardQuery(workspaceId);
+  const { data: board } = useBoardQuery(workspaceId, boardId);
   const activeSprint = sprints.find((sprint) => sprint.active);
   const epics = useMemo(() => {
     if (!board) return [];

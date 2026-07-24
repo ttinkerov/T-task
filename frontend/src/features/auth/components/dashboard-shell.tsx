@@ -324,7 +324,9 @@ export function DashboardShell({
   const settingsHref = workspaceId ? `/dashboard/workspaces/${workspaceId}/settings` : '/dashboard';
 
   return (
-    <div className={`app-frame${collapsed ? ' app-frame--collapsed' : ''}`}>
+    <div
+      className={`app-frame${collapsed ? ' app-frame--collapsed' : ''}${boardMode ? ' app-frame--board' : ''}`}
+    >
       <a className="dashboard-skip-link" href="#dashboard-content">
         Перейти к содержимому
       </a>

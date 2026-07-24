@@ -35,6 +35,9 @@ function makePrisma() {
       deleteMany: vi.fn(),
       createMany: vi.fn(),
     },
+    customFieldDefinition: {
+      count: vi.fn().mockResolvedValue(0),
+    },
     $transaction: vi.fn(),
   };
 }

@@ -23,6 +23,8 @@ export interface FunnelStage {
   id: string;
   name: string;
   position: number;
+  dealTotal?: number;
+  truncated?: boolean;
   deals: FunnelDeal[];
 }
 

@@ -26,6 +26,18 @@ export class AnalyticsController {
     return successResponse(await this.analyticsService.summary(workspaceId, user.id, query));
   }
 
+  @Get('workload')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(ANALYTICS_RATE_LIMIT)
+  @Roles(...ALL_WORKSPACE_ROLES)
+  async workload(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: AnalyticsQueryDto,
+  ) {
+    return successResponse(await this.analyticsService.workload(workspaceId, user.id, query));
+  }
+
   @Get('stuck-tasks')
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(ANALYTICS_RATE_LIMIT)

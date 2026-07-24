@@ -65,10 +65,13 @@ export class AccessTokenDenyService {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      this.logger.error(
-        `Access deny check failed closed: ${error instanceof Error ? error.message : 'unknown'}`,
+      // Soft-fail reads: Redis outage must not lock out the whole product.
+      // Revocation writes remain fail-closed.
+      this.logger.warn(
+        `Access deny check skipped (Redis unavailable): ${
+          error instanceof Error ? error.message : 'unknown'
+        }`,
       );
-      throw new UnauthorizedException('Access token validation unavailable');
     }
   }
 

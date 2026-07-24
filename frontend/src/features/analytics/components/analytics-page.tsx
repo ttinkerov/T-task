@@ -2,19 +2,17 @@
 
 import { useMemo, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useBoardQuery } from '@/features/boards/hooks';
-import { fetchAnalyticsSummary } from '@/features/workspace-tools/api';
+import { fetchAnalyticsSummary, fetchAnalyticsWorkload } from '@/features/workspace-tools/api';
 import {
   buildWorkloadRows,
   filterTasksByAssignee,
   filterTasksByDateRange,
-  flattenBoardTasks,
   getPeriodLabel,
   resolveWorkloadDateRange,
   sumWorkload,
-  type TaskWithColumn,
   type WorkloadPeriod,
   type WorkloadRow,
+  type WorkloadTask,
 } from '@/features/boards/lib/workload';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import { formatMinutes, formatMinutesDelta } from '@/shared/lib/format-duration';
@@ -25,7 +23,6 @@ interface AnalyticsPageProps {
 }
 
 export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
-  const { data: board, isLoading: boardLoading } = useBoardQuery(workspaceId);
   const { data: members = [] } = useMembersQuery(workspaceId);
 
   const [period, setPeriod] = useState<WorkloadPeriod>('week');
@@ -54,13 +51,22 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
       );
       return response.data;
     },
+    staleTime: 60_000,
+  });
+
+  const workloadQuery = useQuery({
+    queryKey: ['analytics-workload', workspaceId],
+    queryFn: async () => {
+      const response = await fetchAnalyticsWorkload(workspaceId);
+      return response.data;
+    },
+    staleTime: 5 * 60_000,
   });
 
   const scopedTasks = useMemo(() => {
-    if (!board) return [];
-    const tasks = flattenBoardTasks(board);
+    const tasks = (workloadQuery.data?.tasks ?? []) as WorkloadTask[];
     return filterTasksByAssignee(filterTasksByDateRange(tasks, dateRange), assigneeFilter);
-  }, [assigneeFilter, board, dateRange]);
+  }, [assigneeFilter, dateRange, workloadQuery.data?.tasks]);
 
   const rows = useMemo(() => buildWorkloadRows(scopedTasks), [scopedTasks]);
   const totals = useMemo(() => sumWorkload(rows), [rows]);
@@ -76,7 +82,7 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
   }, [drilldownId, scopedTasks]);
 
   const periodLabel = getPeriodLabel(period, customFrom, customTo);
-  const workloadLoading = boardLoading || !board;
+  const workloadLoading = workloadQuery.isLoading;
 
   return (
     <div className="analytics-page">
@@ -89,6 +95,12 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
           </p>
         </div>
       </header>
+
+      {workloadQuery.data?.truncated ? (
+        <p className="text-sm text-muted-foreground" role="status">
+          Показаны первые 5000 задач доски для расчёта нагрузки.
+        </p>
+      ) : null}
 
       <div
         className="analytics-summary-cards"
@@ -373,7 +385,7 @@ function AnalyticsDrilldown({
   onClose,
 }: {
   row: WorkloadRow;
-  tasks: TaskWithColumn[];
+  tasks: WorkloadTask[];
   periodLabel: string;
   onClose: () => void;
 }) {

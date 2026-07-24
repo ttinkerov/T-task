@@ -59,7 +59,7 @@ describe('AccessTokenDenyService', () => {
     ).resolves.toBeUndefined();
   });
 
-  it('fails closed when Redis is unavailable during assert', async () => {
+  it('soft-fails when Redis is unavailable during assert', async () => {
     get.mockRejectedValueOnce(new Error('redis down'));
     await expect(
       service.assertNotRevoked({
@@ -69,7 +69,7 @@ describe('AccessTokenDenyService', () => {
         jti: 'jti-4',
         iat: 100,
       }),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    ).resolves.toBeUndefined();
   });
 
   it('surfaces revoke failures instead of silently succeeding', async () => {

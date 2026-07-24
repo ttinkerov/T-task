@@ -30,6 +30,7 @@ import {
   type TaskPriority,
   type TaskRecurrenceAction,
   type TaskRecurrenceRule,
+  type TaskTag,
 } from '../types';
 import { TaskCustomFieldsSection } from './task-custom-fields-section';
 import { TaskDealsSection } from './task-deals-section';
@@ -45,8 +46,10 @@ import { useTaskWatchersQuery, useToggleWatchMutation } from '@/features/watcher
 import { invalidateWorkspaceBoards } from '../hooks';
 import { Eye, EyeOff } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { LazyMount } from '@/shared/ui/lazy-mount';
 
 const EMPTY_WEEKDAYS: number[] = [];
+const EMPTY_TAGS: TaskTag[] = [];
 
 interface TaskDetailDrawerProps {
   workspaceId: string;
@@ -616,29 +619,30 @@ export function TaskDetailDrawer({
             </div>
           </form>
 
-          <TaskTagsSection workspaceId={workspaceId} taskId={task.id} selected={task.tags ?? []} />
-
-          <TaskSubtasksSection workspaceId={workspaceId} taskId={task.id} />
-          <TaskChecklistSection workspaceId={workspaceId} taskId={task.id} />
-
-          <TaskAttachmentsSection workspaceId={workspaceId} taskId={task.id} />
-
-          <TaskCustomFieldsSection
+          <TaskTagsSection
             workspaceId={workspaceId}
             taskId={task.id}
-            values={task.customFields}
+            selected={task.tags ?? EMPTY_TAGS}
           />
 
-          <TaskRollupSection workspaceId={workspaceId} taskId={task.id} />
-
-          <TaskRelationsSection
-            workspaceId={workspaceId}
-            taskId={task.id}
-            candidates={relationCandidates}
-            onOpenTask={onOpenTask}
-          />
-
-          <TaskDealsSection workspaceId={workspaceId} taskId={task.id} />
+          <LazyMount eagerMs={150}>
+            <TaskSubtasksSection workspaceId={workspaceId} taskId={task.id} />
+            <TaskChecklistSection workspaceId={workspaceId} taskId={task.id} />
+            <TaskAttachmentsSection workspaceId={workspaceId} taskId={task.id} />
+            <TaskCustomFieldsSection
+              workspaceId={workspaceId}
+              taskId={task.id}
+              values={task.customFields}
+            />
+            <TaskRollupSection workspaceId={workspaceId} taskId={task.id} />
+            <TaskRelationsSection
+              workspaceId={workspaceId}
+              taskId={task.id}
+              candidates={relationCandidates}
+              onOpenTask={onOpenTask}
+            />
+            <TaskDealsSection workspaceId={workspaceId} taskId={task.id} />
+          </LazyMount>
 
           <div className="task-drawer__comments">
             <h3 className="task-drawer__comments-title task-drawer__section-title">

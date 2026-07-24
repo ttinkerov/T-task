@@ -29,6 +29,23 @@ export type AnalyticsSummary = {
   overdueCount: number;
 };
 
+export type AnalyticsWorkloadTask = {
+  id: string;
+  title: string;
+  assigneeId: string | null;
+  dueDate: string | null;
+  timeEstimateMinutes: number | null;
+  actualMinutes: number | null;
+  columnName: string;
+  assignee: { id: string; name: string; email: string; avatarUrl: string | null } | null;
+};
+
+export type AnalyticsWorkload = {
+  boardId: string | null;
+  truncated: boolean;
+  tasks: AnalyticsWorkloadTask[];
+};
+
 export async function fetchAnalyticsSummary(workspaceId: string, from?: string, to?: string) {
   const params = new URLSearchParams();
   if (from) params.set('from', from);
@@ -38,6 +55,12 @@ export async function fetchAnalyticsSummary(workspaceId: string, from?: string, 
     `/api/v1/workspaces/${workspaceId}/analytics/summary${qs ? `?${qs}` : ''}`,
     { headers: { 'x-workspace-id': workspaceId } },
   );
+}
+
+export async function fetchAnalyticsWorkload(workspaceId: string) {
+  return apiFetch<AnalyticsWorkload>(`/api/v1/workspaces/${workspaceId}/analytics/workload`, {
+    headers: { 'x-workspace-id': workspaceId },
+  });
 }
 
 export type BoardTemplate = {

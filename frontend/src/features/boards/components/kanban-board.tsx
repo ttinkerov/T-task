@@ -22,7 +22,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { FormEvent, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BoardSkeleton } from '@/components/ui/skeleton';
 import { TaskCheckbox } from '@/components/ui/task-checkbox';
 import { useMeQuery } from '@/features/auth/hooks';
@@ -61,6 +62,7 @@ import {
   type BoardFilters,
   type BoardTask,
   type BoardView,
+  type TaskTag,
 } from '../types';
 import { BoardFiltersBar } from './board-filters-bar';
 import { BoardSprintPanel } from './board-sprint-panel';
@@ -68,7 +70,15 @@ import { BoardSwitcher, storeSelectedBoardId } from './board-switcher';
 import { BoardWorkloadPanel } from './board-workload-panel';
 import { ColumnAutomationDialog } from './column-automation-dialog';
 import { TaskDisplayView, TaskViewToolbar } from './task-display-views';
-import { TaskDetailDrawer } from './task-detail-drawer';
+
+const TaskDetailDrawer = dynamic(
+  () => import('./task-detail-drawer').then((mod) => ({ default: mod.TaskDetailDrawer })),
+  { ssr: false },
+);
+
+const EMPTY_TAGS: TaskTag[] = [];
+const EMPTY_SUBTASKS: NonNullable<BoardTask['subtasks']> = [];
+const COLUMN_VISIBLE_STEP = 40;
 
 const FOCUS_CREATE_KEY = 'ttask:focus-create';
 
@@ -222,6 +232,30 @@ export function KanbanBoard({
     [bulkSelectedIds, orderedTaskIds],
   );
 
+  const handleCompleteTask = useCallback(
+    (task: BoardTask) => {
+      const columns = board?.columns;
+      if (!columns) return;
+      const done = findDoneColumn(columns);
+      if (!done || task.columnId === done.id) return;
+      void moveTaskMutation
+        .mutateAsync({
+          taskId: task.id,
+          columnId: done.id,
+          position: done.tasks.length,
+        })
+        .then(() => {
+          if (task.priority === 'URGENT' || task.priority === 'HIGH') {
+            celebrateTaskComplete();
+          }
+        })
+        .catch((error) => {
+          setMoveError(error instanceof Error ? error.message : 'Не удалось завершить задачу');
+        });
+    },
+    [board?.columns, moveTaskMutation],
+  );
+
   const handleDragStart = (event: DragStartEvent) => {
     setMoveError('');
     const type = event.active.data.current?.type as DragType | undefined;
@@ -324,7 +358,17 @@ export function KanbanBoard({
         boardId={boardId}
         onBoardChange={handleBoardChange}
       />
-      <BoardFiltersBar workspaceId={workspaceId} filters={filters} onChange={setFilters} />
+      <BoardFiltersBar
+        workspaceId={workspaceId}
+        boardId={boardId}
+        filters={filters}
+        onChange={setFilters}
+      />
+      {board.columns.some((column) => column.truncated) ? (
+        <p className="kanban-board__error" role="status">
+          В колонке показано до 200 задач. Остальные откройте через фильтры или «Все задачи».
+        </p>
+      ) : null}
       {viewMode === 'BOARD' && moveError ? (
         <p className="kanban-board__error" role="alert">
           {moveError}
@@ -369,26 +413,7 @@ export function KanbanBoard({
                   selectionActive={bulkSelectedIds.size > 0}
                   onToggleSelect={handleToggleSelect}
                   onOpenTask={setSelectedTaskId}
-                  onCompleteTask={(task) => {
-                    const done = findDoneColumn(board.columns);
-                    if (!done || task.columnId === done.id) return;
-                    void moveTaskMutation
-                      .mutateAsync({
-                        taskId: task.id,
-                        columnId: done.id,
-                        position: done.tasks.length,
-                      })
-                      .then(() => {
-                        if (task.priority === 'URGENT' || task.priority === 'HIGH') {
-                          celebrateTaskComplete();
-                        }
-                      })
-                      .catch((error) => {
-                        setMoveError(
-                          error instanceof Error ? error.message : 'Не удалось завершить задачу',
-                        );
-                      });
-                  }}
+                  onCompleteTask={handleCompleteTask}
                 />
               ))}
             </SortableContext>
@@ -602,6 +627,20 @@ function KanbanColumn({
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const createMutation = useCreateTaskMutation(workspaceId, boardId);
   const { data: taskTemplates = [] } = useTaskTemplatesQuery(workspaceId);
+  const taskIds = useMemo(() => column.tasks.map((task) => task.id), [column.tasks]);
+  const [visibleCount, setVisibleCount] = useState(() =>
+    Math.min(COLUMN_VISIBLE_STEP, column.tasks.length),
+  );
+
+  useEffect(() => {
+    setVisibleCount(Math.min(COLUMN_VISIBLE_STEP, column.tasks.length));
+  }, [column.id, column.tasks.length]);
+
+  const visibleTasks = useMemo(
+    () => column.tasks.slice(0, visibleCount),
+    [column.tasks, visibleCount],
+  );
+  const hiddenCount = Math.max(0, column.tasks.length - visibleCount);
   const updateColumnMutation = useUpdateColumnMutation(workspaceId, boardId);
   const deleteColumnMutation = useDeleteColumnMutation(workspaceId, boardId);
   const [title, setTitle] = useState('');
@@ -760,12 +799,9 @@ function KanbanColumn({
         ) : null}
       </div>
 
-      <SortableContext
-        items={column.tasks.map((task) => task.id)}
-        strategy={verticalListSortingStrategy}
-      >
+      <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
         <div className="kanban-column__tasks">
-          {column.tasks.map((task) => (
+          {visibleTasks.map((task) => (
             <KanbanTaskCard
               key={task.id}
               task={task}
@@ -776,10 +812,23 @@ function KanbanColumn({
               selected={selectedIds.has(task.id)}
               selectionActive={selectionActive}
               onToggleSelect={onToggleSelect}
-              onOpen={() => onOpenTask(task.id)}
-              onComplete={() => onCompleteTask(task)}
+              onOpenTask={onOpenTask}
+              onCompleteTask={onCompleteTask}
             />
           ))}
+          {hiddenCount > 0 ? (
+            <button
+              type="button"
+              className="kanban-column__show-more"
+              onClick={() =>
+                setVisibleCount((count) =>
+                  Math.min(count + COLUMN_VISIBLE_STEP, column.tasks.length),
+                )
+              }
+            >
+              Ещё {Math.min(COLUMN_VISIBLE_STEP, hiddenCount)} из {hiddenCount}
+            </button>
+          ) : null}
         </div>
       </SortableContext>
 
@@ -837,7 +886,7 @@ function KanbanColumn({
   );
 }
 
-function KanbanTaskCard({
+const KanbanTaskCard = memo(function KanbanTaskCard({
   task,
   column,
   allColumns,
@@ -846,8 +895,8 @@ function KanbanTaskCard({
   selected,
   selectionActive,
   onToggleSelect,
-  onOpen,
-  onComplete,
+  onOpenTask,
+  onCompleteTask,
 }: {
   task: BoardTask;
   column: BoardColumn;
@@ -860,8 +909,8 @@ function KanbanTaskCard({
     taskId: string,
     event: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean },
   ) => void;
-  onOpen: () => void;
-  onComplete: () => void;
+  onOpenTask: (taskId: string) => void;
+  onCompleteTask: (task: BoardTask) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
@@ -890,6 +939,8 @@ function KanbanTaskCard({
     })
     .filter((chip): chip is { id: string; label: string } => chip !== null);
   const description = task.description ? toPlainMentionText(task.description, memberNames) : null;
+  const tags = task.tags ?? EMPTY_TAGS;
+  const subtasks = task.subtasks ?? EMPTY_SUBTASKS;
 
   return (
     <div
@@ -902,12 +953,12 @@ function KanbanTaskCard({
           onToggleSelect(task.id, event);
           return;
         }
-        onOpen();
+        onOpenTask(task.id);
       }}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
-          onOpen();
+          onOpenTask(task.id);
         }
       }}
       role="button"
@@ -930,10 +981,11 @@ function KanbanTaskCard({
           }
         />
         <TaskCheckbox
+          animated={false}
           checked={isComplete}
           ariaLabel={isComplete ? 'Задача выполнена' : 'Отметить выполненной'}
           onChange={(checked) => {
-            if (checked && !isComplete) onComplete();
+            if (checked && !isComplete) onCompleteTask(task);
           }}
         />
         <button
@@ -958,12 +1010,12 @@ function KanbanTaskCard({
             dueLabel ||
             recurrenceLabel ||
             overdueLabel ||
-            (task.tags ?? []).length > 0 ||
-            (task.subtasks ?? []).length > 0 ||
+            tags.length > 0 ||
+            subtasks.length > 0 ||
             customFieldChips.length > 0 ||
             task.assignee) && (
             <div className="kanban-task-meta">
-              {(task.tags ?? []).slice(0, 3).map((tag) => (
+              {tags.slice(0, 3).map((tag) => (
                 <span
                   key={tag.id}
                   className="tag-chip"
@@ -973,10 +1025,9 @@ function KanbanTaskCard({
                   {tag.name}
                 </span>
               ))}
-              {(task.subtasks ?? []).length > 0 ? (
+              {subtasks.length > 0 ? (
                 <span className="kanban-task-chip">
-                  {(task.subtasks ?? []).filter((item) => item.completed).length}/
-                  {(task.subtasks ?? []).length} шагов
+                  {subtasks.filter((item) => item.completed).length}/{subtasks.length} шагов
                 </span>
               ) : null}
               {overdueLabel ? (
@@ -1040,7 +1091,7 @@ function KanbanTaskCard({
       </div>
     </div>
   );
-}
+});
 
 function formatCustomFieldValue(
   field: CustomFieldDefinition,

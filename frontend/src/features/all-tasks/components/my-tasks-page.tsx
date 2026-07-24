@@ -1,10 +1,19 @@
 'use client';
 
-import { TaskDetailDrawer, PRIORITY_LABELS } from '@/features/boards';
+import { PRIORITY_LABELS } from '@/features/boards';
+import dynamic from 'next/dynamic';
 import { useMemo, useState } from 'react';
 import { useAllTasksQuery } from '../hooks';
 import { DUE_SOON_DAYS, partitionMyTasks } from '../lib/my-tasks-partition';
 import { EMPTY_ALL_TASKS_FILTERS, type AllTask, type AllTasksQuery } from '../types';
+
+const TaskDetailDrawer = dynamic(
+  () =>
+    import('@/features/boards/components/task-detail-drawer').then((mod) => ({
+      default: mod.TaskDetailDrawer,
+    })),
+  { ssr: false },
+);
 
 const SECTION_LIMIT = 50;
 

@@ -167,7 +167,6 @@ export class CalendarFeedsService {
       select: {
         id: true,
         title: true,
-        description: true,
         dueDate: true,
         updatedAt: true,
         completedAt: true,
@@ -180,7 +179,7 @@ export class CalendarFeedsService {
             {
               id: task.id,
               title: task.title,
-              description: task.description,
+              description: null,
               dueDate: task.dueDate,
               updatedAt: task.updatedAt,
               completedAt: task.completedAt,

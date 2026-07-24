@@ -80,6 +80,8 @@ export interface BoardColumn {
   name: string;
   position: number;
   wipLimit: number | null;
+  taskTotal?: number;
+  truncated?: boolean;
   automations: ColumnAutomation[];
   tasks: BoardTask[];
 }

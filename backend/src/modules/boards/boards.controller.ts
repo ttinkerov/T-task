@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
 import {
@@ -8,6 +8,8 @@ import {
 } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
+import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
+import { BOARD_GET_RATE_LIMIT, RateLimit } from '../../common/security/rate-limit.decorator';
 import { BoardsService } from './boards.service';
 import { CreateBoardDto } from './dto/create-board.dto';
 import { CreateColumnDto } from './dto/create-column.dto';
@@ -22,6 +24,8 @@ export class BoardsController {
   constructor(private readonly boardsService: BoardsService) {}
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(BOARD_GET_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async getBoard(
     @Param('workspaceId') workspaceId: string,
@@ -144,6 +148,8 @@ export class WorkspaceBoardsController {
   }
 
   @Get(':boardId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(BOARD_GET_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async getBoardById(
     @Param('workspaceId') workspaceId: string,

@@ -18,6 +18,8 @@ import { ActivityService } from '../activity/activity.service';
 import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
 import { resolveDescriptionDocForApi } from '../tasks/utils/description-doc.util';
 
+const BOARD_COLUMN_TASK_LIMIT = 200;
+
 @Injectable()
 export class BoardsService {
   constructor(
@@ -109,6 +111,7 @@ export class BoardsService {
       name: string;
       position: number;
       wipLimit?: number | null;
+      _count: { tasks: number };
       automations: Array<{
         id: string;
         action: ColumnAutomationAction;
@@ -132,6 +135,8 @@ export class BoardsService {
         name: column.name,
         position: column.position,
         wipLimit: column.wipLimit ?? null,
+        taskTotal: column._count.tasks,
+        truncated: column.tasks.length < column._count.tasks,
         automations: column.automations.map((automation) => ({
           id: automation.id,
           action: automation.action,
@@ -144,6 +149,11 @@ export class BoardsService {
   }
 
   private async fetchBoard(workspaceId: string, boardId?: string) {
+    const cardFieldCount = await this.prisma.customFieldDefinition.count({
+      where: { workspaceId, showOnCard: true },
+    });
+    const includeCardFields = cardFieldCount > 0;
+
     const board = await this.prisma.board.findFirst({
       where: boardId ? { id: boardId, workspaceId } : { workspaceId },
       orderBy: { createdAt: 'asc' },
@@ -163,7 +173,7 @@ export class BoardsService {
             tasks: {
               where: { deletedAt: null },
               orderBy: { position: 'asc' },
-              take: 500,
+              take: BOARD_COLUMN_TASK_LIMIT,
               select: {
                 id: true,
                 title: true,
@@ -190,18 +200,26 @@ export class BoardsService {
                 assignee: {
                   select: { id: true, name: true, email: true, avatarUrl: true },
                 },
-                customFieldValues: {
-                  select: { fieldId: true, value: true },
-                },
+                ...(includeCardFields
+                  ? {
+                      customFieldValues: {
+                        select: { fieldId: true, value: true },
+                      },
+                    }
+                  : {}),
                 taskTags: {
                   include: { tag: { select: { id: true, name: true, color: true } } },
                   orderBy: { tag: { name: 'asc' } },
                 },
                 subtasks: {
-                  orderBy: { position: 'asc' },
                   // Cards only need completion progress; titles load in the drawer.
                   select: { completed: true },
                 },
+              },
+            },
+            _count: {
+              select: {
+                tasks: { where: { deletedAt: null } },
               },
             },
           },

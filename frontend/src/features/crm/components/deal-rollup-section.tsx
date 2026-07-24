@@ -2,7 +2,10 @@
 
 import { useMemo } from 'react';
 import { useDealTasksQuery } from '../hooks';
+import type { DealTaskLink } from '../deal-task-types';
 import { computeDealLinkRollup, formatRollupDue } from '@/features/boards/lib/task-rollup';
+
+const EMPTY_DEAL_TASKS: DealTaskLink[] = [];
 
 export function DealRollupSection({
   workspaceId,
@@ -12,7 +15,7 @@ export function DealRollupSection({
   dealId: string;
 }) {
   const tasksQuery = useDealTasksQuery(workspaceId, dealId);
-  const tasks = tasksQuery.data ?? [];
+  const tasks = tasksQuery.data ?? EMPTY_DEAL_TASKS;
 
   const rollup = useMemo(() => computeDealLinkRollup(tasks.map((link) => link.task)), [tasks]);
 

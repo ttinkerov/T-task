@@ -1,4 +1,4 @@
-import type { BoardTask, BoardView } from '../types';
+import type { BoardView } from '../types';
 
 export interface WorkloadRow {
   id: string;
@@ -8,9 +8,20 @@ export interface WorkloadRow {
   taskCount: number;
 }
 
-export interface TaskWithColumn extends BoardTask {
+/** Minimal task shape for workload math (board flatten or analytics/workload API). */
+export interface WorkloadTask {
+  id: string;
+  title: string;
+  assigneeId: string | null;
+  dueDate: string | null;
+  timeEstimateMinutes: number | null;
+  actualMinutes: number | null;
   columnName: string;
+  assignee: { id: string; name: string } | null;
 }
+
+/** @deprecated Prefer WorkloadTask */
+export type TaskWithColumn = WorkloadTask;
 
 export type WorkloadPeriod = 'today' | 'week' | 'month' | 'all' | 'custom';
 
@@ -19,11 +30,17 @@ export interface WorkloadDateRange {
   to: Date | null;
 }
 
-export function flattenBoardTasks(board: BoardView): TaskWithColumn[] {
+export function flattenBoardTasks(board: BoardView): WorkloadTask[] {
   return board.columns.flatMap((column) =>
     column.tasks.map((task) => ({
-      ...task,
+      id: task.id,
+      title: task.title,
+      assigneeId: task.assigneeId,
+      dueDate: task.dueDate,
+      timeEstimateMinutes: task.timeEstimateMinutes,
+      actualMinutes: task.actualMinutes,
       columnName: column.name,
+      assignee: task.assignee,
     })),
   );
 }
@@ -61,9 +78,9 @@ export function resolveWorkloadDateRange(
 }
 
 export function filterTasksByDateRange(
-  tasks: TaskWithColumn[],
+  tasks: WorkloadTask[],
   range: WorkloadDateRange,
-): TaskWithColumn[] {
+): WorkloadTask[] {
   if (!range.from && !range.to) {
     return tasks;
   }
@@ -86,9 +103,9 @@ export function filterTasksByDateRange(
 }
 
 export function filterTasksByAssignee(
-  tasks: TaskWithColumn[],
+  tasks: WorkloadTask[],
   assigneeId: string | '',
-): TaskWithColumn[] {
+): WorkloadTask[] {
   if (!assigneeId) {
     return tasks;
   }
@@ -100,7 +117,7 @@ export function filterTasksByAssignee(
   return tasks.filter((task) => task.assigneeId === assigneeId);
 }
 
-export function buildWorkloadRows(tasks: TaskWithColumn[]): WorkloadRow[] {
+export function buildWorkloadRows(tasks: WorkloadTask[]): WorkloadRow[] {
   const relevantTasks = tasks.filter(
     (task) => (task.timeEstimateMinutes ?? 0) > 0 || (task.actualMinutes ?? 0) > 0,
   );
@@ -108,17 +125,17 @@ export function buildWorkloadRows(tasks: TaskWithColumn[]): WorkloadRow[] {
   const grouped = new Map<string, WorkloadRow>();
 
   for (const task of relevantTasks) {
-    const assigneeId = task.assigneeId ?? 'unassigned';
+    const id = task.assigneeId ?? 'unassigned';
     const name = task.assignee?.name ?? 'Без исполнителя';
-    const current = grouped.get(assigneeId) ?? {
-      id: assigneeId,
+    const current = grouped.get(id) ?? {
+      id,
       name,
       planMinutes: 0,
       actualMinutes: 0,
       taskCount: 0,
     };
 
-    grouped.set(assigneeId, {
+    grouped.set(id, {
       ...current,
       planMinutes: current.planMinutes + (task.timeEstimateMinutes ?? 0),
       actualMinutes: current.actualMinutes + (task.actualMinutes ?? 0),

@@ -40,16 +40,9 @@ export class AllTasksService {
           assignee: {
             select: { id: true, name: true, email: true, avatarUrl: true },
           },
-          customFieldValues: {
-            select: { fieldId: true, value: true },
-          },
           taskTags: {
             include: { tag: { select: { id: true, name: true, color: true } } },
             orderBy: { tag: { name: 'asc' } },
-          },
-          subtasks: {
-            orderBy: { position: 'asc' },
-            select: { completed: true },
           },
           column: {
             select: {

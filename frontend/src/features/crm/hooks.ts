@@ -50,6 +50,7 @@ export function useFunnelQuery(workspaceId: string | null, funnelId: string | nu
       return response.data;
     },
     enabled: Boolean(workspaceId && funnelId),
+    staleTime: 60_000,
   });
 }
 

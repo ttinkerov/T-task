@@ -8,7 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { WorkspaceRole } from '@prisma/client';
 import { Request } from 'express';
-import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
+import { WorkspacesService } from '../../../modules/workspaces/workspaces.service';
 import { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
 import { SCOPES_KEY } from '../decorators/scopes.decorator';
 import { hasEffectiveScope, type WorkspaceScopeValue } from '../scopes';
@@ -17,7 +17,7 @@ import { hasEffectiveScope, type WorkspaceScopeValue } from '../scopes';
 export class ScopesGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly prisma: PrismaService,
+    private readonly workspacesService: WorkspacesService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -56,21 +56,16 @@ export class ScopesGuard implements CanActivate {
         throw new ForbiddenException('Workspace context is required');
       }
 
-      const row = await this.prisma.workspaceMember.findUnique({
-        where: {
-          workspaceId_userId: { workspaceId, userId: request.user.id },
-        },
-      });
+      const resolved = await this.workspacesService.resolveGuardMembership(
+        workspaceId,
+        request.user.id,
+      );
 
-      if (!row) {
+      if (!resolved) {
         throw new ForbiddenException('You are not a member of this workspace');
       }
 
-      membership = {
-        workspaceId,
-        role: row.role,
-        scopes: row.scopes ?? [],
-      };
+      membership = resolved;
       request.workspaceMembership = membership;
     }
 

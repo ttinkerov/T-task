@@ -20,7 +20,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FormEvent, useEffect, useState, type HTMLAttributes } from 'react';
+import { FormEvent, memo, useEffect, useMemo, useState, type HTMLAttributes } from 'react';
 import { useDealTemplatesQuery } from '@/features/templates';
 import {
   useCreateDealMutation,
@@ -35,6 +35,8 @@ import {
 } from '../hooks';
 import { formatDealAmount, type FunnelDeal, type FunnelStage, type FunnelView } from '../types';
 import { DealDetailDrawer } from './deal-detail-drawer';
+
+const STAGE_VISIBLE_STEP = 40;
 
 export function FunnelBoard({ workspaceId }: { workspaceId: string }) {
   const { data: funnels = [], isLoading: funnelsLoading } = useFunnelsQuery(workspaceId);
@@ -211,6 +213,11 @@ function FunnelBoardView({ workspaceId, funnel }: { workspaceId: string; funnel:
 
   return (
     <>
+      {funnel.stages.some((stage) => stage.truncated) ? (
+        <p className="kanban-board__error" role="status">
+          В этапе показано до 200 сделок. Остальные откройте через поиск или фильтры.
+        </p>
+      ) : null}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -325,6 +332,20 @@ function FunnelStageColumn({
   const [templateId, setTemplateId] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [stageName, setStageName] = useState(stage.name);
+  const dealIds = useMemo(() => stage.deals.map((deal) => deal.id), [stage.deals]);
+  const [visibleCount, setVisibleCount] = useState(() =>
+    Math.min(STAGE_VISIBLE_STEP, stage.deals.length),
+  );
+
+  useEffect(() => {
+    setVisibleCount(Math.min(STAGE_VISIBLE_STEP, stage.deals.length));
+  }, [stage.id, stage.deals.length]);
+
+  const visibleDeals = useMemo(
+    () => stage.deals.slice(0, visibleCount),
+    [stage.deals, visibleCount],
+  );
+  const hiddenCount = Math.max(0, stage.deals.length - visibleCount);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -405,7 +426,7 @@ function FunnelStageColumn({
           </button>
         )}
 
-        <span className="kanban-column__count">{stage.deals.length}</span>
+        <span className="kanban-column__count">{stage.dealTotal ?? stage.deals.length}</span>
 
         {canDelete ? (
           <button
@@ -420,14 +441,22 @@ function FunnelStageColumn({
         ) : null}
       </div>
 
-      <SortableContext
-        items={stage.deals.map((deal) => deal.id)}
-        strategy={verticalListSortingStrategy}
-      >
+      <SortableContext items={dealIds} strategy={verticalListSortingStrategy}>
         <div className="kanban-column__tasks">
-          {stage.deals.map((deal) => (
-            <DealCard key={deal.id} deal={deal} onOpen={() => onOpenDeal(deal.id)} />
+          {visibleDeals.map((deal) => (
+            <DealCard key={deal.id} deal={deal} onOpenDeal={onOpenDeal} />
           ))}
+          {hiddenCount > 0 ? (
+            <button
+              type="button"
+              className="kanban-column__show-more"
+              onClick={() =>
+                setVisibleCount((count) => Math.min(count + STAGE_VISIBLE_STEP, stage.deals.length))
+              }
+            >
+              Ещё {Math.min(STAGE_VISIBLE_STEP, hiddenCount)} из {hiddenCount}
+            </button>
+          ) : null}
         </div>
       </SortableContext>
 
@@ -477,7 +506,13 @@ function FunnelStageColumn({
   );
 }
 
-function DealCard({ deal, onOpen }: { deal: FunnelDeal; onOpen: () => void }) {
+const DealCard = memo(function DealCard({
+  deal,
+  onOpenDeal,
+}: {
+  deal: FunnelDeal;
+  onOpenDeal: (dealId: string) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: deal.id,
     data: { type: 'deal' as const, stageId: deal.stageId },
@@ -496,11 +531,11 @@ function DealCard({ deal, onOpen }: { deal: FunnelDeal; onOpen: () => void }) {
       ref={setNodeRef}
       style={style}
       className="kanban-task-card crm-deal-card"
-      onClick={onOpen}
+      onClick={() => onOpenDeal(deal.id)}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
-          onOpen();
+          onOpenDeal(deal.id);
         }
       }}
       role="button"
@@ -539,7 +574,7 @@ function DealCard({ deal, onOpen }: { deal: FunnelDeal; onOpen: () => void }) {
       </div>
     </div>
   );
-}
+});
 
 function AddStagePanel({ workspaceId, funnelId }: { workspaceId: string; funnelId: string }) {
   const createStageMutation = useCreateStageMutation(workspaceId, funnelId);

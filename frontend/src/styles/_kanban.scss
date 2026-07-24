@@ -220,6 +220,26 @@
     }
   }
 
+  &__show-more {
+    border: 1px dashed var(--tt-border);
+    background: transparent;
+    color: var(--tt-text-muted);
+    border-radius: $radius-sm;
+    padding: 0.5rem 0.625rem;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition:
+      color $transition-fast,
+      border-color $transition-fast,
+      background $transition-fast;
+
+    &:hover {
+      color: var(--tt-text);
+      border-color: var(--tt-brand);
+      background: color-mix(in srgb, var(--tt-brand) 6%, transparent);
+    }
+  }
+
   &__add {
     display: flex;
     flex-wrap: wrap;

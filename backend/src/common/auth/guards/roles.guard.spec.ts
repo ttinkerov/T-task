@@ -5,19 +5,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RolesGuard } from './roles.guard';
 
 describe('RolesGuard archive/delete gates', () => {
-  let findUnique: ReturnType<typeof vi.fn>;
+  let resolveGuardMembership: ReturnType<typeof vi.fn>;
   let guard: RolesGuard;
   let reflector: { getAllAndOverride: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    findUnique = vi.fn();
+    resolveGuardMembership = vi.fn();
     reflector = {
       getAllAndOverride: vi.fn().mockReturnValue([WorkspaceRole.MEMBER, WorkspaceRole.ADMIN]),
     };
     guard = new RolesGuard(
       reflector as unknown as Reflector,
       {
-        workspaceMember: { findUnique },
+        resolveGuardMembership,
       } as never,
     );
   });
@@ -40,19 +40,15 @@ describe('RolesGuard archive/delete gates', () => {
   }
 
   it('rejects members of archived workspaces', async () => {
-    findUnique.mockResolvedValue({
-      role: WorkspaceRole.MEMBER,
-      scopes: [],
-      workspace: { deletedAt: null, archivedAt: new Date() },
-    });
+    resolveGuardMembership.mockRejectedValue(new ForbiddenException('Workspace is archived'));
     await expect(guard.canActivate(context() as never)).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('allows admins on archived workspaces', async () => {
-    findUnique.mockResolvedValue({
+    resolveGuardMembership.mockResolvedValue({
+      workspaceId: 'ws1',
       role: WorkspaceRole.ADMIN,
       scopes: [],
-      workspace: { deletedAt: null, archivedAt: new Date() },
     });
     reflector.getAllAndOverride.mockReturnValue([
       WorkspaceRole.ADMIN,
@@ -63,11 +59,7 @@ describe('RolesGuard archive/delete gates', () => {
   });
 
   it('rejects deleted workspaces', async () => {
-    findUnique.mockResolvedValue({
-      role: WorkspaceRole.OWNER,
-      scopes: [],
-      workspace: { deletedAt: new Date(), archivedAt: null },
-    });
+    resolveGuardMembership.mockResolvedValue(null);
     await expect(guard.canActivate(context() as never)).rejects.toBeInstanceOf(ForbiddenException);
   });
 });

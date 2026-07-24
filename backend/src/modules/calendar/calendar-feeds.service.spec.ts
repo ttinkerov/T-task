@@ -137,7 +137,6 @@ describe('CalendarFeedsService', () => {
       {
         id: 'task-1',
         title: 'Дедлайн',
-        description: null,
         dueDate: new Date('2026-07-20T12:00:00.000Z'),
         updatedAt: UPDATED_AT,
         completedAt: null,

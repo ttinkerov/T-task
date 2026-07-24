@@ -1072,35 +1072,17 @@ export class TasksService {
   }
 
   private async closeGap(tx: Prisma.TransactionClient, columnId: string, removedPosition: number) {
-    const tasks = await tx.task.findMany({
+    await tx.task.updateMany({
       where: { columnId, deletedAt: null, position: { gt: removedPosition } },
-      orderBy: { position: 'asc' },
+      data: { position: { decrement: 1 } },
     });
-
-    await Promise.all(
-      tasks.map((item) =>
-        tx.task.update({
-          where: { id: item.id },
-          data: { position: item.position - 1 },
-        }),
-      ),
-    );
   }
 
   private async makeSpace(tx: Prisma.TransactionClient, columnId: string, position: number) {
-    const tasks = await tx.task.findMany({
+    await tx.task.updateMany({
       where: { columnId, deletedAt: null, position: { gte: position } },
-      orderBy: { position: 'desc' },
+      data: { position: { increment: 1 } },
     });
-
-    await Promise.all(
-      tasks.map((item) =>
-        tx.task.update({
-          where: { id: item.id },
-          data: { position: item.position + 1 },
-        }),
-      ),
-    );
   }
 
   private toTask(task: {

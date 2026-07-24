@@ -15,6 +15,8 @@ import { createDefaultFunnel } from './utils/create-default-funnel.util';
 import { ActivityService } from '../activity/activity.service';
 import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
 
+const FUNNEL_STAGE_DEAL_LIMIT = 200;
+
 @Injectable()
 export class FunnelsService {
   constructor(
@@ -71,7 +73,7 @@ export class FunnelsService {
             deals: {
               where: { deletedAt: null },
               orderBy: { position: 'asc' },
-              take: 200,
+              take: FUNNEL_STAGE_DEAL_LIMIT,
               select: {
                 id: true,
                 title: true,
@@ -85,6 +87,11 @@ export class FunnelsService {
                 assignee: {
                   select: { id: true, name: true, email: true, avatarUrl: true },
                 },
+              },
+            },
+            _count: {
+              select: {
+                deals: { where: { deletedAt: null } },
               },
             },
           },
@@ -104,6 +111,8 @@ export class FunnelsService {
         id: stage.id,
         name: stage.name,
         position: stage.position,
+        dealTotal: stage._count.deals,
+        truncated: stage.deals.length < stage._count.deals,
         deals: stage.deals.map((deal) => this.serializeDeal(deal)),
       })),
     };

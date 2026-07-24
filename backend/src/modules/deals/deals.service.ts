@@ -196,34 +196,16 @@ export class DealsService {
   }
 
   private async closeGap(tx: Prisma.TransactionClient, stageId: string, removedPosition: number) {
-    const deals = await tx.deal.findMany({
+    await tx.deal.updateMany({
       where: { stageId, deletedAt: null, position: { gt: removedPosition } },
-      orderBy: { position: 'asc' },
+      data: { position: { decrement: 1 } },
     });
-
-    await Promise.all(
-      deals.map((item) =>
-        tx.deal.update({
-          where: { id: item.id },
-          data: { position: item.position - 1 },
-        }),
-      ),
-    );
   }
 
   private async makeSpace(tx: Prisma.TransactionClient, stageId: string, position: number) {
-    const deals = await tx.deal.findMany({
+    await tx.deal.updateMany({
       where: { stageId, deletedAt: null, position: { gte: position } },
-      orderBy: { position: 'desc' },
+      data: { position: { increment: 1 } },
     });
-
-    await Promise.all(
-      deals.map((item) =>
-        tx.deal.update({
-          where: { id: item.id },
-          data: { position: item.position + 1 },
-        }),
-      ),
-    );
   }
 }

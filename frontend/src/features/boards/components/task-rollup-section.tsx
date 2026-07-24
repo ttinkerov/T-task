@@ -2,9 +2,14 @@
 
 import { useMemo } from 'react';
 import { useTaskDealsQuery } from '@/features/crm/hooks';
+import type { TaskDealLink } from '@/features/crm/deal-task-types';
 import { useTaskRelationsQuery } from '../hooks';
+import type { TaskRelation } from '../types';
 import { computeTaskLinkRollup, formatRollupAmount, formatRollupDue } from '../lib/task-rollup';
 import { FieldHint } from './field-hint';
+
+const EMPTY_RELATIONS: TaskRelation[] = [];
+const EMPTY_DEALS: TaskDealLink[] = [];
 
 export function TaskRollupSection({
   workspaceId,
@@ -16,8 +21,8 @@ export function TaskRollupSection({
   const relationsQuery = useTaskRelationsQuery(workspaceId, taskId);
   const dealsQuery = useTaskDealsQuery(workspaceId, taskId);
 
-  const relations = relationsQuery.data ?? [];
-  const deals = dealsQuery.data ?? [];
+  const relations = relationsQuery.data ?? EMPTY_RELATIONS;
+  const deals = dealsQuery.data ?? EMPTY_DEALS;
 
   const rollup = useMemo(
     () =>

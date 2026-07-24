@@ -263,6 +263,7 @@ model BoardColumn {
   automations ColumnAutomation[]
 
   @@index([boardId])
+  @@index([boardId, deletedAt])
   @@map("board_columns")
 }
 
@@ -313,7 +314,9 @@ model Task {
 
   @@index([columnId])
   @@index([columnId, deletedAt])
+  @@index([columnId, deletedAt, position])
   @@index([assigneeId])
+  @@index([assigneeId, dueDate])
   @@index([deletedAt])
   @@index([dueDate])
   @@index([completedAt])
@@ -653,6 +656,7 @@ model Deal {
   taskLinks DealTask[]
 
   @@index([stageId])
+  @@index([stageId, deletedAt, position])
   @@index([assigneeId])
   @@index([deletedAt])
   @@map("deals")

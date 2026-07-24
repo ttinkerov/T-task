@@ -6,7 +6,7 @@ import {
   useDeleteTaskRelationMutation,
   useTaskRelationsQuery,
 } from '../hooks';
-import type { TaskRelationCandidate, TaskRelationType } from '../types';
+import type { TaskRelation, TaskRelationCandidate, TaskRelationType } from '../types';
 import { FieldHint } from './field-hint';
 
 const RELATION_OPTIONS: Array<{
@@ -43,6 +43,8 @@ const RELATION_ICONS: Record<TaskRelationType, string> = {
   RELATES_TO: '↔',
 };
 
+const EMPTY_RELATIONS: TaskRelation[] = [];
+
 interface TaskRelationsSectionProps {
   workspaceId: string;
   taskId: string;
@@ -62,7 +64,7 @@ export function TaskRelationsSection({
   const [type, setType] = useState<TaskRelationType>('WAITING_FOR');
   const [relatedTaskId, setRelatedTaskId] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const relations = relationsQuery.data ?? [];
+  const relations = relationsQuery.data ?? EMPTY_RELATIONS;
   const availableCandidates = useMemo(() => {
     const relatedIds = new Set(relations.map((relation) => relation.task.id));
     return candidates.filter(

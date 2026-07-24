@@ -8,7 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { WorkspaceRole } from '@prisma/client';
 import { Request } from 'express';
-import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
+import { WorkspacesService } from '../../../modules/workspaces/workspaces.service';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { AuthenticatedUser, WORKSPACE_ID_HEADER } from '../interfaces/authenticated-user.interface';
 
@@ -16,7 +16,7 @@ import { AuthenticatedUser, WORKSPACE_ID_HEADER } from '../interfaces/authentica
 export class RolesGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    private readonly prisma: PrismaService,
+    private readonly workspacesService: WorkspacesService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -53,39 +53,20 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('Workspace context is required');
     }
 
-    const membership = await this.prisma.workspaceMember.findUnique({
-      where: {
-        workspaceId_userId: {
-          workspaceId,
-          userId: request.user.id,
-        },
-      },
-      include: {
-        workspace: { select: { deletedAt: true, archivedAt: true } },
-      },
-    });
+    const membership = await this.workspacesService.resolveGuardMembership(
+      workspaceId,
+      request.user.id,
+    );
 
-    if (!membership || membership.workspace.deletedAt) {
+    if (!membership) {
       throw new ForbiddenException('You are not a member of this workspace');
-    }
-
-    if (membership.workspace.archivedAt) {
-      const isAdmin =
-        membership.role === WorkspaceRole.OWNER || membership.role === WorkspaceRole.ADMIN;
-      if (!isAdmin) {
-        throw new ForbiddenException('Workspace is archived');
-      }
     }
 
     if (!requiredRoles.includes(membership.role)) {
       throw new ForbiddenException('Insufficient permissions');
     }
 
-    request.workspaceMembership = {
-      workspaceId,
-      role: membership.role,
-      scopes: membership.scopes ?? [],
-    };
+    request.workspaceMembership = membership;
 
     return true;
   }

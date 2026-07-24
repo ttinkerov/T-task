@@ -86,6 +86,7 @@ describe('DealTasksService', () => {
         columnId: 'column-1',
         columnName: 'In progress',
         completed: false,
+        dueDate: null,
       },
     });
 
