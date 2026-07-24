@@ -150,7 +150,7 @@ export function DashboardShell({
         label: 'Работа',
         items: [
           { href: '/dashboard', label: 'Главная', icon: Home },
-          { href: '/dashboard/board', label: 'Доска', icon: Kanban },
+          { href: '/dashboard/board', label: 'Задачи', icon: Kanban },
           { href: '/dashboard/all-tasks', label: 'Все задачи', icon: ListTodo },
           { href: '/dashboard/roadmap', label: 'Роадмап', icon: Milestone },
           { href: '/dashboard/my-tasks', label: 'Мои задачи', icon: UserRound },
@@ -190,7 +190,7 @@ export function DashboardShell({
         label: 'Система',
         items: [
           { href: '/dashboard/apps', label: 'Приложения', icon: AppWindow },
-          { href: '/dashboard/calendar', label: 'Календарь', icon: CalendarDays },
+          { href: '/dashboard/calendar', label: 'iCal', icon: CalendarDays },
           { href: '/dashboard/custom-fields', label: 'Поля', icon: Settings },
           { href: '/dashboard/dod', label: 'DoD', icon: ListChecks },
           { href: '/dashboard/import', label: 'Импорт', icon: Upload },
@@ -231,7 +231,7 @@ export function DashboardShell({
       ...navItems,
       {
         id: 'cmd-board',
-        label: 'Открыть доску',
+        label: 'Открыть задачи',
         href: '/dashboard/board',
         icon: Kanban,
         group: 'Быстрые действия',
@@ -313,8 +313,8 @@ export function DashboardShell({
   }
 
   const mobileItems = [
-    { href: '/dashboard/board', label: 'Доска', icon: Kanban },
-    { href: '/dashboard/all-tasks', label: 'Задачи', icon: ListTodo },
+    { href: '/dashboard/board', label: 'Задачи', icon: Kanban },
+    { href: '/dashboard/all-tasks', label: 'Все', icon: ListTodo },
     { href: '/dashboard/my-tasks', label: 'Мои', icon: UserRound },
     { href: '/dashboard/crm', label: 'CRM', icon: ClipboardList },
   ];

@@ -1,4 +1,38 @@
-export type BoardViewMode = 'BOARD' | 'LIST' | 'WEEK' | 'MONTH' | 'GANTT';
+export type BoardViewMode = 'BOARD' | 'TABLE' | 'CALENDAR' | 'TIMELINE';
+export type CalendarRange = 'WEEK' | 'MONTH';
+
+export const BOARD_VIEW_MODES: BoardViewMode[] = ['BOARD', 'TABLE', 'CALENDAR', 'TIMELINE'];
+export const CALENDAR_RANGES: CalendarRange[] = ['WEEK', 'MONTH'];
+
+const LEGACY_VIEW_MODE_MAP: Record<string, BoardViewMode> = {
+  BOARD: 'BOARD',
+  LIST: 'TABLE',
+  TABLE: 'TABLE',
+  WEEK: 'CALENDAR',
+  MONTH: 'CALENDAR',
+  CALENDAR: 'CALENDAR',
+  GANTT: 'TIMELINE',
+  TIMELINE: 'TIMELINE',
+};
+
+/** Maps current + legacy stored values onto the four product views. */
+export function normalizeBoardViewMode(value: string | null | undefined): BoardViewMode | null {
+  if (!value) return null;
+  return LEGACY_VIEW_MODE_MAP[value] ?? null;
+}
+
+/** If the stored value was WEEK/MONTH, recover the calendar range. */
+export function calendarRangeFromStoredView(
+  value: string | null | undefined,
+): CalendarRange | null {
+  if (value === 'WEEK' || value === 'MONTH') return value;
+  return null;
+}
+
+export function normalizeCalendarRange(value: string | null | undefined): CalendarRange | null {
+  if (value === 'WEEK' || value === 'MONTH') return value;
+  return null;
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

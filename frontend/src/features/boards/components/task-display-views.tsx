@@ -9,39 +9,48 @@ import {
   startOfWeek,
   toDateKey,
   type BoardViewMode,
+  type CalendarRange,
 } from '../lib/task-view-utils';
 
 const VIEW_OPTIONS: { value: BoardViewMode; label: string; icon: string }[] = [
-  { value: 'BOARD', label: 'Доски', icon: '▦' },
-  { value: 'LIST', label: 'Список', icon: '☷' },
-  { value: 'WEEK', label: 'Неделя', icon: '7' },
-  { value: 'MONTH', label: 'Месяц', icon: '□' },
-  { value: 'GANTT', label: 'Гант', icon: '↔' },
+  { value: 'BOARD', label: 'Доска', icon: '▦' },
+  { value: 'TABLE', label: 'Таблица', icon: '☷' },
+  { value: 'CALENDAR', label: 'Календарь', icon: '□' },
+  { value: 'TIMELINE', label: 'Таймлайн', icon: '↔' },
+];
+
+const CALENDAR_RANGE_OPTIONS: { value: CalendarRange; label: string }[] = [
+  { value: 'WEEK', label: 'Неделя' },
+  { value: 'MONTH', label: 'Месяц' },
 ];
 
 interface ViewToolbarProps {
   mode: BoardViewMode;
   anchor: Date;
+  calendarRange?: CalendarRange;
   modes?: BoardViewMode[];
   onModeChange: (mode: BoardViewMode) => void;
   onAnchorChange: (date: Date) => void;
+  onCalendarRangeChange?: (range: CalendarRange) => void;
 }
 
 export function TaskViewToolbar({
   mode,
   anchor,
+  calendarRange = 'WEEK',
   modes,
   onModeChange,
   onAnchorChange,
+  onCalendarRangeChange,
 }: ViewToolbarProps) {
-  const hasDateNavigation = mode === 'WEEK' || mode === 'MONTH' || mode === 'GANTT';
-  const step = mode === 'MONTH' ? 1 : mode === 'WEEK' ? 7 : 14;
+  const hasDateNavigation = mode === 'CALENDAR' || mode === 'TIMELINE';
+  const step = mode === 'CALENDAR' && calendarRange === 'MONTH' ? 1 : mode === 'CALENDAR' ? 7 : 14;
   const label =
-    mode === 'MONTH'
+    mode === 'CALENDAR' && calendarRange === 'MONTH'
       ? anchor.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
-      : mode === 'WEEK'
+      : mode === 'CALENDAR'
         ? formatRange(buildWeekDays(anchor))
-        : mode === 'GANTT'
+        : mode === 'TIMELINE'
           ? formatRange(
               Array.from({ length: 14 }, (_, index) => addDays(startOfWeek(anchor), index)),
             )
@@ -49,55 +58,78 @@ export function TaskViewToolbar({
 
   return (
     <div className="task-view-toolbar">
-      <div className="task-view-toolbar__modes" role="group" aria-label="Режим отображения">
-        {VIEW_OPTIONS.filter((option) => !modes || modes.includes(option.value)).map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            className={mode === option.value ? 'task-view-toolbar__mode--active' : undefined}
-            onClick={() => onModeChange(option.value)}
-            aria-pressed={mode === option.value}
-          >
-            <span aria-hidden="true">{option.icon}</span>
-            {option.label}
-          </button>
-        ))}
+      <div className="task-view-toolbar__lead">
+        <p className="task-view-toolbar__eyebrow">Одна база задач</p>
+        <div className="task-view-toolbar__modes" role="group" aria-label="Вид">
+          {VIEW_OPTIONS.filter((option) => !modes || modes.includes(option.value)).map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={mode === option.value ? 'task-view-toolbar__mode--active' : undefined}
+              onClick={() => onModeChange(option.value)}
+              aria-pressed={mode === option.value}
+            >
+              <span aria-hidden="true">{option.icon}</span>
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {hasDateNavigation ? (
-        <div className="task-view-toolbar__dates">
-          <button
-            type="button"
-            onClick={() =>
-              onAnchorChange(
-                mode === 'MONTH'
-                  ? new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1)
-                  : addDays(anchor, -step),
-              )
-            }
-            aria-label="Предыдущий период"
-          >
-            ‹
-          </button>
-          <button type="button" onClick={() => onAnchorChange(new Date())}>
-            Сегодня
-          </button>
-          <strong>{label}</strong>
-          <button
-            type="button"
-            onClick={() =>
-              onAnchorChange(
-                mode === 'MONTH'
-                  ? new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1)
-                  : addDays(anchor, step),
-              )
-            }
-            aria-label="Следующий период"
-          >
-            ›
-          </button>
-        </div>
-      ) : null}
+      <div className="task-view-toolbar__controls">
+        {mode === 'CALENDAR' && onCalendarRangeChange ? (
+          <div className="task-view-toolbar__ranges" role="group" aria-label="Период календаря">
+            {CALENDAR_RANGE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={
+                  calendarRange === option.value ? 'task-view-toolbar__mode--active' : undefined
+                }
+                onClick={() => onCalendarRangeChange(option.value)}
+                aria-pressed={calendarRange === option.value}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {hasDateNavigation ? (
+          <div className="task-view-toolbar__dates">
+            <button
+              type="button"
+              onClick={() =>
+                onAnchorChange(
+                  mode === 'CALENDAR' && calendarRange === 'MONTH'
+                    ? new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1)
+                    : addDays(anchor, -step),
+                )
+              }
+              aria-label="Предыдущий период"
+            >
+              ‹
+            </button>
+            <button type="button" onClick={() => onAnchorChange(new Date())}>
+              Сегодня
+            </button>
+            <strong>{label}</strong>
+            <button
+              type="button"
+              onClick={() =>
+                onAnchorChange(
+                  mode === 'CALENDAR' && calendarRange === 'MONTH'
+                    ? new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1)
+                    : addDays(anchor, step),
+                )
+              }
+              aria-label="Следующий период"
+            >
+              ›
+            </button>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -106,32 +138,35 @@ export function TaskDisplayView({
   mode,
   columns,
   anchor,
+  calendarRange = 'WEEK',
   onOpenTask,
 }: {
   mode: Exclude<BoardViewMode, 'BOARD'>;
   columns: BoardColumn[];
   anchor: Date;
+  calendarRange?: CalendarRange;
   onOpenTask: (taskId: string) => void;
 }) {
   const tasks = columns.flatMap((column) =>
     column.tasks.map((task) => ({ task, columnName: column.name })),
   );
 
-  if (mode === 'LIST') {
-    return <TaskListView tasks={tasks} onOpenTask={onOpenTask} />;
+  if (mode === 'TABLE') {
+    return <TaskTableView tasks={tasks} onOpenTask={onOpenTask} />;
   }
-  if (mode === 'WEEK') {
-    return <TaskWeekView tasks={tasks} anchor={anchor} onOpenTask={onOpenTask} />;
+  if (mode === 'CALENDAR') {
+    return calendarRange === 'MONTH' ? (
+      <TaskMonthView tasks={tasks} anchor={anchor} onOpenTask={onOpenTask} />
+    ) : (
+      <TaskWeekView tasks={tasks} anchor={anchor} onOpenTask={onOpenTask} />
+    );
   }
-  if (mode === 'MONTH') {
-    return <TaskMonthView tasks={tasks} anchor={anchor} onOpenTask={onOpenTask} />;
-  }
-  return <TaskGanttView tasks={tasks} anchor={anchor} onOpenTask={onOpenTask} />;
+  return <TaskTimelineView tasks={tasks} anchor={anchor} onOpenTask={onOpenTask} />;
 }
 
 type DisplayTask = { task: BoardTask; columnName: string };
 
-function TaskListView({
+function TaskTableView({
   tasks,
   onOpenTask,
 }: {
@@ -143,7 +178,7 @@ function TaskListView({
   return (
     <div className="task-list-view">
       <table>
-        <caption className="sr-only">Список задач с исполнителями, статусами и дедлайнами</caption>
+        <caption className="sr-only">Таблица задач с исполнителями, статусами и дедлайнами</caption>
         <thead>
           <tr>
             <th scope="col">Задача</th>
@@ -280,7 +315,7 @@ function TaskMonthView({
   );
 }
 
-function TaskGanttView({
+function TaskTimelineView({
   tasks,
   anchor,
   onOpenTask,

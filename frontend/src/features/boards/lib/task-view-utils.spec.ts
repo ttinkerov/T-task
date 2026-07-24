@@ -1,5 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import { buildMonthGrid, buildWeekDays, getTimelinePlacement, toDateKey } from './task-view-utils';
+import {
+  buildMonthGrid,
+  buildWeekDays,
+  calendarRangeFromStoredView,
+  getTimelinePlacement,
+  normalizeBoardViewMode,
+  toDateKey,
+} from './task-view-utils';
+
+describe('normalizeBoardViewMode', () => {
+  it('keeps the four product views', () => {
+    expect(normalizeBoardViewMode('BOARD')).toBe('BOARD');
+    expect(normalizeBoardViewMode('TABLE')).toBe('TABLE');
+    expect(normalizeBoardViewMode('CALENDAR')).toBe('CALENDAR');
+    expect(normalizeBoardViewMode('TIMELINE')).toBe('TIMELINE');
+  });
+
+  it('migrates legacy list / week / month / gantt values', () => {
+    expect(normalizeBoardViewMode('LIST')).toBe('TABLE');
+    expect(normalizeBoardViewMode('WEEK')).toBe('CALENDAR');
+    expect(normalizeBoardViewMode('MONTH')).toBe('CALENDAR');
+    expect(normalizeBoardViewMode('GANTT')).toBe('TIMELINE');
+    expect(calendarRangeFromStoredView('WEEK')).toBe('WEEK');
+    expect(calendarRangeFromStoredView('MONTH')).toBe('MONTH');
+    expect(calendarRangeFromStoredView('LIST')).toBeNull();
+  });
+});
 
 describe('task view date utilities', () => {
   it('builds a Monday-first seven-day week', () => {

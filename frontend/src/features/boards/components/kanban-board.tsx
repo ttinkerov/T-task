@@ -45,7 +45,13 @@ import { celebrateTaskComplete } from '@/shared/lib/celebrate';
 import { formatMinutes } from '@/shared/lib/format-duration';
 import { formatRecurrenceLabel } from '@/shared/lib/format-recurrence';
 import { formatAgingLabel, getAgingLevel, isDoneColumn, isTaskOverdue } from '../lib/overdue';
-import type { BoardViewMode } from '../lib/task-view-utils';
+import {
+  calendarRangeFromStoredView,
+  normalizeBoardViewMode,
+  normalizeCalendarRange,
+  type BoardViewMode,
+  type CalendarRange,
+} from '../lib/task-view-utils';
 import {
   useBoardQuery,
   useCreateColumnMutation,
@@ -72,7 +78,6 @@ import { TaskDisplayView, TaskViewToolbar } from './task-display-views';
 import { TaskDetailDrawer } from './task-detail-drawer';
 
 type DragType = 'column' | 'task';
-const BOARD_VIEW_MODES: BoardViewMode[] = ['BOARD', 'LIST', 'WEEK', 'MONTH', 'GANTT'];
 
 export function KanbanBoard({
   workspaceId,
@@ -104,6 +109,7 @@ export function KanbanBoard({
   const [filters, setFilters] = useState<BoardFilters>(EMPTY_BOARD_FILTERS);
   const [moveError, setMoveError] = useState('');
   const [viewMode, setViewMode] = useState<BoardViewMode>('BOARD');
+  const [calendarRange, setCalendarRange] = useState<CalendarRange>('WEEK');
   const [viewAnchor, setViewAnchor] = useState(() => new Date());
 
   const sensors = useSensors(
@@ -155,7 +161,9 @@ export function KanbanBoard({
   }, [board, initialTaskId]);
 
   useEffect(() => {
-    setViewMode(readStoredViewMode(workspaceId));
+    const stored = readStoredViewPrefs(workspaceId);
+    setViewMode(stored.mode);
+    setCalendarRange(stored.calendarRange);
     setViewAnchor(new Date());
     setBoardId(null);
     setFilters(EMPTY_BOARD_FILTERS);
@@ -298,12 +306,17 @@ export function KanbanBoard({
       <TaskViewToolbar
         mode={viewMode}
         anchor={viewAnchor}
+        calendarRange={calendarRange}
         onModeChange={(mode) => {
           setMoveError('');
           setViewMode(mode);
           storeViewMode(workspaceId, mode);
         }}
         onAnchorChange={setViewAnchor}
+        onCalendarRangeChange={(range) => {
+          setCalendarRange(range);
+          storeCalendarRange(workspaceId, range);
+        }}
       />
       <BoardSwitcher
         workspaceId={workspaceId}
@@ -401,6 +414,7 @@ export function KanbanBoard({
           mode={viewMode as Exclude<BoardViewMode, 'BOARD'>}
           columns={filteredColumns}
           anchor={viewAnchor}
+          calendarRange={calendarRange}
           onOpenTask={setSelectedTaskId}
         />
       )}
@@ -1032,13 +1046,20 @@ function toPlainMentionText(text: string, memberNames: Map<string, string>) {
     .join('');
 }
 
-function readStoredViewMode(workspaceId: string): BoardViewMode {
+function readStoredViewPrefs(workspaceId: string): {
+  mode: BoardViewMode;
+  calendarRange: CalendarRange;
+} {
   try {
     const stored = window.localStorage.getItem(`ttask:view-mode:${workspaceId}`);
-    return BOARD_VIEW_MODES.includes(stored as BoardViewMode) ? (stored as BoardViewMode) : 'BOARD';
+    const mode = normalizeBoardViewMode(stored) ?? 'BOARD';
+    const storedRange = window.localStorage.getItem(`ttask:calendar-range:${workspaceId}`);
+    const calendarRange =
+      normalizeCalendarRange(storedRange) ?? calendarRangeFromStoredView(stored) ?? 'WEEK';
+    return { mode, calendarRange };
   } catch (error) {
     console.warn('Unable to read the saved board view mode', error);
-    return 'BOARD';
+    return { mode: 'BOARD', calendarRange: 'WEEK' };
   }
 }
 
@@ -1047,6 +1068,14 @@ function storeViewMode(workspaceId: string, mode: BoardViewMode) {
     window.localStorage.setItem(`ttask:view-mode:${workspaceId}`, mode);
   } catch (error) {
     console.warn('Unable to save the board view mode', error);
+  }
+}
+
+function storeCalendarRange(workspaceId: string, range: CalendarRange) {
+  try {
+    window.localStorage.setItem(`ttask:calendar-range:${workspaceId}`, range);
+  } catch (error) {
+    console.warn('Unable to save the calendar range', error);
   }
 }
 

@@ -124,9 +124,9 @@ export function RoadmapPage({
     <section className="roadmap">
       <header className="roadmap__header">
         <div>
-          <p className="roadmap__eyebrow">Портфель</p>
+          <p className="roadmap__eyebrow">Рядом с видами задач</p>
           <h1>Роадмап</h1>
-          <p>Эпики и сроки по месяцам — лёгкая лента без тяжёлого Gantt.</p>
+          <p>Эпики и сроки по месяцам — та же база задач, другой масштаб.</p>
         </div>
         <strong>{datedEpics.length + undatedEpics.length} эпиков</strong>
       </header>

@@ -8,6 +8,10 @@ import {
   type BoardColumn,
   type BoardFilters,
   type BoardViewMode,
+  type CalendarRange,
+  normalizeBoardViewMode,
+  normalizeCalendarRange,
+  calendarRangeFromStoredView,
 } from '@/features/boards';
 import { SavedFiltersControl } from '@/features/saved-filters';
 import { downloadExport } from '@/features/workspace-tools/api';
@@ -24,7 +28,7 @@ import {
   type SortOrder,
 } from '../types';
 
-const VIEW_MODES: BoardViewMode[] = ['LIST', 'WEEK', 'MONTH', 'GANTT'];
+const VIEW_MODES: BoardViewMode[] = ['TABLE', 'CALENDAR', 'TIMELINE'];
 const PAGE_SIZE = 50;
 
 export function AllTasksPage({
@@ -51,7 +55,8 @@ export function AllTasksPage({
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<AllTasksSort>('CREATED_AT');
   const [sortOrder, setSortOrder] = useState<SortOrder>('DESC');
-  const [viewMode, setViewMode] = useState<BoardViewMode>('LIST');
+  const [viewMode, setViewMode] = useState<BoardViewMode>('TABLE');
+  const [calendarRange, setCalendarRange] = useState<CalendarRange>('WEEK');
   const [viewAnchor, setViewAnchor] = useState(() => new Date());
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
@@ -65,8 +70,14 @@ export function AllTasksPage({
 
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem(storageKey) as BoardViewMode | null;
-      if (saved && VIEW_MODES.includes(saved)) setViewMode(saved);
+      const saved = window.localStorage.getItem(storageKey);
+      const mode = normalizeBoardViewMode(saved);
+      if (mode && VIEW_MODES.includes(mode)) setViewMode(mode);
+      const rangeKey = `${storageKey}:calendar-range`;
+      const storedRange = window.localStorage.getItem(rangeKey);
+      setCalendarRange(
+        normalizeCalendarRange(storedRange) ?? calendarRangeFromStoredView(saved) ?? 'WEEK',
+      );
     } catch (error) {
       console.warn('Не удалось восстановить режим всех задач', error);
     }
@@ -147,6 +158,15 @@ export function AllTasksPage({
     }
   };
 
+  const changeCalendarRange = (range: CalendarRange) => {
+    setCalendarRange(range);
+    try {
+      window.localStorage.setItem(`${storageKey}:calendar-range`, range);
+    } catch (error) {
+      console.warn('Не удалось сохранить период календаря', error);
+    }
+  };
+
   return (
     <section className="all-tasks" aria-labelledby="all-tasks-title">
       <header className="all-tasks__header">
@@ -162,8 +182,10 @@ export function AllTasksPage({
         mode={viewMode}
         modes={VIEW_MODES}
         anchor={viewAnchor}
+        calendarRange={calendarRange}
         onModeChange={changeViewMode}
         onAnchorChange={setViewAnchor}
+        onCalendarRangeChange={changeCalendarRange}
       />
 
       <fieldset className="all-tasks__filters">
@@ -326,6 +348,7 @@ export function AllTasksPage({
             mode={viewMode as Exclude<BoardViewMode, 'BOARD'>}
             columns={columns}
             anchor={viewAnchor}
+            calendarRange={calendarRange}
             onOpenTask={setSelectedTaskId}
           />
         </div>
