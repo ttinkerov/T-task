@@ -29,6 +29,7 @@ import {
   useDeleteStageMutation,
   useFunnelQuery,
   useFunnelsQuery,
+  useLoadMoreStageDealsMutation,
   useMoveDealMutation,
   useMoveStageMutation,
   useUpdateStageMutation,
@@ -214,8 +215,8 @@ function FunnelBoardView({ workspaceId, funnel }: { workspaceId: string; funnel:
   return (
     <>
       {funnel.stages.some((stage) => stage.truncated) ? (
-        <p className="kanban-board__error" role="status">
-          В этапе показано до 200 сделок. Остальные откройте через поиск или фильтры.
+        <p className="text-sm text-muted-foreground" role="status">
+          В некоторых этапах загружена только часть сделок — нажмите «Загрузить ещё» внизу этапа.
         </p>
       ) : null}
       <DndContext
@@ -325,6 +326,7 @@ function FunnelStageColumn({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
   const createMutation = useCreateDealMutation(workspaceId, funnelId);
+  const loadMoreMutation = useLoadMoreStageDealsMutation(workspaceId, funnelId);
   const { data: dealTemplates = [] } = useDealTemplatesQuery(workspaceId);
   const updateStageMutation = useUpdateStageMutation(workspaceId, funnelId);
   const deleteStageMutation = useDeleteStageMutation(workspaceId, funnelId);
@@ -338,7 +340,7 @@ function FunnelStageColumn({
   );
 
   useEffect(() => {
-    setVisibleCount(Math.min(STAGE_VISIBLE_STEP, stage.deals.length));
+    setVisibleCount((count) => Math.min(Math.max(count, STAGE_VISIBLE_STEP), stage.deals.length));
   }, [stage.id, stage.deals.length]);
 
   const visibleDeals = useMemo(
@@ -346,6 +348,7 @@ function FunnelStageColumn({
     [stage.deals, visibleCount],
   );
   const hiddenCount = Math.max(0, stage.deals.length - visibleCount);
+  const remainingServer = Math.max(0, (stage.dealTotal ?? stage.deals.length) - stage.deals.length);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -426,7 +429,11 @@ function FunnelStageColumn({
           </button>
         )}
 
-        <span className="kanban-column__count">{stage.dealTotal ?? stage.deals.length}</span>
+        <span className="kanban-column__count">
+          {stage.truncated && stage.dealTotal
+            ? `${stage.deals.length}/${stage.dealTotal}`
+            : (stage.dealTotal ?? stage.deals.length)}
+        </span>
 
         {canDelete ? (
           <button
@@ -455,6 +462,21 @@ function FunnelStageColumn({
               }
             >
               Ещё {Math.min(STAGE_VISIBLE_STEP, hiddenCount)} из {hiddenCount}
+            </button>
+          ) : stage.truncated ? (
+            <button
+              type="button"
+              className="kanban-column__show-more"
+              disabled={loadMoreMutation.isPending}
+              onClick={() => {
+                void loadMoreMutation
+                  .mutateAsync({ stageId: stage.id, offset: stage.deals.length })
+                  .then((page) => {
+                    setVisibleCount((count) => count + page.items.length);
+                  });
+              }}
+            >
+              {loadMoreMutation.isPending ? 'Загрузка…' : `Загрузить ещё (${remainingServer})`}
             </button>
           ) : null}
         </div>

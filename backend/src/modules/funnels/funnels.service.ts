@@ -118,6 +118,70 @@ export class FunnelsService {
     };
   }
 
+  async listStageDeals(
+    workspaceId: string,
+    funnelId: string,
+    stageId: string,
+    userId: string,
+    offset = 0,
+    limit = 100,
+  ) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+
+    const stage = await this.prisma.funnelStage.findFirst({
+      where: {
+        id: stageId,
+        funnelId,
+        funnel: { workspaceId },
+      },
+      select: { id: true },
+    });
+
+    if (!stage) {
+      throw new NotFoundException('Stage not found');
+    }
+
+    const take = Math.min(Math.max(limit, 1), FUNNEL_STAGE_DEAL_LIMIT);
+    const skip = Math.max(offset, 0);
+
+    const [total, deals] = await Promise.all([
+      this.prisma.deal.count({
+        where: { stageId, deletedAt: null },
+      }),
+      this.prisma.deal.findMany({
+        where: { stageId, deletedAt: null },
+        orderBy: { position: 'asc' },
+        skip,
+        take,
+        select: {
+          id: true,
+          title: true,
+          amount: true,
+          contactName: true,
+          companyName: true,
+          assigneeId: true,
+          position: true,
+          stageId: true,
+          createdAt: true,
+          assignee: {
+            select: { id: true, name: true, email: true, avatarUrl: true },
+          },
+        },
+      }),
+    ]);
+
+    const loadedThrough = skip + deals.length;
+
+    return {
+      stageId,
+      items: deals.map((deal) => this.serializeDeal(deal)),
+      total,
+      offset: skip,
+      limit: take,
+      truncated: loadedThrough < total,
+    };
+  }
+
   async getFunnelForWorkspace(workspaceId: string, funnelId: string) {
     const funnel = await this.prisma.funnel.findFirst({
       where: { id: funnelId, workspaceId },

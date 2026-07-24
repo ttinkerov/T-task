@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
 import { ALL_WORKSPACE_ROLES, MEMBER_PLUS_ROLES } from '../../common/auth/workspace-roles';
@@ -8,6 +18,7 @@ import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard'
 import { FUNNEL_GET_RATE_LIMIT, RateLimit } from '../../common/security/rate-limit.decorator';
 import { CreateFunnelDto } from './dto/create-funnel.dto';
 import { CreateStageDto } from './dto/create-stage.dto';
+import { ListStageDealsQueryDto } from './dto/list-stage-deals-query.dto';
 import { MoveStageDto } from './dto/move-stage.dto';
 import { UpdateStageDto } from './dto/update-stage.dto';
 import { FunnelsService } from './funnels.service';
@@ -55,6 +66,28 @@ export class FunnelsController {
   ) {
     const funnel = await this.funnelsService.getFunnel(workspaceId, funnelId, user.id);
     return successResponse(funnel);
+  }
+
+  @Get(':funnelId/stages/:stageId/deals')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FUNNEL_GET_RATE_LIMIT)
+  @Roles(...ALL_WORKSPACE_ROLES)
+  async listStageDeals(
+    @Param('workspaceId') workspaceId: string,
+    @Param('funnelId') funnelId: string,
+    @Param('stageId') stageId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: ListStageDealsQueryDto,
+  ) {
+    const page = await this.funnelsService.listStageDeals(
+      workspaceId,
+      funnelId,
+      stageId,
+      user.id,
+      query.offset ?? 0,
+      query.limit ?? 100,
+    );
+    return successResponse(page);
   }
 
   @Post(':funnelId/stages')

@@ -1,6 +1,6 @@
 import { apiFetch } from '@/shared/api/client';
 import type { DealTaskLink, TaskDealLink } from './deal-task-types';
-import type { FunnelSummary, FunnelView, UpdateDealPayload } from './types';
+import type { FunnelDeal, FunnelSummary, FunnelView, UpdateDealPayload } from './types';
 
 function withWorkspace(workspaceId: string) {
   return { 'x-workspace-id': workspaceId };
@@ -16,6 +16,32 @@ export async function fetchFunnel(workspaceId: string, funnelId: string) {
   return apiFetch<FunnelView>(`/api/v1/workspaces/${workspaceId}/funnels/${funnelId}`, {
     headers: withWorkspace(workspaceId),
   });
+}
+
+export type StageDealsPage = {
+  stageId: string;
+  items: FunnelDeal[];
+  total: number;
+  offset: number;
+  limit: number;
+  truncated: boolean;
+};
+
+export async function fetchStageDeals(
+  workspaceId: string,
+  funnelId: string,
+  stageId: string,
+  offset: number,
+  limit = 100,
+) {
+  const params = new URLSearchParams({
+    offset: String(offset),
+    limit: String(limit),
+  });
+  return apiFetch<StageDealsPage>(
+    `/api/v1/workspaces/${workspaceId}/funnels/${funnelId}/stages/${stageId}/deals?${params}`,
+    { headers: withWorkspace(workspaceId) },
+  );
 }
 
 export async function createFunnel(workspaceId: string, name: string, templateId?: string) {

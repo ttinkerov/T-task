@@ -8,6 +8,7 @@ import {
   fetchDealTasks,
   fetchFunnel,
   fetchFunnels,
+  fetchStageDeals,
   fetchTaskDeals,
   linkDealTask,
   linkTaskDeal,
@@ -18,7 +19,7 @@ import {
   updateDeal,
   updateStage,
 } from './api';
-import type { FunnelView, UpdateDealPayload } from './types';
+import type { FunnelDeal, FunnelView, UpdateDealPayload } from './types';
 
 export const crmKeys = {
   all: ['crm'] as const,
@@ -51,6 +52,46 @@ export function useFunnelQuery(workspaceId: string | null, funnelId: string | nu
     },
     enabled: Boolean(workspaceId && funnelId),
     staleTime: 60_000,
+  });
+}
+
+export function useLoadMoreStageDealsMutation(workspaceId: string, funnelId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      stageId,
+      offset,
+      limit = 100,
+    }: {
+      stageId: string;
+      offset: number;
+      limit?: number;
+    }) => {
+      const response = await fetchStageDeals(workspaceId, funnelId, stageId, offset, limit);
+      return response.data!;
+    },
+    onSuccess: (page) => {
+      const key = crmKeys.funnel(workspaceId, funnelId);
+      queryClient.setQueryData<FunnelView>(key, (current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          stages: current.stages.map((stage) => {
+            if (stage.id !== page.stageId) return stage;
+            const seen = new Set(stage.deals.map((deal) => deal.id));
+            const appended = page.items.filter((deal) => !seen.has(deal.id));
+            const deals = [...stage.deals, ...appended] as FunnelDeal[];
+            return {
+              ...stage,
+              deals,
+              dealTotal: page.total,
+              truncated: page.truncated,
+            };
+          }),
+        };
+      });
+    },
   });
 }
 

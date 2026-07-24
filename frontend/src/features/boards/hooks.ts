@@ -14,6 +14,7 @@ import {
   duplicateTask,
   fetchBoard,
   fetchBoards,
+  fetchColumnTasks,
   fetchComments,
   fetchDefaultBoard,
   fetchTask,
@@ -27,6 +28,7 @@ import {
   bulkUpdateTasks,
 } from './api';
 import type {
+  BoardTask,
   BoardView,
   BulkUpdateTasksPayload,
   TaskRelationType,
@@ -96,6 +98,46 @@ export function useBoardQuery(
     },
     enabled: Boolean(workspaceId) && (boardId === undefined || Boolean(boardId)),
     staleTime: options?.staleTime ?? 60_000,
+  });
+}
+
+export function useLoadMoreColumnTasksMutation(workspaceId: string, boardId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      columnId,
+      offset,
+      limit = 100,
+    }: {
+      columnId: string;
+      offset: number;
+      limit?: number;
+    }) => {
+      const response = await fetchColumnTasks(workspaceId, boardId, columnId, offset, limit);
+      return response.data!;
+    },
+    onSuccess: (page) => {
+      const key = boardKeys.detail(workspaceId, boardId);
+      queryClient.setQueryData<BoardView>(key, (current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          columns: current.columns.map((column) => {
+            if (column.id !== page.columnId) return column;
+            const seen = new Set(column.tasks.map((task) => task.id));
+            const appended = page.items.filter((task) => !seen.has(task.id));
+            const tasks = [...column.tasks, ...appended] as BoardTask[];
+            return {
+              ...column,
+              tasks,
+              taskTotal: page.total,
+              truncated: page.truncated,
+            };
+          }),
+        };
+      });
+    },
   });
 }
 

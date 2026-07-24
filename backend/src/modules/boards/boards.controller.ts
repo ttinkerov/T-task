@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
 import {
@@ -13,6 +24,7 @@ import { BOARD_GET_RATE_LIMIT, RateLimit } from '../../common/security/rate-limi
 import { BoardsService } from './boards.service';
 import { CreateBoardDto } from './dto/create-board.dto';
 import { CreateColumnDto } from './dto/create-column.dto';
+import { ListColumnTasksQueryDto } from './dto/list-column-tasks-query.dto';
 import { MoveColumnDto } from './dto/move-column.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
 import { UpdateColumnDto } from './dto/update-column.dto';
@@ -158,6 +170,28 @@ export class WorkspaceBoardsController {
   ) {
     const board = await this.boardsService.getBoard(workspaceId, user.id, boardId);
     return successResponse(board);
+  }
+
+  @Get(':boardId/columns/:columnId/tasks')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(BOARD_GET_RATE_LIMIT)
+  @Roles(...ALL_WORKSPACE_ROLES)
+  async listColumnTasks(
+    @Param('workspaceId') workspaceId: string,
+    @Param('boardId') boardId: string,
+    @Param('columnId') columnId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: ListColumnTasksQueryDto,
+  ) {
+    const page = await this.boardsService.listColumnTasks(
+      workspaceId,
+      boardId,
+      columnId,
+      user.id,
+      query.offset ?? 0,
+      query.limit ?? 100,
+    );
+    return successResponse(page);
   }
 
   @Patch(':boardId')

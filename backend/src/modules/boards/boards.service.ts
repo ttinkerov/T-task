@@ -69,6 +69,63 @@ export class BoardsService {
     return this.serializeBoard(board);
   }
 
+  async listColumnTasks(
+    workspaceId: string,
+    boardId: string,
+    columnId: string,
+    userId: string,
+    offset = 0,
+    limit = 100,
+  ) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+
+    const column = await this.prisma.boardColumn.findFirst({
+      where: {
+        id: columnId,
+        deletedAt: null,
+        boardId,
+        board: { workspaceId },
+      },
+      select: { id: true },
+    });
+
+    if (!column) {
+      throw new NotFoundException('Column not found');
+    }
+
+    const take = Math.min(Math.max(limit, 1), BOARD_COLUMN_TASK_LIMIT);
+    const skip = Math.max(offset, 0);
+
+    const cardFieldCount = await this.prisma.customFieldDefinition.count({
+      where: { workspaceId, showOnCard: true },
+    });
+    const includeCardFields = cardFieldCount > 0;
+
+    const [total, tasks] = await Promise.all([
+      this.prisma.task.count({
+        where: { columnId, deletedAt: null },
+      }),
+      this.prisma.task.findMany({
+        where: { columnId, deletedAt: null },
+        orderBy: { position: 'asc' },
+        skip,
+        take,
+        select: this.boardCardTaskSelect(includeCardFields),
+      }),
+    ]);
+
+    const loadedThrough = skip + tasks.length;
+
+    return {
+      columnId,
+      items: tasks.map((task) => this.serializeTask(task)),
+      total,
+      offset: skip,
+      limit: take,
+      truncated: loadedThrough < total,
+    };
+  }
+
   async updateBoard(workspaceId: string, boardId: string, userId: string, dto: UpdateBoardDto) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
     await this.resolveBoardForWorkspace(workspaceId, boardId);
@@ -174,48 +231,7 @@ export class BoardsService {
               where: { deletedAt: null },
               orderBy: { position: 'asc' },
               take: BOARD_COLUMN_TASK_LIMIT,
-              select: {
-                id: true,
-                title: true,
-                // description omitted — load via GET /tasks/:id when drawer opens
-                priority: true,
-                complexity: true,
-                timeEstimateMinutes: true,
-                actualMinutes: true,
-                dueDate: true,
-                assigneeId: true,
-                position: true,
-                columnId: true,
-                recurrenceRule: true,
-                recurrenceAction: true,
-                recurrenceWeekdays: true,
-                recurrenceOriginColumnId: true,
-                overdueDays: true,
-                timerStartedAt: true,
-                completedAt: true,
-                createdAt: true,
-                sprintId: true,
-                isEpic: true,
-                epicId: true,
-                assignee: {
-                  select: { id: true, name: true, email: true, avatarUrl: true },
-                },
-                ...(includeCardFields
-                  ? {
-                      customFieldValues: {
-                        select: { fieldId: true, value: true },
-                      },
-                    }
-                  : {}),
-                taskTags: {
-                  include: { tag: { select: { id: true, name: true, color: true } } },
-                  orderBy: { tag: { name: 'asc' } },
-                },
-                subtasks: {
-                  // Cards only need completion progress; titles load in the drawer.
-                  select: { completed: true },
-                },
-              },
+              select: this.boardCardTaskSelect(includeCardFields),
             },
             _count: {
               select: {
@@ -234,7 +250,51 @@ export class BoardsService {
     return board;
   }
 
-  /** Default/first board in the workspace (oldest by createdAt). */
+  private boardCardTaskSelect(includeCardFields: boolean) {
+    return {
+      id: true,
+      title: true,
+      // description omitted — load via GET /tasks/:id when drawer opens
+      priority: true,
+      complexity: true,
+      timeEstimateMinutes: true,
+      actualMinutes: true,
+      dueDate: true,
+      assigneeId: true,
+      position: true,
+      columnId: true,
+      recurrenceRule: true,
+      recurrenceAction: true,
+      recurrenceWeekdays: true,
+      recurrenceOriginColumnId: true,
+      overdueDays: true,
+      timerStartedAt: true,
+      completedAt: true,
+      createdAt: true,
+      sprintId: true,
+      isEpic: true,
+      epicId: true,
+      assignee: {
+        select: { id: true, name: true, email: true, avatarUrl: true },
+      },
+      ...(includeCardFields
+        ? {
+            customFieldValues: {
+              select: { fieldId: true, value: true },
+            },
+          }
+        : {}),
+      taskTags: {
+        include: { tag: { select: { id: true, name: true, color: true } } },
+        orderBy: { tag: { name: 'asc' as const } },
+      },
+      subtasks: {
+        // Cards only need completion progress; titles load in the drawer.
+        select: { completed: true },
+      },
+    };
+  }
+
   async getBoardForWorkspace(workspaceId: string) {
     return this.resolveBoardForWorkspace(workspaceId);
   }

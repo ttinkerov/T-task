@@ -29,6 +29,32 @@ export async function fetchBoard(workspaceId: string, boardId: string) {
   });
 }
 
+export type ColumnTasksPage = {
+  columnId: string;
+  items: BoardTask[];
+  total: number;
+  offset: number;
+  limit: number;
+  truncated: boolean;
+};
+
+export async function fetchColumnTasks(
+  workspaceId: string,
+  boardId: string,
+  columnId: string,
+  offset: number,
+  limit = 100,
+) {
+  const params = new URLSearchParams({
+    offset: String(offset),
+    limit: String(limit),
+  });
+  return apiFetch<ColumnTasksPage>(
+    `/api/v1/workspaces/${workspaceId}/boards/${boardId}/columns/${columnId}/tasks?${params}`,
+    { headers: withWorkspace(workspaceId) },
+  );
+}
+
 /** Legacy: first board in workspace (used when boardId is unknown). */
 export async function fetchDefaultBoard(workspaceId: string) {
   return apiFetch<BoardView>(`/api/v1/workspaces/${workspaceId}/board`, {

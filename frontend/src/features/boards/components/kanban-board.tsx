@@ -51,6 +51,7 @@ import {
   useCreateColumnMutation,
   useCreateTaskMutation,
   useDeleteColumnMutation,
+  useLoadMoreColumnTasksMutation,
   useMoveColumnMutation,
   useMoveTaskMutation,
   useUpdateColumnMutation,
@@ -365,8 +366,8 @@ export function KanbanBoard({
         onChange={setFilters}
       />
       {board.columns.some((column) => column.truncated) ? (
-        <p className="kanban-board__error" role="status">
-          В колонке показано до 200 задач. Остальные откройте через фильтры или «Все задачи».
+        <p className="text-sm text-muted-foreground" role="status">
+          В некоторых колонках загружена только часть задач — нажмите «Загрузить ещё» внизу колонки.
         </p>
       ) : null}
       {viewMode === 'BOARD' && moveError ? (
@@ -626,6 +627,7 @@ function KanbanColumn({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const createMutation = useCreateTaskMutation(workspaceId, boardId);
+  const loadMoreMutation = useLoadMoreColumnTasksMutation(workspaceId, boardId);
   const { data: taskTemplates = [] } = useTaskTemplatesQuery(workspaceId);
   const taskIds = useMemo(() => column.tasks.map((task) => task.id), [column.tasks]);
   const [visibleCount, setVisibleCount] = useState(() =>
@@ -633,7 +635,7 @@ function KanbanColumn({
   );
 
   useEffect(() => {
-    setVisibleCount(Math.min(COLUMN_VISIBLE_STEP, column.tasks.length));
+    setVisibleCount((count) => Math.min(Math.max(count, COLUMN_VISIBLE_STEP), column.tasks.length));
   }, [column.id, column.tasks.length]);
 
   const visibleTasks = useMemo(
@@ -641,6 +643,10 @@ function KanbanColumn({
     [column.tasks, visibleCount],
   );
   const hiddenCount = Math.max(0, column.tasks.length - visibleCount);
+  const remainingServer = Math.max(
+    0,
+    (column.taskTotal ?? column.tasks.length) - column.tasks.length,
+  );
   const updateColumnMutation = useUpdateColumnMutation(workspaceId, boardId);
   const deleteColumnMutation = useDeleteColumnMutation(workspaceId, boardId);
   const [title, setTitle] = useState('');
@@ -750,7 +756,11 @@ function KanbanColumn({
         )}
 
         <span className={`kanban-column__count ${overWip ? 'kanban-column__count--over' : ''}`}>
-          {column.wipLimit ? `${column.tasks.length}/${column.wipLimit}` : column.tasks.length}
+          {column.wipLimit
+            ? `${column.tasks.length}/${column.wipLimit}`
+            : column.truncated && column.taskTotal
+              ? `${column.tasks.length}/${column.taskTotal}`
+              : column.tasks.length}
         </span>
         {canManageAutomations ? (
           <input
@@ -827,6 +837,21 @@ function KanbanColumn({
               }
             >
               Ещё {Math.min(COLUMN_VISIBLE_STEP, hiddenCount)} из {hiddenCount}
+            </button>
+          ) : column.truncated ? (
+            <button
+              type="button"
+              className="kanban-column__show-more"
+              disabled={loadMoreMutation.isPending}
+              onClick={() => {
+                void loadMoreMutation
+                  .mutateAsync({ columnId: column.id, offset: column.tasks.length })
+                  .then((page) => {
+                    setVisibleCount((count) => count + page.items.length);
+                  });
+              }}
+            >
+              {loadMoreMutation.isPending ? 'Загрузка…' : `Загрузить ещё (${remainingServer})`}
             </button>
           ) : null}
         </div>

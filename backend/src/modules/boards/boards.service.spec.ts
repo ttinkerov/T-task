@@ -26,6 +26,7 @@ function makePrisma() {
     },
     task: {
       count: vi.fn(),
+      findMany: vi.fn(),
       update: vi.fn(),
     },
     workspaceMember: {
@@ -184,6 +185,68 @@ describe('BoardsService — multiple boards', () => {
       await expect(service.getBoard('ws-1', 'user-1', 'missing')).rejects.toBeInstanceOf(
         NotFoundException,
       );
+    });
+  });
+
+  describe('listColumnTasks', () => {
+    it('returns a page of column tasks after offset', async () => {
+      prisma.boardColumn.findFirst.mockResolvedValue({ id: 'col-1' });
+      prisma.customFieldDefinition.count.mockResolvedValue(0);
+      prisma.task.count.mockResolvedValue(250);
+      prisma.task.findMany.mockResolvedValue([
+        {
+          id: 'task-201',
+          title: 'Next',
+          priority: null,
+          complexity: null,
+          timeEstimateMinutes: null,
+          actualMinutes: null,
+          dueDate: null,
+          assigneeId: null,
+          position: 200,
+          columnId: 'col-1',
+          recurrenceRule: 'NONE',
+          recurrenceAction: 'DUPLICATE',
+          recurrenceWeekdays: [],
+          recurrenceOriginColumnId: null,
+          overdueDays: 0,
+          timerStartedAt: null,
+          completedAt: null,
+          createdAt: new Date('2026-07-01T00:00:00.000Z'),
+          sprintId: null,
+          isEpic: false,
+          epicId: null,
+          assignee: null,
+          taskTags: [],
+          subtasks: [],
+        },
+      ]);
+
+      const result = await service.listColumnTasks('ws-1', 'board-1', 'col-1', 'user-1', 200, 100);
+
+      expect(prisma.task.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { columnId: 'col-1', deletedAt: null },
+          skip: 200,
+          take: 100,
+        }),
+      );
+      expect(result).toMatchObject({
+        columnId: 'col-1',
+        total: 250,
+        offset: 200,
+        limit: 100,
+        truncated: true,
+      });
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].id).toBe('task-201');
+    });
+
+    it('throws when column is missing', async () => {
+      prisma.boardColumn.findFirst.mockResolvedValue(null);
+      await expect(
+        service.listColumnTasks('ws-1', 'board-1', 'missing', 'user-1', 0, 100),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 
