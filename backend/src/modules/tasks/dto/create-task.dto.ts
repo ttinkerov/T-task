@@ -18,4 +18,8 @@ export class CreateTaskDto {
   @IsOptional()
   @IsEntityId()
   epicId?: string;
+
+  @IsOptional()
+  @IsEntityId()
+  templateId?: string;
 }

@@ -117,7 +117,7 @@ export async function updateColumnAutomations(
 
 export async function createTask(
   workspaceId: string,
-  data: { title: string; columnId: string; description?: string },
+  data: { title: string; columnId: string; description?: string; templateId?: string },
 ) {
   return apiFetch(`/api/v1/workspaces/${workspaceId}/tasks`, {
     method: 'POST',

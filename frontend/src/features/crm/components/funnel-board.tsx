@@ -21,6 +21,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { FormEvent, useEffect, useState, type HTMLAttributes } from 'react';
+import { useDealTemplatesQuery } from '@/features/templates';
 import {
   useCreateDealMutation,
   useCreateFunnelMutation,
@@ -317,17 +318,26 @@ function FunnelStageColumn({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
   const createMutation = useCreateDealMutation(workspaceId, funnelId);
+  const { data: dealTemplates = [] } = useDealTemplatesQuery(workspaceId);
   const updateStageMutation = useUpdateStageMutation(workspaceId, funnelId);
   const deleteStageMutation = useDeleteStageMutation(workspaceId, funnelId);
   const [title, setTitle] = useState('');
+  const [templateId, setTemplateId] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [stageName, setStageName] = useState(stage.name);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!title.trim()) return;
-    await createMutation.mutateAsync({ title: title.trim(), stageId: stage.id });
+    const selected = dealTemplates.find((template) => template.id === templateId);
+    const nextTitle = title.trim() || selected?.title?.trim() || '';
+    if (!nextTitle) return;
+    await createMutation.mutateAsync({
+      title: nextTitle,
+      stageId: stage.id,
+      ...(templateId ? { templateId } : {}),
+    });
     setTitle('');
+    setTemplateId('');
   };
 
   const handleRename = async () => {
@@ -422,6 +432,28 @@ function FunnelStageColumn({
       </SortableContext>
 
       <form onSubmit={handleSubmit} className="kanban-column__add">
+        {dealTemplates.length > 0 ? (
+          <select
+            className="kanban-column__add-template"
+            value={templateId}
+            onChange={(event) => {
+              const nextId = event.target.value;
+              setTemplateId(nextId);
+              const selected = dealTemplates.find((template) => template.id === nextId);
+              if (selected?.title && !title.trim()) {
+                setTitle(selected.title);
+              }
+            }}
+            aria-label="Шаблон сделки"
+          >
+            <option value="">Без шаблона</option>
+            {dealTemplates.map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.name}
+              </option>
+            ))}
+          </select>
+        ) : null}
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
@@ -431,7 +463,10 @@ function FunnelStageColumn({
         />
         <button
           type="submit"
-          disabled={createMutation.isPending || !title.trim()}
+          disabled={
+            createMutation.isPending ||
+            !(title.trim() || dealTemplates.find((template) => template.id === templateId)?.title)
+          }
           className="kanban-column__add-btn"
           aria-label="Добавить сделку"
         >

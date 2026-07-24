@@ -40,6 +40,7 @@ describe('TasksService.bulkUpdate', () => {
       { prepare: vi.fn(), notify: vi.fn() } as never,
       { notifyWatchers: vi.fn() } as never,
       { assertDoDSatisfied: vi.fn().mockResolvedValue(undefined) } as never,
+      {} as never,
       { emit: vi.fn() } as never,
     );
   });

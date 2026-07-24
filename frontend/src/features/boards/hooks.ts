@@ -255,7 +255,12 @@ export function useCreateTaskMutation(workspaceId: string, boardId?: string | nu
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { title: string; columnId: string; description?: string }) => {
+    mutationFn: async (data: {
+      title: string;
+      columnId: string;
+      description?: string;
+      templateId?: string;
+    }) => {
       await createTask(workspaceId, data);
     },
     onSuccess: () => {

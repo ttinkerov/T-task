@@ -31,14 +31,7 @@ import type { CustomFieldDefinition } from '@/features/custom-fields/types';
 import { BulkActionsToolbar } from './bulk-actions-toolbar';
 import { toggleTaskSelection } from '../lib/bulk-selection';
 import { useCreateTaskShortcutListener } from '@/features/shell/hooks/use-shortcut-handlers';
-
-const FOCUS_CREATE_KEY = 'ttask:focus-create';
-
-function focusCreateTaskInput() {
-  const input = document.querySelector<HTMLInputElement>('.kanban-column__add-input');
-  input?.focus();
-  input?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-}
+import { useTaskTemplatesQuery } from '@/features/templates';
 import { tokenizeMentions } from '@/features/mentions/mention-utils';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import { celebrateTaskComplete } from '@/shared/lib/celebrate';
@@ -76,6 +69,14 @@ import { BoardWorkloadPanel } from './board-workload-panel';
 import { ColumnAutomationDialog } from './column-automation-dialog';
 import { TaskDisplayView, TaskViewToolbar } from './task-display-views';
 import { TaskDetailDrawer } from './task-detail-drawer';
+
+const FOCUS_CREATE_KEY = 'ttask:focus-create';
+
+function focusCreateTaskInput() {
+  const input = document.querySelector<HTMLInputElement>('.kanban-column__add-input');
+  input?.focus();
+  input?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
 
 type DragType = 'column' | 'task';
 
@@ -600,9 +601,11 @@ function KanbanColumn({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const createMutation = useCreateTaskMutation(workspaceId, boardId);
+  const { data: taskTemplates = [] } = useTaskTemplatesQuery(workspaceId);
   const updateColumnMutation = useUpdateColumnMutation(workspaceId, boardId);
   const deleteColumnMutation = useDeleteColumnMutation(workspaceId, boardId);
   const [title, setTitle] = useState('');
+  const [templateId, setTemplateId] = useState('');
   const [editingName, setEditingName] = useState(false);
   const [columnName, setColumnName] = useState(column.name);
   const [automationOpen, setAutomationOpen] = useState(false);
@@ -614,9 +617,16 @@ function KanbanColumn({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!title.trim()) return;
-    await createMutation.mutateAsync({ title: title.trim(), columnId: column.id });
+    const selected = taskTemplates.find((template) => template.id === templateId);
+    const nextTitle = title.trim() || selected?.title?.trim() || '';
+    if (!nextTitle) return;
+    await createMutation.mutateAsync({
+      title: nextTitle,
+      columnId: column.id,
+      ...(templateId ? { templateId } : {}),
+    });
     setTitle('');
+    setTemplateId('');
   };
 
   const handleRename = async () => {
@@ -774,6 +784,28 @@ function KanbanColumn({
       </SortableContext>
 
       <form onSubmit={handleSubmit} className="kanban-column__add">
+        {taskTemplates.length > 0 ? (
+          <select
+            className="kanban-column__add-template"
+            value={templateId}
+            onChange={(event) => {
+              const nextId = event.target.value;
+              setTemplateId(nextId);
+              const selected = taskTemplates.find((template) => template.id === nextId);
+              if (selected?.title && !title.trim()) {
+                setTitle(selected.title);
+              }
+            }}
+            aria-label="Шаблон задачи"
+          >
+            <option value="">Без шаблона</option>
+            {taskTemplates.map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.name}
+              </option>
+            ))}
+          </select>
+        ) : null}
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
@@ -782,7 +814,10 @@ function KanbanColumn({
         />
         <button
           type="submit"
-          disabled={createMutation.isPending || !title.trim()}
+          disabled={
+            createMutation.isPending ||
+            !(title.trim() || taskTemplates.find((template) => template.id === templateId)?.title)
+          }
           className="kanban-column__add-btn"
           aria-label="Добавить задачу"
         >

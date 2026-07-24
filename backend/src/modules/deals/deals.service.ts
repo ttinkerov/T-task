@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { FunnelsService } from '../funnels/funnels.service';
+import { DealTemplatesService } from '../templates/deal-templates.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateDealDto } from './dto/create-deal.dto';
 import { MoveDealDto } from './dto/move-deal.dto';
@@ -19,6 +20,7 @@ export class DealsService {
     private readonly prisma: PrismaService,
     private readonly workspacesService: WorkspacesService,
     private readonly funnelsService: FunnelsService,
+    private readonly dealTemplatesService: DealTemplatesService,
   ) {}
 
   async create(workspaceId: string, userId: string, dto: CreateDealDto) {
@@ -35,18 +37,27 @@ export class DealsService {
       throw new NotFoundException('Stage not found');
     }
 
+    const template = dto.templateId
+      ? await this.dealTemplatesService.getForApply(workspaceId, dto.templateId)
+      : null;
+    const defaults = template ? this.dealTemplatesService.dealFieldDefaults(template) : null;
+
     const lastDeal = await this.prisma.deal.findFirst({
       where: { stageId: stage.id, deletedAt: null },
       orderBy: { position: 'desc' },
     });
 
     const position = (lastDeal?.position ?? -1) + 1;
+    const title = (dto.title.trim() || defaults?.title || 'Новая сделка').slice(0, 200);
 
     const deal = await this.prisma.deal.create({
       data: {
         stageId: stage.id,
-        title: dto.title.trim(),
-        description: dto.description?.trim() || null,
+        title,
+        description: dto.description?.trim() || defaults?.description || null,
+        amount: defaults?.amount ?? null,
+        contactName: defaults?.contactName ?? null,
+        companyName: defaults?.companyName ?? null,
         position,
       },
       include: dealWithAssignee,

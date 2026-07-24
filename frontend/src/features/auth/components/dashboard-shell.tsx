@@ -16,6 +16,7 @@ import {
   Kanban,
   Keyboard,
   LayoutDashboard,
+  LayoutTemplate,
   ListChecks,
   ListTodo,
   LogOut,
@@ -193,6 +194,7 @@ export function DashboardShell({
           { href: '/dashboard/calendar', label: 'iCal', icon: CalendarDays },
           { href: '/dashboard/custom-fields', label: 'Поля', icon: Settings },
           { href: '/dashboard/dod', label: 'DoD', icon: ListChecks },
+          { href: '/dashboard/templates', label: 'Шаблоны', icon: LayoutTemplate },
           { href: '/dashboard/import', label: 'Импорт', icon: Upload },
           { href: '/dashboard/tags', label: 'Теги', icon: Tags },
           {

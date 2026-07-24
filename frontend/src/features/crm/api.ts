@@ -69,7 +69,7 @@ export async function moveStage(
 
 export async function createDeal(
   workspaceId: string,
-  data: { title: string; stageId: string; description?: string },
+  data: { title: string; stageId: string; description?: string; templateId?: string },
 ) {
   return apiFetch(`/api/v1/workspaces/${workspaceId}/deals`, {
     method: 'POST',

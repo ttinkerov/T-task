@@ -15,6 +15,7 @@ import { extractMentionUserIds } from '../mentions/mention-parser.util';
 import { MentionsService } from '../mentions/mentions.service';
 import { WatchersService } from '../watchers/watchers.service';
 import { TaskChecklistService } from '../dod/task-checklist.service';
+import { TaskTemplatesService } from '../templates/task-templates.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
@@ -44,6 +45,7 @@ export class TasksService {
     private readonly mentionsService: MentionsService,
     private readonly watchersService: WatchersService,
     private readonly taskChecklistService: TaskChecklistService,
+    private readonly taskTemplatesService: TaskTemplatesService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -115,6 +117,13 @@ export class TasksService {
       epicId = epic.id;
     }
 
+    const template = dto.templateId
+      ? await this.taskTemplatesService.getForApply(workspaceId, dto.templateId)
+      : null;
+    const templateDefaults = template
+      ? this.taskTemplatesService.taskFieldDefaults(template)
+      : null;
+
     const lastTask = await this.prisma.task.findFirst({
       where: { columnId: column.id, deletedAt: null },
       orderBy: { position: 'desc' },
@@ -132,27 +141,36 @@ export class TasksService {
       { actualMinutes: null, timerStartedAt: null, completedAt: null },
       new Date(),
     );
-    const preparedDescription = dto.description?.trim()
-      ? await this.mentionsService.prepare(workspaceId, userId, dto.description.trim())
+    const descriptionSource = dto.description?.trim() || templateDefaults?.description || null;
+    const preparedDescription = descriptionSource
+      ? await this.mentionsService.prepare(workspaceId, userId, descriptionSource)
       : { text: null, recipientIds: [] as string[] };
+    const title = dto.title.trim() || templateDefaults?.title || 'Новая задача';
 
     const task = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const created = await tx.task.create({
         data: {
           columnId: column.id,
-          title: dto.title.trim(),
+          title: title.slice(0, 200),
           description: preparedDescription.text,
           descriptionDoc: preparedDescription.text
             ? (descriptionDocFromPlain(
                 preparedDescription.text,
               ) as unknown as Prisma.InputJsonValue)
             : Prisma.JsonNull,
+          priority: templateDefaults?.priority ?? null,
+          complexity: templateDefaults?.complexity ?? null,
+          timeEstimateMinutes: templateDefaults?.timeEstimateMinutes ?? null,
           position,
           epicId,
           ...automationUpdate,
         },
         include: taskWithAssignee,
       });
+
+      if (template) {
+        await this.taskTemplatesService.applyInTransaction(tx, workspaceId, created.id, template);
+      }
 
       await this.mentionsService.notify(
         tx,

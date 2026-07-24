@@ -139,7 +139,12 @@ export function useCreateDealMutation(workspaceId: string, funnelId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { title: string; stageId: string; description?: string }) => {
+    mutationFn: async (data: {
+      title: string;
+      stageId: string;
+      description?: string;
+      templateId?: string;
+    }) => {
       await createDeal(workspaceId, data);
     },
     onSuccess: () => {

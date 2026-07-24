@@ -14,4 +14,8 @@ export class CreateDealDto {
   @IsString()
   @MaxLength(2000)
   description?: string;
+
+  @IsOptional()
+  @IsEntityId()
+  templateId?: string;
 }
