@@ -130,3 +130,122 @@
     grid-template-columns: 1fr;
   }
 }
+
+.my-tasks {
+  &__empty {
+    margin: 0.5rem 0 1rem;
+    color: $color-text-muted;
+    font-size: 0.8rem;
+  }
+
+  &__section {
+    display: grid;
+    gap: 0.65rem;
+    margin-bottom: 1rem;
+    border: 1px solid $color-border-subtle;
+    border-radius: $radius-md;
+    background: var(--tt-surface);
+    padding: 0.85rem 0.95rem;
+
+    &--danger {
+      border-color: color-mix(in srgb, #ef4444 45%, $color-border-subtle);
+    }
+
+    &--warn {
+      border-color: color-mix(in srgb, #f59e0b 45%, $color-border-subtle);
+    }
+  }
+
+  &__section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+
+    h2 {
+      margin: 0;
+      color: $color-white;
+      font-size: 0.9rem;
+      font-weight: 650;
+    }
+
+    p {
+      margin: 0.15rem 0 0;
+      color: $color-text-muted;
+      font-size: 0.7rem;
+    }
+
+    > span {
+      display: grid;
+      min-width: 1.4rem;
+      height: 1.4rem;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--tt-hover-strong);
+      color: $color-text-muted;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+  }
+
+  &__list {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    border: 1px solid transparent;
+    border-radius: $radius-sm;
+    background: transparent;
+    padding: 0.55rem 0.6rem;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      border-color: $color-border-subtle;
+      background: var(--tt-hover);
+    }
+
+    time {
+      flex-shrink: 0;
+      color: $color-text-muted;
+      font-size: 0.7rem;
+      font-weight: 650;
+    }
+  }
+
+  &__row-main {
+    display: grid;
+    gap: 0.15rem;
+    min-width: 0;
+
+    strong {
+      color: $color-white;
+      font-size: 0.8rem;
+      font-weight: 650;
+    }
+
+    small {
+      color: $color-text-muted;
+      font-size: 0.68rem;
+    }
+  }
+
+  &__section--danger .my-tasks__row time {
+    color: #f87171;
+  }
+
+  &__section--warn .my-tasks__row time {
+    color: #fbbf24;
+  }
+}
+

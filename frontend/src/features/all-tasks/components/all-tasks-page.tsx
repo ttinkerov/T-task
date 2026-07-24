@@ -298,6 +298,7 @@ export function AllTasksPage({
         >
           <option value="">Любой срок</option>
           <option value="OVERDUE">Просроченные</option>
+          <option value="DUE_SOON">Скоро (7 дней)</option>
           <option value="UPCOMING">Предстоящие</option>
           <option value="NO_DUE">Без срока</option>
         </select>

@@ -15,6 +15,7 @@ export function DealTasksSection({ workspaceId, dealId }: { workspaceId: string;
     tagId: '',
     status: 'OPEN',
     due: '',
+    watching: false,
     page: 1,
     limit: 100,
     sortBy: 'UPDATED_AT',

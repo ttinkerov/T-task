@@ -5,9 +5,10 @@ export async function fetchAllTasks(workspaceId: string, query: AllTasksQuery) {
   const searchParams = new URLSearchParams();
 
   Object.entries(query).forEach(([key, value]) => {
-    if (value !== '') {
-      searchParams.set(key, String(value));
+    if (value === '' || value === false || value === null || value === undefined) {
+      return;
     }
+    searchParams.set(key, String(value));
   });
 
   return apiFetch<AllTasksResult>(

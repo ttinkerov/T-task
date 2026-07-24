@@ -1,6 +1,6 @@
 'use client';
 
-import { AllTasksPage } from '@/features/all-tasks';
+import { MyTasksPage } from '@/features/all-tasks';
 import { DashboardShell } from '@/features/auth/components/dashboard-shell';
 import { useMeQuery } from '@/features/auth/hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';
@@ -24,14 +24,11 @@ function MyTasksContent() {
   return (
     <DashboardShell boardMode>
       {workspaceId && userId ? (
-        <AllTasksPage
+        <MyTasksPage
           key={`${workspaceId}:${userId}`}
           workspaceId={workspaceId}
+          userId={userId}
           initialTaskId={searchParams.get('task')}
-          lockedAssigneeId={userId}
-          title="Мои задачи"
-          description="Только задачи, где вы назначены исполнителем."
-          linkSource="my-tasks"
         />
       ) : (
         <p className="text-sm text-muted-foreground">

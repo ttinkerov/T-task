@@ -7,6 +7,7 @@ import {
   AllTasksDueFilter,
   AllTasksSort,
   AllTasksStatus,
+  DUE_SOON_DAYS,
   ListAllTasksQueryDto,
   SortOrder,
 } from './dto/list-all-tasks-query.dto';
@@ -24,7 +25,7 @@ export class AllTasksService {
 
     const page = query.page ?? 1;
     const limit = query.limit ?? 50;
-    const where = this.buildWhere(workspaceId, query);
+    const where = this.buildWhere(workspaceId, userId, query);
     const orderBy = this.buildOrderBy(query);
     const includeMeta = page === 1;
 
@@ -104,29 +105,42 @@ export class AllTasksService {
     };
   }
 
-  private buildWhere(workspaceId: string, query: ListAllTasksQueryDto): Prisma.TaskWhereInput {
+  private buildWhere(
+    workspaceId: string,
+    userId: string,
+    query: ListAllTasksQueryDto,
+  ): Prisma.TaskWhereInput {
     const search = query.search?.trim();
     const board = {
       workspaceId,
       ...(query.boardId ? { id: query.boardId } : {}),
     };
+    const now = new Date();
+    const dueSoonEnd = new Date(now.getTime() + DUE_SOON_DAYS * 24 * 60 * 60 * 1000);
 
     return {
       deletedAt: null,
       column: { board },
       ...(query.columnId ? { columnId: query.columnId } : {}),
       ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
+      ...(query.watching ? { watchers: { some: { userId } } } : {}),
       ...(query.tagId ? { taskTags: { some: { tagId: query.tagId } } } : {}),
       ...(query.priority ? { priority: query.priority } : {}),
       ...(query.status === AllTasksStatus.OPEN ? { completedAt: null } : {}),
       ...(query.status === AllTasksStatus.COMPLETED ? { completedAt: { not: null } } : {}),
       ...(query.due === AllTasksDueFilter.OVERDUE
         ? {
-            dueDate: { lt: new Date() },
+            dueDate: { lt: now },
             ...(query.status !== AllTasksStatus.COMPLETED ? { completedAt: null } : {}),
           }
         : {}),
-      ...(query.due === AllTasksDueFilter.UPCOMING ? { dueDate: { gte: new Date() } } : {}),
+      ...(query.due === AllTasksDueFilter.UPCOMING ? { dueDate: { gte: now } } : {}),
+      ...(query.due === AllTasksDueFilter.DUE_SOON
+        ? {
+            dueDate: { gte: now, lte: dueSoonEnd },
+            ...(query.status !== AllTasksStatus.COMPLETED ? { completedAt: null } : {}),
+          }
+        : {}),
       ...(query.due === AllTasksDueFilter.NO_DUE ? { dueDate: null } : {}),
       ...(search
         ? {

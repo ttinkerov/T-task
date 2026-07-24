@@ -1,7 +1,7 @@
 import type { BoardTask, TaskPriority } from '@/features/boards/types';
 
 export type AllTasksStatus = '' | 'OPEN' | 'COMPLETED';
-export type AllTasksDueFilter = '' | 'OVERDUE' | 'UPCOMING' | 'NO_DUE';
+export type AllTasksDueFilter = '' | 'OVERDUE' | 'UPCOMING' | 'DUE_SOON' | 'NO_DUE';
 export type AllTasksSort = 'CREATED_AT' | 'UPDATED_AT' | 'DUE_DATE' | 'PRIORITY' | 'TITLE';
 export type SortOrder = 'ASC' | 'DESC';
 
@@ -14,6 +14,7 @@ export interface AllTasksFilters {
   tagId: string;
   status: AllTasksStatus;
   due: AllTasksDueFilter;
+  watching: boolean;
 }
 
 export interface AllTasksQuery extends AllTasksFilters {
@@ -53,4 +54,5 @@ export const EMPTY_ALL_TASKS_FILTERS: AllTasksFilters = {
   tagId: '',
   status: '',
   due: '',
+  watching: false,
 };

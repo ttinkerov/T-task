@@ -1,6 +1,15 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { TaskPriority } from '@prisma/client';
-import { IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { IsEntityId } from '../../../common/validators/is-entity-id.decorator';
 
 export enum AllTasksStatus {
@@ -11,6 +20,7 @@ export enum AllTasksStatus {
 export enum AllTasksDueFilter {
   OVERDUE = 'OVERDUE',
   UPCOMING = 'UPCOMING',
+  DUE_SOON = 'DUE_SOON',
   NO_DUE = 'NO_DUE',
 }
 
@@ -26,6 +36,8 @@ export enum SortOrder {
   ASC = 'ASC',
   DESC = 'DESC',
 }
+
+export const DUE_SOON_DAYS = 7;
 
 export class ListAllTasksQueryDto {
   @IsOptional()
@@ -73,6 +85,11 @@ export class ListAllTasksQueryDto {
   @IsOptional()
   @IsEnum(AllTasksDueFilter)
   due?: AllTasksDueFilter;
+
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true' || value === '1')
+  @IsBoolean()
+  watching?: boolean;
 
   @IsOptional()
   @IsEnum(AllTasksSort)
