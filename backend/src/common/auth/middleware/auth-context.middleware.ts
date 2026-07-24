@@ -25,7 +25,7 @@ export class AuthContextMiddleware implements NestMiddleware {
     }
 
     try {
-      const payload = this.tokenExtractor.verifyAccessToken(token);
+      const payload = await this.tokenExtractor.verifyAccessTokenAsync(token);
       const user = await this.prisma.user.findFirst({
         where: {
           id: payload.sub,

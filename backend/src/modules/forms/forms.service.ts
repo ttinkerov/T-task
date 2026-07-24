@@ -263,10 +263,11 @@ export class FormsService {
       where: { publicToken: token, isPublic: true },
       include: {
         fields: { orderBy: { position: 'asc' } },
+        workspace: { select: { deletedAt: true, archivedAt: true } },
       },
     });
 
-    if (!form) {
+    if (!form || form.workspace.deletedAt || form.workspace.archivedAt) {
       throw new NotFoundException('Form not found');
     }
 
@@ -290,10 +291,11 @@ export class FormsService {
       where: { publicToken: token, isPublic: true },
       include: {
         fields: { orderBy: { position: 'asc' } },
+        workspace: { select: { deletedAt: true, archivedAt: true } },
       },
     });
 
-    if (!form) {
+    if (!form || form.workspace.deletedAt || form.workspace.archivedAt) {
       throw new NotFoundException('Form not found');
     }
 

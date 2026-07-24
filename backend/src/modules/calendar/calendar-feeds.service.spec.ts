@@ -129,7 +129,7 @@ describe('CalendarFeedsService', () => {
       workspaceId: 'workspace-1',
       userId: 'user-1',
       revokedAt: null,
-      workspace: { name: 'Команда', deletedAt: null },
+      workspace: { name: 'Команда', deletedAt: null, archivedAt: null },
       user: { name: 'Ирина', deletedAt: null },
     });
     prisma.workspaceMember.findUnique.mockResolvedValue({ id: 'member-1' });
@@ -174,7 +174,7 @@ describe('CalendarFeedsService', () => {
       workspaceId: 'workspace-1',
       userId: 'user-1',
       revokedAt: new Date(),
-      workspace: { name: 'Команда', deletedAt: null },
+      workspace: { name: 'Команда', deletedAt: null, archivedAt: null },
       user: { name: 'Ирина', deletedAt: null },
     });
     await expect(service.getCalendar('A'.repeat(43))).rejects.toBeInstanceOf(NotFoundException);
@@ -183,10 +183,21 @@ describe('CalendarFeedsService', () => {
       workspaceId: 'workspace-1',
       userId: 'user-1',
       revokedAt: null,
-      workspace: { name: 'Команда', deletedAt: null },
+      workspace: { name: 'Команда', deletedAt: null, archivedAt: null },
       user: { name: 'Ирина', deletedAt: null },
     });
     prisma.workspaceMember.findUnique.mockResolvedValue(null);
     await expect(service.getCalendar('B'.repeat(43))).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects feeds for archived workspaces', async () => {
+    prisma.calendarFeed.findUnique.mockResolvedValue({
+      workspaceId: 'workspace-1',
+      userId: 'user-1',
+      revokedAt: null,
+      workspace: { name: 'Команда', deletedAt: null, archivedAt: new Date() },
+      user: { name: 'Ирина', deletedAt: null },
+    });
+    await expect(service.getCalendar('C'.repeat(43))).rejects.toBeInstanceOf(NotFoundException);
   });
 });

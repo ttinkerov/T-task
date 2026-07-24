@@ -15,9 +15,12 @@ import {
   DomainEvents,
   TaskAssignedPayload,
   TaskMovedPayload,
+  UserAccessRevokedPayload,
+  WorkspaceMemberRemovedPayload,
 } from '../../common/events/domain-events';
 import { TokenExtractorService } from '../../common/auth/services/token-extractor.service';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
+import { WorkspaceRole } from '@prisma/client';
 
 type AuthedSocket = Socket & {
   data: {
@@ -41,6 +44,7 @@ function resolveWsCorsOrigins(): string[] {
 })
 export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(RealtimeGateway.name);
+  private readonly socketsByUser = new Map<string, Set<string>>();
 
   @WebSocketServer()
   server!: Server;
@@ -59,16 +63,24 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         return;
       }
 
-      const payload = this.tokenExtractor.verifyAccessToken(token);
+      const payload = await this.tokenExtractor.verifyAccessTokenAsync(token);
       client.data.userId = payload.sub;
+      this.trackSocket(payload.sub, client.id);
     } catch (error) {
       this.logger.debug(`WS auth failed: ${error instanceof Error ? error.message : 'unknown'}`);
       client.disconnect(true);
     }
   }
 
-  handleDisconnect(_client: AuthedSocket) {
-    // rooms cleaned automatically
+  handleDisconnect(client: AuthedSocket) {
+    const userId = client.data.userId;
+    if (!userId) return;
+    const sockets = this.socketsByUser.get(userId);
+    if (!sockets) return;
+    sockets.delete(client.id);
+    if (sockets.size === 0) {
+      this.socketsByUser.delete(userId);
+    }
   }
 
   @SubscribeMessage('workspace:join')
@@ -84,15 +96,56 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
     const membership = await this.prisma.workspaceMember.findUnique({
       where: { workspaceId_userId: { workspaceId, userId } },
-      select: { id: true },
+      include: {
+        workspace: { select: { deletedAt: true, archivedAt: true } },
+      },
     });
 
-    if (!membership) {
+    if (!membership || membership.workspace.deletedAt) {
       return { ok: false };
     }
 
+    if (membership.workspace.archivedAt) {
+      const isAdmin =
+        membership.role === WorkspaceRole.OWNER || membership.role === WorkspaceRole.ADMIN;
+      if (!isAdmin) {
+        return { ok: false };
+      }
+    }
+
     await client.join(roomName(workspaceId));
+
+    // Re-check after join to close the TOCTOU window with member removal.
+    const stillMember = await this.prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId } },
+      select: { id: true },
+    });
+    if (!stillMember) {
+      await client.leave(roomName(workspaceId));
+      return { ok: false };
+    }
+
     return { ok: true };
+  }
+
+  @OnEvent(DomainEvents.USER_ACCESS_REVOKED)
+  onUserAccessRevoked(payload: UserAccessRevokedPayload) {
+    const sockets = this.socketsByUser.get(payload.userId);
+    if (!sockets?.size) return;
+    for (const socketId of sockets) {
+      this.server.in(socketId).disconnectSockets(true);
+    }
+    this.socketsByUser.delete(payload.userId);
+  }
+
+  @OnEvent(DomainEvents.WORKSPACE_MEMBER_REMOVED)
+  onWorkspaceMemberRemoved(payload: WorkspaceMemberRemovedPayload) {
+    const sockets = this.socketsByUser.get(payload.userId);
+    if (!sockets?.size) return;
+    const room = roomName(payload.workspaceId);
+    for (const socketId of sockets) {
+      this.server.in(socketId).socketsLeave(room);
+    }
   }
 
   @OnEvent(DomainEvents.TASK_MOVED)
@@ -109,6 +162,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   onCommentCreated(payload: CommentCreatedPayload) {
     this.server.to(roomName(payload.workspaceId)).emit(DomainEvents.COMMENT_CREATED, payload);
   }
+
+  private trackSocket(userId: string, socketId: string) {
+    const existing = this.socketsByUser.get(userId) ?? new Set<string>();
+    existing.add(socketId);
+    this.socketsByUser.set(userId, existing);
+  }
 }
 
 function roomName(workspaceId: string) {
@@ -118,8 +177,8 @@ function roomName(workspaceId: string) {
 function parseCookie(header: string, name: string): string | null {
   const parts = header.split(';');
   for (const part of parts) {
-    const [key, ...rest] = part.trim().split('=');
-    if (key === name) {
+    const [rawKey, ...rest] = part.trim().split('=');
+    if (rawKey === name) {
       return decodeURIComponent(rest.join('='));
     }
   }

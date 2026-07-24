@@ -1,7 +1,9 @@
 import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
-import { ALL_WORKSPACE_ROLES, MEMBER_PLUS_ROLES } from '../../common/auth/workspace-roles';
+import { Scopes } from '../../common/auth/decorators/scopes.decorator';
+import { WorkspaceScope } from '../../common/auth/scopes';
+import { ALL_WORKSPACE_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
@@ -28,7 +30,8 @@ export class TaskDealsController {
   @Post()
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(DEAL_TASK_MUTATE_RATE_LIMIT)
-  @Roles(...MEMBER_PLUS_ROLES)
+  @Roles(...ALL_WORKSPACE_ROLES)
+  @Scopes(WorkspaceScope.CRM_WRITE)
   async link(
     @Param('workspaceId') workspaceId: string,
     @Param('taskId') taskId: string,
@@ -43,7 +46,8 @@ export class TaskDealsController {
   @Delete(':dealId')
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(DEAL_TASK_MUTATE_RATE_LIMIT)
-  @Roles(...MEMBER_PLUS_ROLES)
+  @Roles(...ALL_WORKSPACE_ROLES)
+  @Scopes(WorkspaceScope.CRM_WRITE)
   async unlink(
     @Param('workspaceId') workspaceId: string,
     @Param('taskId') taskId: string,

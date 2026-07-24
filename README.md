@@ -24,7 +24,8 @@ docker compose up --build
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
 ```
 
-В `.env` для прода обязательны сильный `POSTGRES_PASSWORD`, `JWT_ACCESS_SECRET`, `CORS_ORIGIN` (https).
+В `.env` для прода обязательны сильный `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `JWT_ACCESS_SECRET`, `CORS_ORIGIN` (https).  
+Прод не публикует Postgres/Redis/PgBouncer наружу; локально они слушаются только на `127.0.0.1`.
 
 ### Без Docker
 

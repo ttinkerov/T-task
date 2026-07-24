@@ -61,6 +61,12 @@ export class DueRemindersService implements OnModuleInit, OnModuleDestroy {
         assigneeId: { not: null },
         dueDate: { gte: now, lte: until },
         dueReminderSentAt: null,
+        assignee: { deletedAt: null },
+        column: {
+          board: {
+            workspace: { deletedAt: null, archivedAt: null },
+          },
+        },
       },
       select: {
         id: true,
@@ -75,9 +81,25 @@ export class DueRemindersService implements OnModuleInit, OnModuleDestroy {
 
     if (tasks.length === 0) return 0;
 
+    const memberships = await this.prisma.workspaceMember.findMany({
+      where: {
+        OR: tasks.map((task) => ({
+          workspaceId: task.column.board.workspaceId,
+          userId: task.assigneeId!,
+        })),
+      },
+      select: { workspaceId: true, userId: true },
+    });
+    const memberKeys = new Set(memberships.map((row) => `${row.workspaceId}:${row.userId}`));
+    const eligible = tasks.filter((task) =>
+      memberKeys.has(`${task.column.board.workspaceId}:${task.assigneeId}`),
+    );
+
+    if (eligible.length === 0) return 0;
+
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.notification.createMany({
-        data: tasks.map((task) => ({
+        data: eligible.map((task) => ({
           workspaceId: task.column.board.workspaceId,
           recipientId: task.assigneeId!,
           actorId: null,
@@ -90,18 +112,18 @@ export class DueRemindersService implements OnModuleInit, OnModuleDestroy {
       });
 
       await tx.task.updateMany({
-        where: { id: { in: tasks.map((task) => task.id) } },
+        where: { id: { in: eligible.map((task) => task.id) } },
         data: { dueReminderSentAt: now },
       });
     });
 
     const assignees = await this.prisma.user.findMany({
-      where: { id: { in: [...new Set(tasks.map((task) => task.assigneeId!))] } },
+      where: { id: { in: [...new Set(eligible.map((task) => task.assigneeId!))] } },
       select: { id: true, email: true, name: true },
     });
     const byId = new Map(assignees.map((user) => [user.id, user]));
 
-    for (const task of tasks) {
+    for (const task of eligible) {
       const assignee = byId.get(task.assigneeId!);
       if (!assignee || !task.dueDate) continue;
       this.eventEmitter.emit(DomainEvents.DUE_REMINDER, {
@@ -114,7 +136,7 @@ export class DueRemindersService implements OnModuleInit, OnModuleDestroy {
       });
     }
 
-    return tasks.length;
+    return eligible.length;
   }
 
   /**
@@ -123,7 +145,11 @@ export class DueRemindersService implements OnModuleInit, OnModuleDestroy {
    */
   async rollOverdueBatch(limit = BATCH_SIZE) {
     const workspaces = await this.prisma.workspace.findMany({
-      where: { autoRollOverdue: true },
+      where: {
+        autoRollOverdue: true,
+        deletedAt: null,
+        archivedAt: null,
+      },
       select: { id: true },
       take: 50,
     });

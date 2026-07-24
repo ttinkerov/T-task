@@ -4,6 +4,9 @@ export interface JwtPayload {
   sub: string;
   email: string;
   type: 'access';
+  jti?: string;
+  iat?: number;
+  exp?: number;
 }
 
 export interface AuthenticatedUser {

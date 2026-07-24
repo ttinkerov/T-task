@@ -2,9 +2,11 @@ import type { RateLimitConfig } from './rate-limit.decorator';
 
 type RateLimitRequest = {
   user?: { id: string };
-  params?: Record<string, string | undefined>;
+  params?: Record<string, unknown>;
   body?: unknown;
   ip?: string;
+  /** Unspoofable peer address — preferred for auth:* rate limits. */
+  socket?: { remoteAddress?: string };
 };
 
 /**
@@ -21,7 +23,10 @@ export function resolveRateLimitKeys(request: RateLimitRequest, config: RateLimi
     const body = request.body as { email?: unknown } | undefined;
     const email =
       typeof body?.email === 'string' ? body.email.trim().toLowerCase().slice(0, 320) : '';
-    const ip = request.ip ?? 'unknown';
+    // Auth endpoints must not trust X-Forwarded-For (trust proxy spoof).
+    const ip = config.keyPrefix.startsWith('auth:')
+      ? (request.socket?.remoteAddress ?? request.ip ?? 'unknown')
+      : (request.ip ?? 'unknown');
 
     if (email) {
       keys.push(`ip:${ip}`, `email:${email}`);

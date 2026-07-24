@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
 import { WorkspaceRole, Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
@@ -11,10 +12,14 @@ import {
   hashToken,
   parseDurationToSeconds,
 } from '../../common/auth/utils/token.util';
+import { AccessTokenDenyService } from '../../common/auth/services/access-token-deny.service';
 import { ACCESS_TOKEN_COOKIE } from '../../common/auth/services/token-extractor.service';
+import { DomainEvents } from '../../common/events/domain-events';
 import {
-  buildAuthCookieClearOptions,
-  buildAuthCookieOptions,
+  buildAccessCookieClearOptions,
+  buildAccessCookieOptions,
+  buildRefreshCookieClearOptions,
+  buildRefreshCookieOptions,
 } from '../../common/security/cookie-options.util';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
@@ -49,6 +54,8 @@ export class IdentityService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly workspacesService: WorkspacesService,
+    private readonly accessTokenDeny: AccessTokenDenyService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async register(dto: RegisterDto, request: Request, response: Response) {
@@ -190,6 +197,7 @@ export class IdentityService {
       });
     }
 
+    await this.revokeCurrentAccessToken(request);
     this.clearAuthCookies(response);
 
     return { success: true };
@@ -206,6 +214,8 @@ export class IdentityService {
       },
     });
 
+    await this.accessTokenDeny.revokeAllForUser(userId);
+    this.eventEmitter.emit(DomainEvents.USER_ACCESS_REVOKED, { userId });
     this.clearAuthCookies(response);
 
     return { success: true };
@@ -245,10 +255,12 @@ export class IdentityService {
 
     const accessTtl = this.configService.getOrThrow<string>('JWT_ACCESS_TTL');
     const refreshTtl = this.configService.getOrThrow<string>('JWT_REFRESH_TTL');
+    const accessJti = randomUUID();
 
     const accessToken = await this.jwtService.signAsync(accessPayload, {
       secret: this.configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
       expiresIn: accessTtl as `${number}${'s' | 'm' | 'h' | 'd'}`,
+      jwtid: accessJti,
     });
 
     const refreshToken = generateRefreshToken();
@@ -283,22 +295,43 @@ export class IdentityService {
     response.cookie(
       ACCESS_TOKEN_COOKIE,
       tokens.accessToken,
-      buildAuthCookieOptions(accessTtlSeconds * 1000, isProduction),
+      buildAccessCookieOptions(accessTtlSeconds * 1000, isProduction),
     );
 
     response.cookie(
       REFRESH_TOKEN_COOKIE,
       tokens.refreshToken,
-      buildAuthCookieOptions(refreshTtlSeconds * 1000, isProduction),
+      buildRefreshCookieOptions(refreshTtlSeconds * 1000, isProduction),
     );
   }
 
   private clearAuthCookies(response: Response): void {
     const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
-    const clearOptions = buildAuthCookieClearOptions(isProduction);
+    response.clearCookie(ACCESS_TOKEN_COOKIE, buildAccessCookieClearOptions(isProduction));
+    response.clearCookie(REFRESH_TOKEN_COOKIE, buildRefreshCookieClearOptions(isProduction));
+    // Clear legacy path=/ refresh cookies from older deploys.
+    response.clearCookie(REFRESH_TOKEN_COOKIE, buildAccessCookieClearOptions(isProduction));
+  }
 
-    response.clearCookie(ACCESS_TOKEN_COOKIE, clearOptions);
-    response.clearCookie(REFRESH_TOKEN_COOKIE, clearOptions);
+  private async revokeCurrentAccessToken(request: Request): Promise<void> {
+    const accessToken = request.cookies?.[ACCESS_TOKEN_COOKIE] as string | undefined;
+    if (!accessToken) return;
+
+    try {
+      const payload = this.jwtService.verify<JwtPayload>(accessToken, {
+        secret: this.configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
+      });
+      if (payload.type !== 'access' || !payload.jti) return;
+
+      const now = Math.floor(Date.now() / 1000);
+      const ttl = typeof payload.exp === 'number' ? Math.max(1, payload.exp - now) : 900;
+      await this.accessTokenDeny.revokeJti(payload.jti, ttl);
+      if (payload.sub) {
+        this.eventEmitter.emit(DomainEvents.USER_ACCESS_REVOKED, { userId: payload.sub });
+      }
+    } catch {
+      // Expired/invalid access cookie — nothing to denylist.
+    }
   }
 
   private async revokeRefreshFamily(familyId: string): Promise<void> {

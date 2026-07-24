@@ -55,6 +55,16 @@ export class WorkspacesController {
     return successResponse(result);
   }
 
+  @Post(':workspaceId/unarchive')
+  @Roles(...ADMIN_PLUS_ROLES)
+  async unarchive(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.workspacesService.unarchive(workspaceId, user.id);
+    return successResponse(result);
+  }
+
   @Delete(':workspaceId')
   @Roles(WorkspaceRole.OWNER)
   async remove(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {

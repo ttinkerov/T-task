@@ -26,7 +26,20 @@ async function bootstrap(): Promise<void> {
     .filter(Boolean);
   const isProduction = nodeEnv === 'production';
 
-  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  // Default: trust proxy only in production. Override with TRUST_PROXY=false|0|N|subnet.
+  const trustProxyRaw = (configService.get<string>('TRUST_PROXY') ?? (isProduction ? '1' : 'false'))
+    .trim()
+    .toLowerCase();
+  if (trustProxyRaw !== 'false' && trustProxyRaw !== '0') {
+    const asNumber = Number(trustProxyRaw);
+    app
+      .getHttpAdapter()
+      .getInstance()
+      .set(
+        'trust proxy',
+        Number.isFinite(asNumber) && trustProxyRaw !== '' ? asNumber : trustProxyRaw,
+      );
+  }
 
   app.use(json({ limit: REQUEST_BODY_LIMIT }));
   app.use(urlencoded({ extended: true, limit: REQUEST_BODY_LIMIT }));

@@ -5,9 +5,20 @@ export const DomainEvents = {
   INVITATION_CREATED: 'invitation.created',
   MENTION_CREATED: 'mention.created',
   DUE_REMINDER: 'due.reminder',
+  USER_ACCESS_REVOKED: 'user.access.revoked',
+  WORKSPACE_MEMBER_REMOVED: 'workspace.member.removed',
 } as const;
 
 export type DomainEventName = (typeof DomainEvents)[keyof typeof DomainEvents];
+
+export type UserAccessRevokedPayload = {
+  userId: string;
+};
+
+export type WorkspaceMemberRemovedPayload = {
+  userId: string;
+  workspaceId: string;
+};
 
 export type TaskMovedPayload = {
   workspaceId: string;

@@ -126,12 +126,18 @@ export class CalendarFeedsService {
         userId: true,
         updatedAt: true,
         revokedAt: true,
-        workspace: { select: { name: true, deletedAt: true } },
+        workspace: { select: { name: true, deletedAt: true, archivedAt: true } },
         user: { select: { name: true, deletedAt: true } },
       },
     });
 
-    if (!feed || feed.revokedAt || feed.workspace.deletedAt || feed.user.deletedAt) {
+    if (
+      !feed ||
+      feed.revokedAt ||
+      feed.workspace.deletedAt ||
+      feed.workspace.archivedAt ||
+      feed.user.deletedAt
+    ) {
       throw new NotFoundException(FEED_NOT_FOUND_MESSAGE);
     }
 

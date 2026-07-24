@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { JwtPayload } from '../interfaces/authenticated-user.interface';
+import { AccessTokenDenyService } from './access-token-deny.service';
 
 export const ACCESS_TOKEN_COOKIE = 'access_token';
 
@@ -11,6 +12,7 @@ export class TokenExtractorService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly accessTokenDeny: AccessTokenDenyService,
   ) {}
 
   extractAccessToken(request: Request): string | null {
@@ -29,8 +31,17 @@ export class TokenExtractorService {
       }
 
       return payload;
-    } catch {
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       throw new UnauthorizedException('Invalid or expired access token');
     }
+  }
+
+  async verifyAccessTokenAsync(token: string): Promise<JwtPayload> {
+    const payload = this.verifyAccessToken(token);
+    await this.accessTokenDeny.assertNotRevoked(payload);
+    return payload;
   }
 }

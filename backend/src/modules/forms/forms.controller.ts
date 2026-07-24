@@ -3,7 +3,7 @@ import { CurrentUser } from '../../common/auth/decorators/current-user.decorator
 import { Roles } from '../../common/auth/decorators/roles.decorator';
 import { Scopes } from '../../common/auth/decorators/scopes.decorator';
 import { WorkspaceScope } from '../../common/auth/scopes';
-import { ALL_WORKSPACE_ROLES, MEMBER_PLUS_ROLES } from '../../common/auth/workspace-roles';
+import { ALL_WORKSPACE_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { CreateFormFieldDto } from './dto/create-form-field.dto';
@@ -25,7 +25,7 @@ export class FormsController {
   }
 
   @Post()
-  @Roles(...MEMBER_PLUS_ROLES)
+  @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.FORMS_WRITE)
   async create(
     @Param('workspaceId') workspaceId: string,
@@ -48,7 +48,7 @@ export class FormsController {
   }
 
   @Patch(':formId')
-  @Roles(...MEMBER_PLUS_ROLES)
+  @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.FORMS_WRITE)
   async update(
     @Param('workspaceId') workspaceId: string,
@@ -61,7 +61,7 @@ export class FormsController {
   }
 
   @Delete(':formId')
-  @Roles(...MEMBER_PLUS_ROLES)
+  @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.FORMS_WRITE)
   async remove(
     @Param('workspaceId') workspaceId: string,
@@ -73,7 +73,7 @@ export class FormsController {
   }
 
   @Post(':formId/fields')
-  @Roles(...MEMBER_PLUS_ROLES)
+  @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.FORMS_WRITE)
   async addField(
     @Param('workspaceId') workspaceId: string,
@@ -86,7 +86,8 @@ export class FormsController {
   }
 
   @Patch(':formId/fields/:fieldId')
-  @Roles(...MEMBER_PLUS_ROLES)
+  @Roles(...ALL_WORKSPACE_ROLES)
+  @Scopes(WorkspaceScope.FORMS_WRITE)
   async updateField(
     @Param('workspaceId') workspaceId: string,
     @Param('formId') formId: string,
@@ -99,7 +100,8 @@ export class FormsController {
   }
 
   @Delete(':formId/fields/:fieldId')
-  @Roles(...MEMBER_PLUS_ROLES)
+  @Roles(...ALL_WORKSPACE_ROLES)
+  @Scopes(WorkspaceScope.FORMS_WRITE)
   async removeField(
     @Param('workspaceId') workspaceId: string,
     @Param('formId') formId: string,

@@ -11,10 +11,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Only access_token is path=/ (visible on Next page routes).
+  // refresh_token is scoped to /api/v1/auth on the API host.
   const hasAccessToken = request.cookies.has('access_token');
-  const hasRefreshToken = request.cookies.has('refresh_token');
 
-  if (!hasAccessToken && !hasRefreshToken) {
+  if (!hasAccessToken) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(loginUrl);

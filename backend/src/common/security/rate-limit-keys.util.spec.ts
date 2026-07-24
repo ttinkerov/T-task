@@ -52,6 +52,21 @@ describe('resolveRateLimitKeys', () => {
 
     expect(keys).toEqual(['user-1', 'ws:ws-9']);
   });
+
+  it('uses socket remoteAddress for auth rate limits (not spoofable XFF)', () => {
+    const keys = resolveRateLimitKeys(
+      {
+        ip: '203.0.113.9',
+        socket: { remoteAddress: '198.51.100.10' },
+        body: { email: 'a@example.com' },
+      },
+      { keyPrefix: 'auth:rate', windowSeconds: 60, maxAttempts: 5 },
+    );
+
+    expect(keys).toContain('ip:198.51.100.10');
+    expect(keys).not.toContain('ip:203.0.113.9');
+    expect(keys).toContain('email:a@example.com');
+  });
 });
 
 describe('PUBLIC_FORM_SUBMIT_WORKSPACE_RATE_LIMIT', () => {

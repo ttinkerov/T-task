@@ -145,10 +145,40 @@ export class WorkspacesService {
         where: { id: workspaceId },
         data: { archivedAt: new Date() },
       });
+      // Public tokens must stop working while the workspace is frozen.
+      await tx.form.updateMany({
+        where: { workspaceId, isPublic: true },
+        data: { isPublic: false },
+      });
+      await tx.invitation.updateMany({
+        where: { workspaceId, acceptedAt: null, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
       await this.activityService.record({
         workspaceId,
         actorId: userId,
         action: ActivityAction.WORKSPACE_ARCHIVED,
+        entityType: ActivityEntityType.WORKSPACE,
+        entityId: workspaceId,
+        entityName: workspace.name,
+      });
+    });
+
+    return { success: true };
+  }
+
+  async unarchive(workspaceId: string, userId: string) {
+    await this.getMembership(workspaceId, userId);
+
+    await this.prisma.$transaction(async (tx) => {
+      const workspace = await tx.workspace.update({
+        where: { id: workspaceId },
+        data: { archivedAt: null },
+      });
+      await this.activityService.record({
+        workspaceId,
+        actorId: userId,
+        action: ActivityAction.WORKSPACE_UNARCHIVED,
         entityType: ActivityEntityType.WORKSPACE,
         entityId: workspaceId,
         entityName: workspace.name,
@@ -169,6 +199,14 @@ export class WorkspacesService {
       const workspace = await tx.workspace.update({
         where: { id: workspaceId },
         data: { deletedAt: new Date() },
+      });
+      await tx.form.updateMany({
+        where: { workspaceId, isPublic: true },
+        data: { isPublic: false },
+      });
+      await tx.invitation.updateMany({
+        where: { workspaceId, acceptedAt: null, revokedAt: null },
+        data: { revokedAt: new Date() },
       });
       await this.activityService.record({
         workspaceId,
@@ -405,6 +443,36 @@ export class WorkspacesService {
     }
 
     await this.prisma.$transaction(async (tx) => {
+      const removedUserId = targetMember.userId;
+
+      await tx.task.updateMany({
+        where: {
+          assigneeId: removedUserId,
+          column: { board: { workspaceId } },
+        },
+        data: { assigneeId: null },
+      });
+      await tx.deal.updateMany({
+        where: {
+          assigneeId: removedUserId,
+          stage: { funnel: { workspaceId } },
+        },
+        data: { assigneeId: null },
+      });
+      await tx.columnAutomation.updateMany({
+        where: {
+          assigneeId: removedUserId,
+          column: { board: { workspaceId } },
+        },
+        data: { assigneeId: null },
+      });
+      await tx.taskWatcher.deleteMany({
+        where: {
+          userId: removedUserId,
+          task: { column: { board: { workspaceId } } },
+        },
+      });
+
       await tx.workspaceMember.delete({ where: { id: memberId } });
       await this.activityService.record({
         workspaceId,
@@ -418,6 +486,17 @@ export class WorkspacesService {
     });
 
     await this.invalidateMembershipCache(workspaceId, targetMember.userId);
+
+    // ICS feed tokens live in URLs — revoke when the member leaves.
+    await this.prisma.calendarFeed.updateMany({
+      where: { workspaceId, userId: targetMember.userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+
+    this.eventEmitter.emit(DomainEvents.WORKSPACE_MEMBER_REMOVED, {
+      userId: targetMember.userId,
+      workspaceId,
+    });
 
     return { success: true };
   }
@@ -445,13 +524,19 @@ export class WorkspacesService {
   }
 
   async createInvitation(workspaceId: string, userId: string, dto: InviteMemberDto) {
-    await this.assertCanManageInvitations(workspaceId, userId);
+    const actorMembership = await this.assertCanManageInvitations(workspaceId, userId);
 
     const email = dto.email.toLowerCase();
     const role = dto.role ?? WorkspaceRole.MEMBER;
 
     if (role === WorkspaceRole.OWNER) {
       throw new BadRequestException('Cannot invite with owner role');
+    }
+
+    try {
+      assertCanAssignRole(actorMembership.role, role);
+    } catch {
+      throw new ForbiddenException('You cannot invite with this role');
     }
 
     const existingMember = await this.prisma.user.findUnique({
@@ -568,14 +653,7 @@ export class WorkspacesService {
 
   async getInvitationPreview(token: string) {
     const invitation = await this.findValidInvitation(token);
-
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: invitation.workspaceId },
-    });
-
-    if (!workspace || workspace.deletedAt) {
-      throw new NotFoundException('Invitation not found');
-    }
+    const workspace = invitation.workspace;
 
     return {
       email: invitation.email,
@@ -616,10 +694,31 @@ export class WorkspacesService {
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
-      await tx.invitation.update({
-        where: { id: invitation.id },
+      const claimed = await tx.invitation.updateMany({
+        where: {
+          id: invitation.id,
+          acceptedAt: null,
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+        },
         data: { acceptedAt: new Date() },
       });
+
+      if (claimed.count !== 1) {
+        throw new NotFoundException('Invitation not found or expired');
+      }
+
+      const workspace = await tx.workspace.findFirst({
+        where: {
+          id: invitation.workspaceId,
+          deletedAt: null,
+          archivedAt: null,
+        },
+      });
+
+      if (!workspace) {
+        throw new NotFoundException('Invitation not found or expired');
+      }
 
       const membership = await tx.workspaceMember.create({
         data: {
@@ -629,9 +728,6 @@ export class WorkspacesService {
         },
       });
 
-      const workspace = await tx.workspace.findUniqueOrThrow({
-        where: { id: invitation.workspaceId },
-      });
       await this.activityService.record({
         workspaceId: invitation.workspaceId,
         actorId: userId,
@@ -659,13 +755,26 @@ export class WorkspacesService {
     const tokenHash = hashToken(token);
     const invitation = await this.prisma.invitation.findUnique({
       where: { tokenHash },
+      include: {
+        workspace: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            deletedAt: true,
+            archivedAt: true,
+          },
+        },
+      },
     });
 
     if (
       !invitation ||
       invitation.revokedAt ||
       invitation.acceptedAt ||
-      invitation.expiresAt < new Date()
+      invitation.expiresAt < new Date() ||
+      invitation.workspace.deletedAt ||
+      invitation.workspace.archivedAt
     ) {
       throw new NotFoundException('Invitation not found or expired');
     }
@@ -679,6 +788,8 @@ export class WorkspacesService {
     if (membership.role !== WorkspaceRole.OWNER && membership.role !== WorkspaceRole.ADMIN) {
       throw new ForbiddenException('Insufficient permissions to manage invitations');
     }
+
+    return membership;
   }
 
   private membershipCacheKey(workspaceId: string, userId: string) {
@@ -704,15 +815,16 @@ export class WorkspacesService {
         const membership = JSON.parse(cached) as {
           role: WorkspaceRole;
           userId: string;
-          workspace: { deletedAt: string | Date | null };
+          workspace: {
+            deletedAt: string | Date | null;
+            archivedAt?: string | Date | null;
+          };
         };
-        if (membership.workspace.deletedAt) {
-          throw new NotFoundException('Workspace not found');
-        }
+        this.assertMembershipUsable(membership);
         return membership as Awaited<ReturnType<WorkspacesService['loadMembership']>>;
       }
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
         throw error;
       }
       this.logger.warn(
@@ -747,7 +859,25 @@ export class WorkspacesService {
       throw new NotFoundException('Workspace not found');
     }
 
+    this.assertMembershipUsable(membership);
     return membership;
+  }
+
+  private assertMembershipUsable(membership: {
+    role: WorkspaceRole;
+    workspace: {
+      deletedAt: string | Date | null;
+      archivedAt?: string | Date | null;
+    };
+  }) {
+    if (membership.workspace.deletedAt) {
+      throw new NotFoundException('Workspace not found');
+    }
+    if (membership.workspace.archivedAt) {
+      if (membership.role !== WorkspaceRole.OWNER && membership.role !== WorkspaceRole.ADMIN) {
+        throw new ForbiddenException('Workspace is archived');
+      }
+    }
   }
 
   private async assertNotLastOwner(workspaceId: string) {

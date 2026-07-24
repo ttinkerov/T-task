@@ -60,10 +60,21 @@ export class RolesGuard implements CanActivate {
           userId: request.user.id,
         },
       },
+      include: {
+        workspace: { select: { deletedAt: true, archivedAt: true } },
+      },
     });
 
-    if (!membership) {
+    if (!membership || membership.workspace.deletedAt) {
       throw new ForbiddenException('You are not a member of this workspace');
+    }
+
+    if (membership.workspace.archivedAt) {
+      const isAdmin =
+        membership.role === WorkspaceRole.OWNER || membership.role === WorkspaceRole.ADMIN;
+      if (!isAdmin) {
+        throw new ForbiddenException('Workspace is archived');
+      }
     }
 
     if (!requiredRoles.includes(membership.role)) {

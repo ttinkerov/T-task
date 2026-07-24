@@ -84,7 +84,7 @@ export class TasksController {
   }
 
   @Delete(':taskId')
-  @Roles(...MEMBER_PLUS_ROLES)
+  @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.TASK_DELETE)
   async remove(
     @Param('workspaceId') workspaceId: string,

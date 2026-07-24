@@ -5,19 +5,40 @@
 #
 # Required in .env (no weak defaults):
 #   POSTGRES_PASSWORD=...
+#   REDIS_PASSWORD=...      (alphanumeric / URL-safe; used in REDIS_URL)
 #   JWT_ACCESS_SECRET=...   (≥32 chars, not a placeholder)
 #   CORS_ORIGIN=https://your.app
 #   NEXT_PUBLIC_API_URL=https://api.your.app
 # Optional: AI_TOKEN_ENC_KEY=...
+#
+# Datastore ports from docker-compose.yml are reset — only backend/frontend stay published.
+# Redis requires a password on the Docker network.
 
 services:
   postgres:
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env for production}
+    ports: !reset []
 
   pgbouncer:
     environment:
       DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env for production}
+    ports: !reset []
+
+  redis:
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env for production}
+    command:
+      - redis-server
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+      - --requirepass
+      - ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env for production}
+    ports: !reset []
+    healthcheck:
+      test: ['CMD-SHELL', 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG']
 
   backend:
     environment:
@@ -25,6 +46,7 @@ services:
       ALLOW_INSECURE_DEV: 'false'
       DATABASE_URL: postgresql://${POSTGRES_USER:-ttask}:${POSTGRES_PASSWORD}@pgbouncer:5432/${POSTGRES_DB:-ttask}?schema=public&pgbouncer=true&connection_limit=10
       DIRECT_DATABASE_URL: postgresql://${POSTGRES_USER:-ttask}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ttask}?schema=public
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       CORS_ORIGIN: ${CORS_ORIGIN:?Set CORS_ORIGIN to your https frontend origin}
       APP_URL: ${APP_URL:-}
 

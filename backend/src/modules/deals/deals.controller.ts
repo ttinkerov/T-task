@@ -3,7 +3,7 @@ import { CurrentUser } from '../../common/auth/decorators/current-user.decorator
 import { Roles } from '../../common/auth/decorators/roles.decorator';
 import { Scopes } from '../../common/auth/decorators/scopes.decorator';
 import { WorkspaceScope } from '../../common/auth/scopes';
-import { MEMBER_PLUS_ROLES } from '../../common/auth/workspace-roles';
+import { ALL_WORKSPACE_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { CreateDealDto } from './dto/create-deal.dto';
@@ -16,7 +16,7 @@ export class DealsController {
   constructor(private readonly dealsService: DealsService) {}
 
   @Post()
-  @Roles(...MEMBER_PLUS_ROLES)
+  @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.CRM_WRITE)
   async create(
     @Param('workspaceId') workspaceId: string,
@@ -28,7 +28,7 @@ export class DealsController {
   }
 
   @Patch(':dealId')
-  @Roles(...MEMBER_PLUS_ROLES)
+  @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.CRM_WRITE)
   async update(
     @Param('workspaceId') workspaceId: string,
@@ -41,7 +41,7 @@ export class DealsController {
   }
 
   @Patch(':dealId/move')
-  @Roles(...MEMBER_PLUS_ROLES)
+  @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.CRM_WRITE)
   async move(
     @Param('workspaceId') workspaceId: string,
@@ -54,7 +54,7 @@ export class DealsController {
   }
 
   @Delete(':dealId')
-  @Roles(...MEMBER_PLUS_ROLES)
+  @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.DEAL_DELETE)
   async remove(
     @Param('workspaceId') workspaceId: string,
