@@ -5,6 +5,7 @@ import { useMembersQuery } from '@/features/workspaces/hooks';
 import { useDeleteDealMutation, useUpdateDealMutation } from '../hooks';
 import type { FunnelDeal } from '../types';
 import { DealTasksSection } from './deal-tasks-section';
+import { DealRollupSection } from './deal-rollup-section';
 
 interface DealDetailDrawerProps {
   workspaceId: string;
@@ -200,6 +201,7 @@ export function DealDetailDrawer({
           </div>
         </form>
 
+        <DealRollupSection workspaceId={workspaceId} dealId={deal.id} />
         <DealTasksSection workspaceId={workspaceId} dealId={deal.id} />
       </aside>
     </div>

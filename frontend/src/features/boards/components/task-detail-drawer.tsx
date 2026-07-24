@@ -34,6 +34,7 @@ import {
 import { TaskCustomFieldsSection } from './task-custom-fields-section';
 import { TaskDealsSection } from './task-deals-section';
 import { TaskRelationsSection } from './task-relations-section';
+import { TaskRollupSection } from './task-rollup-section';
 import { TaskSubtasksSection } from './task-subtasks-section';
 import { TaskChecklistSection } from '@/features/dod';
 import { TaskTagsSection } from './task-tags-section';
@@ -627,6 +628,8 @@ export function TaskDetailDrawer({
             taskId={task.id}
             values={task.customFields}
           />
+
+          <TaskRollupSection workspaceId={workspaceId} taskId={task.id} />
 
           <TaskRelationsSection
             workspaceId={workspaceId}

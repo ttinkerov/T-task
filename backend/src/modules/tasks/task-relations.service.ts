@@ -18,6 +18,7 @@ const relationTaskInclude = {
     title: true,
     columnId: true,
     completedAt: true,
+    dueDate: true,
     column: {
       select: {
         name: true,
@@ -125,6 +126,7 @@ export class TaskRelationsService {
           columnId: relatedTask.columnId,
           columnName: relatedTask.column.name,
           completed: this.isTaskCompleted(relatedTask),
+          dueDate: relatedTask.dueDate ? relatedTask.dueDate.toISOString() : null,
         },
       };
     } catch (error) {
@@ -314,12 +316,14 @@ export class TaskRelationsService {
         id: string;
         title: string;
         columnId: string;
+        dueDate: Date | null;
         column: { name: string };
       };
       targetTask: Parameters<TaskRelationsService['isTaskCompleted']>[0] & {
         id: string;
         title: string;
         columnId: string;
+        dueDate: Date | null;
         column: { name: string };
       };
     },
@@ -335,6 +339,7 @@ export class TaskRelationsService {
         columnId: task.columnId,
         columnName: task.column.name,
         completed: this.isTaskCompleted(task),
+        dueDate: task.dueDate ? task.dueDate.toISOString() : null,
       },
     };
   }

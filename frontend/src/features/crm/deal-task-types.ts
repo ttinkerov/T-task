@@ -13,6 +13,7 @@ export interface LinkedTaskSummary {
   columnId: string;
   columnName: string;
   completed: boolean;
+  dueDate: string | null;
 }
 
 export interface TaskDealLink {

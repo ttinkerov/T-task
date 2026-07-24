@@ -154,6 +154,7 @@ export interface TaskRelation {
     columnId: string;
     columnName: string;
     completed: boolean;
+    dueDate: string | null;
   };
 }
 

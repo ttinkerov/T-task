@@ -8,6 +8,7 @@ const taskSummarySelect = {
   title: true,
   columnId: true,
   completedAt: true,
+  dueDate: true,
   column: {
     select: {
       name: true,
@@ -188,6 +189,7 @@ export class DealTasksService {
       title: string;
       columnId: string;
       completedAt: Date | null;
+      dueDate: Date | null;
       column: { name: string };
     };
   }) {
@@ -224,6 +226,7 @@ export class DealTasksService {
     title: string;
     columnId: string;
     completedAt: Date | null;
+    dueDate: Date | null;
     column: { name: string };
   }) {
     return {
@@ -232,6 +235,7 @@ export class DealTasksService {
       columnId: task.columnId,
       columnName: task.column.name,
       completed: Boolean(task.completedAt),
+      dueDate: task.dueDate ? task.dueDate.toISOString() : null,
     };
   }
 
