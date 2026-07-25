@@ -7,11 +7,14 @@ import {
   createTLStore,
   getSnapshot,
   loadSnapshot,
+  useEditor,
   type TLEditorSnapshot,
   type TLStoreWithStatus,
 } from 'tldraw';
 import 'tldraw/tldraw.css';
+import '../styles/tldraw-theme.css';
 import { ApiError } from '@/shared/api/client';
+import { useThemeStore, type ThemeMode } from '@/stores/theme.store';
 import { fetchWhiteboard, saveWhiteboard } from '../api';
 import { tldrawAssetUrls } from '../lib/tldraw-asset-urls';
 
@@ -23,7 +26,19 @@ interface WorkspaceWhiteboardProps {
   workspaceId: string;
 }
 
+/** Keep tldraw canvas/UI in sync with the app theme toggle. */
+function SyncTldrawTheme({ theme }: { theme: ThemeMode }) {
+  const editor = useEditor();
+
+  useEffect(() => {
+    editor.user.updateUserPreferences({ colorScheme: theme });
+  }, [editor, theme]);
+
+  return null;
+}
+
 export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
+  const theme = useThemeStore((state) => state.theme);
   const [storeWithStatus, setStoreWithStatus] = useState<TLStoreWithStatus>({
     status: 'loading',
   });
@@ -228,7 +243,9 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
         </p>
       </div>
       <div className="relative min-h-0 flex-1">
-        <Tldraw store={storeWithStatus.store} assetUrls={tldrawAssetUrls} />
+        <Tldraw store={storeWithStatus.store} assetUrls={tldrawAssetUrls} colorScheme={theme}>
+          <SyncTldrawTheme theme={theme} />
+        </Tldraw>
       </div>
     </div>
   );
