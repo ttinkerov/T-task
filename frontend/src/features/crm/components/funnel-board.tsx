@@ -22,6 +22,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { FormEvent, memo, useEffect, useMemo, useState, type HTMLAttributes } from 'react';
 import { useDealTemplatesQuery } from '@/features/templates';
+import { VirtualizedColumnList } from '@/shared/ui/virtualized-column-list';
 import {
   useCreateDealMutation,
   useCreateFunnelMutation,
@@ -36,8 +37,6 @@ import {
 } from '../hooks';
 import { formatDealAmount, type FunnelDeal, type FunnelStage, type FunnelView } from '../types';
 import { DealDetailDrawer } from './deal-detail-drawer';
-
-const STAGE_VISIBLE_STEP = 40;
 
 export function FunnelBoard({ workspaceId }: { workspaceId: string }) {
   const { data: funnels = [], isLoading: funnelsLoading } = useFunnelsQuery(workspaceId);
@@ -335,19 +334,6 @@ function FunnelStageColumn({
   const [editingName, setEditingName] = useState(false);
   const [stageName, setStageName] = useState(stage.name);
   const dealIds = useMemo(() => stage.deals.map((deal) => deal.id), [stage.deals]);
-  const [visibleCount, setVisibleCount] = useState(() =>
-    Math.min(STAGE_VISIBLE_STEP, stage.deals.length),
-  );
-
-  useEffect(() => {
-    setVisibleCount((count) => Math.min(Math.max(count, STAGE_VISIBLE_STEP), stage.deals.length));
-  }, [stage.id, stage.deals.length]);
-
-  const visibleDeals = useMemo(
-    () => stage.deals.slice(0, visibleCount),
-    [stage.deals, visibleCount],
-  );
-  const hiddenCount = Math.max(0, stage.deals.length - visibleCount);
   const remainingServer = Math.max(0, (stage.dealTotal ?? stage.deals.length) - stage.deals.length);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -449,37 +435,30 @@ function FunnelStageColumn({
       </div>
 
       <SortableContext items={dealIds} strategy={verticalListSortingStrategy}>
-        <div className="kanban-column__tasks">
-          {visibleDeals.map((deal) => (
-            <DealCard key={deal.id} deal={deal} onOpenDeal={onOpenDeal} />
-          ))}
-          {hiddenCount > 0 ? (
-            <button
-              type="button"
-              className="kanban-column__show-more"
-              onClick={() =>
-                setVisibleCount((count) => Math.min(count + STAGE_VISIBLE_STEP, stage.deals.length))
-              }
-            >
-              Ещё {Math.min(STAGE_VISIBLE_STEP, hiddenCount)} из {hiddenCount}
-            </button>
-          ) : stage.truncated ? (
-            <button
-              type="button"
-              className="kanban-column__show-more"
-              disabled={loadMoreMutation.isPending}
-              onClick={() => {
-                void loadMoreMutation
-                  .mutateAsync({ stageId: stage.id, offset: stage.deals.length })
-                  .then((page) => {
-                    setVisibleCount((count) => count + page.items.length);
+        <VirtualizedColumnList
+          items={stage.deals}
+          getItemKey={(deal) => deal.id}
+          estimateSize={84}
+          footer={
+            stage.truncated ? (
+              <button
+                type="button"
+                className="kanban-column__show-more"
+                disabled={loadMoreMutation.isPending}
+                onClick={() => {
+                  void loadMoreMutation.mutateAsync({
+                    stageId: stage.id,
+                    offset: stage.deals.length,
                   });
-              }}
-            >
-              {loadMoreMutation.isPending ? 'Загрузка…' : `Загрузить ещё (${remainingServer})`}
-            </button>
-          ) : null}
-        </div>
+                }}
+              >
+                {loadMoreMutation.isPending ? 'Загрузка…' : `Загрузить ещё (${remainingServer})`}
+              </button>
+            ) : null
+          }
+        >
+          {(deal) => <DealCard deal={deal} onOpenDeal={onOpenDeal} />}
+        </VirtualizedColumnList>
       </SortableContext>
 
       <form onSubmit={handleSubmit} className="kanban-column__add">

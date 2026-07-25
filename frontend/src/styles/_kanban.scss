@@ -218,6 +218,23 @@
       background: var(--tt-scrollbar);
       border-radius: $radius-pill;
     }
+
+    &--virtual {
+      display: block;
+      gap: 0;
+    }
+  }
+
+  &__virtual-spacer {
+    position: relative;
+    width: 100%;
+  }
+
+  &__virtual-item {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
   }
 
   &__show-more {

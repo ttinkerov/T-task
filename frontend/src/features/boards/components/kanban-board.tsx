@@ -38,6 +38,7 @@ import { useMembersQuery } from '@/features/workspaces/hooks';
 import { celebrateTaskComplete } from '@/shared/lib/celebrate';
 import { formatMinutes } from '@/shared/lib/format-duration';
 import { formatRecurrenceLabel } from '@/shared/lib/format-recurrence';
+import { VirtualizedColumnList } from '@/shared/ui/virtualized-column-list';
 import { formatAgingLabel, getAgingLevel, isDoneColumn, isTaskOverdue } from '../lib/overdue';
 import {
   calendarRangeFromStoredView,
@@ -79,7 +80,6 @@ const TaskDetailDrawer = dynamic(
 
 const EMPTY_TAGS: TaskTag[] = [];
 const EMPTY_SUBTASKS: NonNullable<BoardTask['subtasks']> = [];
-const COLUMN_VISIBLE_STEP = 40;
 
 const FOCUS_CREATE_KEY = 'ttask:focus-create';
 
@@ -630,19 +630,6 @@ function KanbanColumn({
   const loadMoreMutation = useLoadMoreColumnTasksMutation(workspaceId, boardId);
   const { data: taskTemplates = [] } = useTaskTemplatesQuery(workspaceId);
   const taskIds = useMemo(() => column.tasks.map((task) => task.id), [column.tasks]);
-  const [visibleCount, setVisibleCount] = useState(() =>
-    Math.min(COLUMN_VISIBLE_STEP, column.tasks.length),
-  );
-
-  useEffect(() => {
-    setVisibleCount((count) => Math.min(Math.max(count, COLUMN_VISIBLE_STEP), column.tasks.length));
-  }, [column.id, column.tasks.length]);
-
-  const visibleTasks = useMemo(
-    () => column.tasks.slice(0, visibleCount),
-    [column.tasks, visibleCount],
-  );
-  const hiddenCount = Math.max(0, column.tasks.length - visibleCount);
   const remainingServer = Math.max(
     0,
     (column.taskTotal ?? column.tasks.length) - column.tasks.length,
@@ -810,10 +797,29 @@ function KanbanColumn({
       </div>
 
       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-        <div className="kanban-column__tasks">
-          {visibleTasks.map((task) => (
+        <VirtualizedColumnList
+          items={column.tasks}
+          getItemKey={(task) => task.id}
+          footer={
+            column.truncated ? (
+              <button
+                type="button"
+                className="kanban-column__show-more"
+                disabled={loadMoreMutation.isPending}
+                onClick={() => {
+                  void loadMoreMutation.mutateAsync({
+                    columnId: column.id,
+                    offset: column.tasks.length,
+                  });
+                }}
+              >
+                {loadMoreMutation.isPending ? 'Загрузка…' : `Загрузить ещё (${remainingServer})`}
+              </button>
+            ) : null
+          }
+        >
+          {(task) => (
             <KanbanTaskCard
-              key={task.id}
               task={task}
               column={column}
               allColumns={allColumns}
@@ -825,36 +831,8 @@ function KanbanColumn({
               onOpenTask={onOpenTask}
               onCompleteTask={onCompleteTask}
             />
-          ))}
-          {hiddenCount > 0 ? (
-            <button
-              type="button"
-              className="kanban-column__show-more"
-              onClick={() =>
-                setVisibleCount((count) =>
-                  Math.min(count + COLUMN_VISIBLE_STEP, column.tasks.length),
-                )
-              }
-            >
-              Ещё {Math.min(COLUMN_VISIBLE_STEP, hiddenCount)} из {hiddenCount}
-            </button>
-          ) : column.truncated ? (
-            <button
-              type="button"
-              className="kanban-column__show-more"
-              disabled={loadMoreMutation.isPending}
-              onClick={() => {
-                void loadMoreMutation
-                  .mutateAsync({ columnId: column.id, offset: column.tasks.length })
-                  .then((page) => {
-                    setVisibleCount((count) => count + page.items.length);
-                  });
-              }}
-            >
-              {loadMoreMutation.isPending ? 'Загрузка…' : `Загрузить ещё (${remainingServer})`}
-            </button>
-          ) : null}
-        </div>
+          )}
+        </VirtualizedColumnList>
       </SortableContext>
 
       <form onSubmit={handleSubmit} className="kanban-column__add">
