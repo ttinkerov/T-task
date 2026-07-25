@@ -22,4 +22,11 @@ describe('toPlainMentionText', () => {
     const names = new Map([['cm12345678901234567890', 'Анна']]);
     expect(toPlainMentionText('Hi @[Анна](cm12345678901234567890)!', names)).toBe('Hi @Анна!');
   });
+
+  it('renders wiki-links as readable titles', () => {
+    const names = new Map<string, string>();
+    expect(toPlainMentionText('См. [[Онбординг]](cm12345678901234567890)', names)).toBe(
+      'См. [[Онбординг]]',
+    );
+  });
 });

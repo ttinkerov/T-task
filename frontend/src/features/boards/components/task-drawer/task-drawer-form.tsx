@@ -3,6 +3,7 @@
 import { FormEvent } from 'react';
 import { TaskAiAssistant } from '@/features/ai';
 import { MentionTextarea } from '@/features/mentions';
+import { WikiLinkChips } from '@/features/wiki-links';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import type { BoardTask, TaskRelationCandidate } from '../../types';
 import type { useTaskFormState } from './hooks/use-task-form-state';
@@ -38,6 +39,11 @@ export function TaskDrawerForm({
   onClose: () => void;
 }) {
   const { data: members = [] } = useMembersQuery(workspaceId);
+  const wikiLinkTasks = relationCandidates.map((candidate) => ({
+    id: candidate.id,
+    title: candidate.title,
+    columnName: candidate.columnName,
+  }));
 
   return (
     <form onSubmit={onSubmit} className="task-drawer__form">
@@ -59,11 +65,14 @@ export function TaskDrawerForm({
           value={form.description}
           onChange={form.setDescription}
           members={members}
+          wikiLinkTasks={wikiLinkTasks}
+          excludeWikiTaskId={task.id}
           className="glass-input task-drawer__textarea"
           rows={4}
           maxLength={2000}
-          placeholder="Подробности задачи… Введите @, чтобы упомянуть коллегу"
+          placeholder="Подробности… @ — коллега, [[ — ссылка на задачу"
         />
+        <WikiLinkChips text={form.description} excludeTaskId={task.id} onOpenTask={onOpenTask} />
       </label>
 
       <TaskAiAssistant

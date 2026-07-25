@@ -1,5 +1,6 @@
 import type { CustomFieldDefinition } from '@/features/custom-fields/types';
 import { tokenizeMentions } from '../../mentions/mention-utils';
+import { tokenizeWikiLinks } from '../../wiki-links/wiki-link-utils';
 import type { BoardTask } from '../types';
 
 export function formatCustomFieldValue(
@@ -33,10 +34,13 @@ export function formatCustomFieldValue(
 
 export function toPlainMentionText(text: string, memberNames: Map<string, string>) {
   return tokenizeMentions(text)
-    .map((token) =>
-      token.type === 'text'
-        ? token.value
-        : `@${memberNames.get(token.userId) ?? token.value.slice(1)}`,
-    )
+    .map((token) => {
+      if (token.type === 'mention') {
+        return `@${memberNames.get(token.userId) ?? token.value.slice(1)}`;
+      }
+      return tokenizeWikiLinks(token.value)
+        .map((part) => (part.type === 'wiki-link' ? `[[${part.value}]]` : part.value))
+        .join('');
+    })
     .join('');
 }

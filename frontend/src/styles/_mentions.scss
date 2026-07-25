@@ -67,3 +67,30 @@
   color: var(--tt-brand);
   font-weight: 650;
 }
+
+.wiki-link-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.wiki-link-chip {
+  border: 1px solid var(--tt-border);
+  border-radius: 0.4rem;
+  background: var(--tt-surface);
+  padding: 0.2rem 0.45rem;
+  color: var(--tt-brand);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 650;
+
+  &:hover {
+    background: var(--tt-hover-strong);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--tt-brand);
+    outline-offset: 1px;
+  }
+}
