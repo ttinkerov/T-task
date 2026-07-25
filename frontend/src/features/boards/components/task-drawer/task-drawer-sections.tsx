@@ -5,6 +5,7 @@ import { TaskChecklistSection } from '@/features/dod';
 import { ApplyTaskTemplateControl } from '@/features/templates';
 import { LazyMount } from '@/shared/ui/lazy-mount';
 import type { BoardTask, TaskRelationCandidate, TaskTag } from '../../types';
+import { TaskBacklinksSection } from '../task-backlinks-section';
 import { TaskCustomFieldsSection } from '../task-custom-fields-section';
 import { TaskDealsSection } from '../task-deals-section';
 import { TaskRelationsSection } from '../task-relations-section';
@@ -53,6 +54,7 @@ export function TaskDrawerSections({
           candidates={relationCandidates}
           onOpenTask={onOpenTask}
         />
+        <TaskBacklinksSection workspaceId={workspaceId} taskId={task.id} onOpenTask={onOpenTask} />
         <TaskDealsSection workspaceId={workspaceId} taskId={task.id} />
       </LazyMount>
     </>

@@ -168,6 +168,12 @@ export interface TaskRelationCandidate {
   isEpic?: boolean;
 }
 
+export interface TaskBacklink {
+  id: string;
+  title: string;
+  columnName: string;
+}
+
 export interface BoardFilters {
   search: string;
   priority: TaskPriority | '';

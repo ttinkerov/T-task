@@ -4,6 +4,7 @@ import type {
   BoardTask,
   BoardView,
   ColumnAutomation,
+  TaskBacklink,
   TaskComment,
   TaskRelation,
   TaskRelationType,
@@ -217,6 +218,12 @@ export async function deleteComment(workspaceId: string, taskId: string, comment
 
 export async function fetchTaskRelations(workspaceId: string, taskId: string) {
   return apiFetch<TaskRelation[]>(`/api/v1/workspaces/${workspaceId}/tasks/${taskId}/relations`, {
+    headers: withWorkspace(workspaceId),
+  });
+}
+
+export async function fetchTaskBacklinks(workspaceId: string, taskId: string) {
+  return apiFetch<TaskBacklink[]>(`/api/v1/workspaces/${workspaceId}/tasks/${taskId}/backlinks`, {
     headers: withWorkspace(workspaceId),
   });
 }

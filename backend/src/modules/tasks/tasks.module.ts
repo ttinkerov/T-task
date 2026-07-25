@@ -18,6 +18,8 @@ import { TaskRelationsController } from './task-relations.controller';
 import { TaskRelationsService } from './task-relations.service';
 import { TaskAttachmentsController } from './task-attachments.controller';
 import { TaskAttachmentsService } from './task-attachments.service';
+import { TaskBacklinksController } from './task-backlinks.controller';
+import { TaskBacklinksService } from './task-backlinks.service';
 import { TasksController } from './tasks.controller';
 import { TasksService } from './tasks.service';
 
@@ -33,6 +35,7 @@ import { TasksService } from './tasks.service';
   controllers: [
     TasksController,
     TaskRelationsController,
+    TaskBacklinksController,
     CustomFieldsController,
     TaskCustomFieldsController,
     AllTasksController,
@@ -45,6 +48,7 @@ import { TasksService } from './tasks.service';
   providers: [
     TasksService,
     TaskRelationsService,
+    TaskBacklinksService,
     CustomFieldsService,
     AllTasksService,
     TagsService,
@@ -54,6 +58,7 @@ import { TasksService } from './tasks.service';
   exports: [
     TasksService,
     TaskRelationsService,
+    TaskBacklinksService,
     CustomFieldsService,
     TagsService,
     SubtasksService,

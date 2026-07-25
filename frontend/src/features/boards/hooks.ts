@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { scheduleInvalidateQueries } from '@/shared/query/schedule-invalidate';
+import { extractWikiLinks } from '@/features/wiki-links/wiki-link-utils';
 import {
   createBoard,
   createColumn,
@@ -18,6 +19,7 @@ import {
   fetchComments,
   fetchDefaultBoard,
   fetchTask,
+  fetchTaskBacklinks,
   fetchTaskRelations,
   moveColumn,
   moveTask,
@@ -48,6 +50,8 @@ export const boardKeys = {
     [...boardKeys.all, workspaceId, 'comments', taskId] as const,
   relations: (workspaceId: string, taskId: string) =>
     [...boardKeys.all, workspaceId, 'relations', taskId] as const,
+  backlinks: (workspaceId: string, taskId: string) =>
+    [...boardKeys.all, workspaceId, 'backlinks', taskId] as const,
 };
 
 export function invalidateWorkspaceBoards(
@@ -359,8 +363,14 @@ export function useUpdateTaskMutation(workspaceId: string, boardId?: string | nu
     mutationFn: async ({ taskId, data }: { taskId: string; data: UpdateTaskPayload }) => {
       await updateTask(workspaceId, taskId, data);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       invalidateBoardAndLists(queryClient, workspaceId, boardId);
+      scheduleInvalidateQueries(queryClient, [...boardKeys.all, workspaceId, 'backlinks']);
+      if (typeof variables.data.description === 'string') {
+        for (const link of extractWikiLinks(variables.data.description)) {
+          scheduleInvalidateQueries(queryClient, boardKeys.backlinks(workspaceId, link.taskId));
+        }
+      }
     },
   });
 }
@@ -453,6 +463,17 @@ export function useTaskRelationsQuery(workspaceId: string, taskId: string) {
     queryKey: boardKeys.relations(workspaceId, taskId),
     queryFn: async () => {
       const response = await fetchTaskRelations(workspaceId, taskId);
+      return response.data ?? [];
+    },
+    enabled: Boolean(workspaceId && taskId),
+  });
+}
+
+export function useTaskBacklinksQuery(workspaceId: string, taskId: string) {
+  return useQuery({
+    queryKey: boardKeys.backlinks(workspaceId, taskId),
+    queryFn: async () => {
+      const response = await fetchTaskBacklinks(workspaceId, taskId);
       return response.data ?? [];
     },
     enabled: Boolean(workspaceId && taskId),
