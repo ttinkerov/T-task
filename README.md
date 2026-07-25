@@ -4,6 +4,18 @@
 
 **Стек:** Next.js, NestJS, Prisma, PostgreSQL, Redis
 
+## Возможности
+
+Workspaces — команды, роли, инвайты, scopes  
+Boards — колонки, DnD, WIP, автоматизации, фильтры  
+Tasks — сабтаски, теги, комментарии, @mentions, watchers, эпики, спринты  
+My Tasks — назначенные / слежу / просрочка / скоро дедлайн  
+CRM — воронки, сделки, связь со задачами  
+Forms — публичные формы → задачи / сделки  
+DoD / Templates — чеклисты и шаблоны карточек  
+Analytics — throughput, cycle time, workload  
+Apps — календарь iCal, импорт, AI-помощник, корзина
+
 ## Запуск
 
 ```bash
@@ -57,10 +69,3 @@ npm run build
 npm run lint
 npm run prisma:migrate -w backend
 ```
-
-## Заметки
-
-- Auth через httpOnly cookies (`access_token`, `refresh_token`). В production cookies `Secure`, включены HSTS/CSP и Origin CSRF.
-- На workspace-роутах нужен заголовок `x-workspace-id`.
-- В `.env` обязательно свой `JWT_ACCESS_SECRET` (≥32 символа, не placeholder).
-- Для ИИ (чат и помощник в задаче): задайте `AI_TOKEN_ENC_KEY` (base64, 32 байта) и вставьте API-токен в настройках команды.

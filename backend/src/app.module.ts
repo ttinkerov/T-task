@@ -30,6 +30,7 @@ import { WatchersModule } from './modules/watchers/watchers.module';
 import { DodModule } from './modules/dod/dod.module';
 import { ImportModule } from './modules/import/import.module';
 import { TemplatesModule } from './modules/templates/templates.module';
+import { HealthController } from './modules/health/health.controller';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { TemplatesModule } from './modules/templates/templates.module';
     TemplatesModule,
     ImportModule,
   ],
+  controllers: [HealthController],
   providers: [MailNotificationsListener],
 })
 export class AppModule {}

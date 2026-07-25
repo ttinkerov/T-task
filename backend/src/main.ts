@@ -44,7 +44,9 @@ async function bootstrap(): Promise<void> {
   app.use(json({ limit: REQUEST_BODY_LIMIT }));
   app.use(urlencoded({ extended: true, limit: REQUEST_BODY_LIMIT }));
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['health/live', 'health/ready'],
+  });
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },

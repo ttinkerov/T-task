@@ -249,6 +249,7 @@ export function TaskDetailDrawer({
         role="dialog"
         aria-modal="true"
         aria-label="Редактирование задачи"
+        data-testid="task-detail-drawer"
       >
         <div className="task-drawer__header">
           <div>

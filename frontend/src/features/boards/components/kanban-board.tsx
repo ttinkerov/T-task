@@ -698,6 +698,8 @@ function KanbanColumn({
     <div
       ref={setNodeRef}
       className={`kanban-column ${isOver ? 'kanban-column--over' : ''} ${overWip ? 'kanban-column--over-wip' : ''}`}
+      data-testid={`kanban-column-${column.id}`}
+      data-column-id={column.id}
     >
       <div className="kanban-column__header">
         <button
@@ -949,6 +951,9 @@ const KanbanTaskCard = memo(function KanbanTaskCard({
     <div
       ref={setNodeRef}
       style={style}
+      data-testid={`kanban-task-${task.id}`}
+      data-task-id={task.id}
+      data-column-id={task.columnId}
       className={`kanban-task-card kanban-task ${selected ? 'kanban-task-card--selected' : ''} ${agingLevel !== 'none' ? `kanban-task-card--aging-${agingLevel}` : ''} ${isOverdue ? 'kanban-task-card--overdue' : ''} ${task.isEpic ? 'kanban-task-card--epic' : ''} ${isDragging ? 'kanban-task--dragging' : ''}`}
       onClick={(event) => {
         if (event.metaKey || event.ctrlKey || event.shiftKey || selectionActive) {
