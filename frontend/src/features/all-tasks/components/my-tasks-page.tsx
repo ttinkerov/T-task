@@ -3,9 +3,9 @@
 import { PRIORITY_LABELS } from '@/features/boards';
 import dynamic from 'next/dynamic';
 import { useMemo, useState } from 'react';
-import { useAllTasksQuery } from '../hooks';
-import { DUE_SOON_DAYS, partitionMyTasks } from '../lib/my-tasks-partition';
-import { EMPTY_ALL_TASKS_FILTERS, type AllTask, type AllTasksQuery } from '../types';
+import { useMyTasksQuery } from '../hooks';
+import { DUE_SOON_DAYS } from '../lib/my-tasks-partition';
+import type { AllTask } from '../types';
 
 const TaskDetailDrawer = dynamic(
   () =>
@@ -19,48 +19,36 @@ const SECTION_LIMIT = 50;
 
 export function MyTasksPage({
   workspaceId,
-  userId,
+  userId: _userId,
   initialTaskId = null,
 }: {
   workspaceId: string;
   userId: string;
   initialTaskId?: string | null;
 }) {
-  const assignedQuery: AllTasksQuery = {
-    ...EMPTY_ALL_TASKS_FILTERS,
-    assigneeId: userId,
-    status: 'OPEN',
-    page: 1,
-    limit: SECTION_LIMIT,
-    sortBy: 'DUE_DATE',
-    sortOrder: 'ASC',
-  };
-  const watchingQuery: AllTasksQuery = {
-    ...EMPTY_ALL_TASKS_FILTERS,
-    watching: true,
-    status: 'OPEN',
-    page: 1,
-    limit: SECTION_LIMIT,
-    sortBy: 'DUE_DATE',
-    sortOrder: 'ASC',
-  };
-
-  const assigned = useAllTasksQuery(workspaceId, assignedQuery);
-  const watching = useAllTasksQuery(workspaceId, watchingQuery);
+  const myTasks = useMyTasksQuery(workspaceId, SECTION_LIMIT);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(initialTaskId);
 
-  const buckets = useMemo(
-    () => partitionMyTasks(assigned.data?.items ?? [], watching.data?.items ?? []),
-    [assigned.data?.items, watching.data?.items],
-  );
+  const buckets = myTasks.data ?? {
+    overdue: [] as AllTask[],
+    dueSoon: [] as AllTask[],
+    assigned: [] as AllTask[],
+    watching: [] as AllTask[],
+  };
+  const dueSoonDays = myTasks.data?.dueSoonDays ?? DUE_SOON_DAYS;
 
   const allTasksById = useMemo(() => {
     const map = new Map<string, AllTask>();
-    for (const task of [...(assigned.data?.items ?? []), ...(watching.data?.items ?? [])]) {
+    for (const task of [
+      ...buckets.overdue,
+      ...buckets.dueSoon,
+      ...buckets.assigned,
+      ...buckets.watching,
+    ]) {
       map.set(task.id, task);
     }
     return map;
-  }, [assigned.data?.items, watching.data?.items]);
+  }, [buckets.assigned, buckets.dueSoon, buckets.overdue, buckets.watching]);
 
   const selectedTask = selectedTaskId ? (allTasksById.get(selectedTaskId) ?? null) : null;
   const relationCandidates = useMemo(
@@ -81,8 +69,8 @@ export function MyTasksPage({
     buckets.assigned.length +
     buckets.watching.length;
 
-  const isLoading = assigned.isLoading || watching.isLoading;
-  const isError = assigned.isError || watching.isError;
+  const isLoading = myTasks.isLoading;
+  const isError = myTasks.isError;
 
   return (
     <section className="all-tasks my-tasks" aria-labelledby="my-tasks-title">
@@ -91,8 +79,8 @@ export function MyTasksPage({
           <p className="all-tasks__eyebrow">Личное</p>
           <h1 id="my-tasks-title">Мои задачи</h1>
           <p>
-            Как Notion «Assigned to me»: просроченные, ближайшие {DUE_SOON_DAYS} дней, назначенные
-            вам и те, за которыми вы следите.
+            Как Notion «Assigned to me»: просроченные, ближайшие {dueSoonDays} дней, назначенные вам
+            и те, за которыми вы следите.
           </p>
         </div>
         <strong>{totalVisible} открытых</strong>
@@ -118,7 +106,7 @@ export function MyTasksPage({
       <MyTasksSection
         id="dueSoon"
         title="Скоро дедлайн"
-        hint={`В ближайшие ${DUE_SOON_DAYS} дней`}
+        hint={`В ближайшие ${dueSoonDays} дней`}
         tasks={buckets.dueSoon}
         tone="warn"
         onOpenTask={setSelectedTaskId}

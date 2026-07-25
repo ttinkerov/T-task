@@ -71,7 +71,14 @@ describe('AllTasksService', () => {
     service = new AllTasksService(
       prisma as never,
       { getWorkspaceForMember: vi.fn().mockResolvedValue({ id: 'workspace-1' }) } as never,
-      { serializeTask: vi.fn((task) => ({ id: task.id, title: task.title })) } as never,
+      {
+        serializeTask: vi.fn((task) => ({
+          id: task.id,
+          title: task.title,
+          dueDate: task.dueDate?.toISOString?.() ?? task.dueDate ?? null,
+          completedAt: task.completedAt?.toISOString?.() ?? task.completedAt ?? null,
+        })),
+      } as never,
     );
   });
 
@@ -183,5 +190,84 @@ describe('AllTasksService', () => {
         AND: [{ completedAt: null }],
       }),
     });
+  });
+
+  it('loads assigned and watching in one my-tasks response with buckets', async () => {
+    const now = new Date('2026-07-25T12:00:00.000Z');
+    prisma.task.findMany
+      .mockResolvedValueOnce([
+        {
+          id: 'overdue',
+          title: 'Late',
+          dueDate: new Date('2026-07-20T00:00:00.000Z'),
+          completedAt: null,
+          column: {
+            id: 'column-1',
+            name: 'В работе',
+            board: { id: 'board-1', name: 'Продукт' },
+          },
+        },
+        {
+          id: 'soon',
+          title: 'Soon',
+          dueDate: new Date('2026-07-27T00:00:00.000Z'),
+          completedAt: null,
+          column: {
+            id: 'column-1',
+            name: 'В работе',
+            board: { id: 'board-1', name: 'Продукт' },
+          },
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'soon',
+          title: 'Soon',
+          dueDate: new Date('2026-07-27T00:00:00.000Z'),
+          completedAt: null,
+          column: {
+            id: 'column-1',
+            name: 'В работе',
+            board: { id: 'board-1', name: 'Продукт' },
+          },
+        },
+        {
+          id: 'watch-only',
+          title: 'Watch',
+          dueDate: new Date('2026-07-26T00:00:00.000Z'),
+          completedAt: null,
+          column: {
+            id: 'column-1',
+            name: 'В работе',
+            board: { id: 'board-1', name: 'Продукт' },
+          },
+        },
+      ]);
+
+    const result = await service.listMyTasks('workspace-1', 'user-1', 50, now);
+
+    expect(prisma.task.findMany).toHaveBeenCalledTimes(2);
+    expect(prisma.task.findMany).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        where: expect.objectContaining({ assigneeId: 'user-1', completedAt: null }),
+        take: 50,
+      }),
+    );
+    expect(prisma.task.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          watchers: { some: { userId: 'user-1' } },
+          completedAt: null,
+        }),
+        take: 50,
+      }),
+    );
+    expect(result.overdue.map((task) => task.id)).toEqual(['overdue']);
+    expect(result.dueSoon.map((task) => task.id)).toEqual(['soon']);
+    expect(result.watching.map((task) => task.id)).toEqual(['watch-only']);
+    expect(result.limit).toBe(50);
+    expect(result.dueSoonDays).toBe(7);
   });
 });

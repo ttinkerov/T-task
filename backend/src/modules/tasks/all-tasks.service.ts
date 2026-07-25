@@ -11,6 +11,24 @@ import {
   ListAllTasksQueryDto,
   SortOrder,
 } from './dto/list-all-tasks-query.dto';
+import { MY_TASKS_DUE_SOON_DAYS, partitionMyTasks } from './utils/partition-my-tasks.util';
+
+const MY_TASKS_LIST_INCLUDE = {
+  assignee: {
+    select: { id: true, name: true, email: true, avatarUrl: true },
+  },
+  taskTags: {
+    include: { tag: { select: { id: true, name: true, color: true } } },
+    orderBy: { tag: { name: 'asc' as const } },
+  },
+  column: {
+    select: {
+      id: true,
+      name: true,
+      board: { select: { id: true, name: true } },
+    },
+  },
+} satisfies Prisma.TaskInclude;
 
 @Injectable()
 export class AllTasksService {
@@ -36,22 +54,7 @@ export class AllTasksService {
         skip: (page - 1) * limit,
         take: limit,
         orderBy,
-        include: {
-          assignee: {
-            select: { id: true, name: true, email: true, avatarUrl: true },
-          },
-          taskTags: {
-            include: { tag: { select: { id: true, name: true, color: true } } },
-            orderBy: { tag: { name: 'asc' } },
-          },
-          column: {
-            select: {
-              id: true,
-              name: true,
-              board: { select: { id: true, name: true } },
-            },
-          },
-        },
+        include: MY_TASKS_LIST_INCLUDE,
       }),
       includeMeta
         ? this.prisma.board.findMany({
@@ -95,6 +98,50 @@ export class AllTasksService {
       totalPages: Math.ceil(total / limit),
       boards,
       tags,
+    };
+  }
+
+  async listMyTasks(workspaceId: string, userId: string, limit = 50, now: Date = new Date()) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+
+    const take = Math.min(Math.max(limit, 1), 100);
+    const openInWorkspace: Prisma.TaskWhereInput = {
+      deletedAt: null,
+      completedAt: null,
+      column: { board: { workspaceId } },
+    };
+    const orderBy: Prisma.TaskOrderByWithRelationInput[] = [
+      { dueDate: { sort: 'asc', nulls: 'last' } },
+      { id: 'asc' },
+    ];
+
+    const [assignedRows, watchingRows] = await Promise.all([
+      this.prisma.task.findMany({
+        where: { ...openInWorkspace, assigneeId: userId },
+        take,
+        orderBy,
+        include: MY_TASKS_LIST_INCLUDE,
+      }),
+      this.prisma.task.findMany({
+        where: { ...openInWorkspace, watchers: { some: { userId } } },
+        take,
+        orderBy,
+        include: MY_TASKS_LIST_INCLUDE,
+      }),
+    ]);
+
+    const serialize = (task: (typeof assignedRows)[number]) => ({
+      ...this.boardsService.serializeTask(task),
+      board: task.column.board,
+      column: { id: task.column.id, name: task.column.name },
+    });
+
+    const buckets = partitionMyTasks(assignedRows.map(serialize), watchingRows.map(serialize), now);
+
+    return {
+      ...buckets,
+      limit: take,
+      dueSoonDays: MY_TASKS_DUE_SOON_DAYS,
     };
   }
 

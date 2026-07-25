@@ -7,6 +7,7 @@ import { WatchersModule } from '../watchers/watchers.module';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
 import { AllTasksController } from './all-tasks.controller';
 import { AllTasksService } from './all-tasks.service';
+import { MyTasksController } from './my-tasks.controller';
 import { CustomFieldsController, TaskCustomFieldsController } from './custom-fields.controller';
 import { CustomFieldsService } from './custom-fields.service';
 import { SubtasksController } from './subtasks.controller';
@@ -35,6 +36,7 @@ import { TasksService } from './tasks.service';
     CustomFieldsController,
     TaskCustomFieldsController,
     AllTasksController,
+    MyTasksController,
     TagsController,
     TaskTagsController,
     SubtasksController,

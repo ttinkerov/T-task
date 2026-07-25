@@ -45,6 +45,15 @@ export interface AllTasksResult {
   tags: { id: string; name: string; color: string }[];
 }
 
+export interface MyTasksResult {
+  overdue: AllTask[];
+  dueSoon: AllTask[];
+  assigned: AllTask[];
+  watching: AllTask[];
+  limit: number;
+  dueSoonDays: number;
+}
+
 export const EMPTY_ALL_TASKS_FILTERS: AllTasksFilters = {
   search: '',
   priority: '',

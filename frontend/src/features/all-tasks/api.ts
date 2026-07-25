@@ -1,5 +1,5 @@
 import { apiFetch } from '@/shared/api/client';
-import type { AllTasksQuery, AllTasksResult } from './types';
+import type { AllTasksQuery, AllTasksResult, MyTasksResult } from './types';
 
 export async function fetchAllTasks(workspaceId: string, query: AllTasksQuery) {
   const searchParams = new URLSearchParams();
@@ -13,6 +13,14 @@ export async function fetchAllTasks(workspaceId: string, query: AllTasksQuery) {
 
   return apiFetch<AllTasksResult>(
     `/api/v1/workspaces/${workspaceId}/all-tasks?${searchParams.toString()}`,
+    { headers: { 'x-workspace-id': workspaceId } },
+  );
+}
+
+export async function fetchMyTasks(workspaceId: string, limit = 50) {
+  const searchParams = new URLSearchParams({ limit: String(limit) });
+  return apiFetch<MyTasksResult>(
+    `/api/v1/workspaces/${workspaceId}/my-tasks?${searchParams.toString()}`,
     { headers: { 'x-workspace-id': workspaceId } },
   );
 }
