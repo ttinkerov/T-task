@@ -1,11 +1,12 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { fetchAllTasks, fetchMyTasks } from './api';
+import { fetchAllTasks, fetchAllTasksMeta, fetchMyTasks } from './api';
 import type { AllTasksQuery } from './types';
 
 export const allTasksKeys = {
   all: ['all-tasks'] as const,
   list: (workspaceId: string, query: AllTasksQuery) =>
     [...allTasksKeys.all, workspaceId, query] as const,
+  meta: (workspaceId: string) => [...allTasksKeys.all, workspaceId, 'meta'] as const,
   my: (workspaceId: string) => [...allTasksKeys.all, workspaceId, 'my'] as const,
 };
 
@@ -18,6 +19,18 @@ export function useAllTasksQuery(workspaceId: string | null, query: AllTasksQuer
     },
     enabled: Boolean(workspaceId),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useAllTasksMetaQuery(workspaceId: string | null) {
+  return useQuery({
+    queryKey: allTasksKeys.meta(workspaceId ?? ''),
+    queryFn: async () => {
+      const response = await fetchAllTasksMeta(workspaceId!);
+      return response.data;
+    },
+    enabled: Boolean(workspaceId),
+    staleTime: 5 * 60_000,
   });
 }
 

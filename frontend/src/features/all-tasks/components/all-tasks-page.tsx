@@ -17,7 +17,15 @@ import { downloadExport } from '@/features/workspace-tools/api';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useAllTasksQuery } from '../hooks';
+import { useAllTasksMetaQuery, useAllTasksQuery } from '../hooks';
+import {
+  EMPTY_ALL_TASKS_FILTERS,
+  type AllTask,
+  type AllTasksFilters,
+  type AllTasksQuery,
+  type AllTasksSort,
+  type SortOrder,
+} from '../types';
 
 const TaskDetailDrawer = dynamic(
   () =>
@@ -26,15 +34,6 @@ const TaskDetailDrawer = dynamic(
     })),
   { ssr: false },
 );
-import {
-  EMPTY_ALL_TASKS_FILTERS,
-  type AllTask,
-  type AllTasksBoard,
-  type AllTasksFilters,
-  type AllTasksQuery,
-  type AllTasksSort,
-  type SortOrder,
-} from '../types';
 
 const VIEW_MODES: BoardViewMode[] = ['TABLE', 'CALENDAR', 'TIMELINE'];
 const PAGE_SIZE = 50;
@@ -100,18 +99,10 @@ export function AllTasksPage({
     sortOrder,
   };
   const { data, isLoading, isFetching, isError } = useAllTasksQuery(workspaceId, query);
+  const { data: filterMeta } = useAllTasksMetaQuery(workspaceId);
   const { data: members = [] } = useMembersQuery(workspaceId);
-  const [filterBoards, setFilterBoards] = useState<AllTasksBoard[]>([]);
-  const [filterTags, setFilterTags] = useState<{ id: string; name: string; color: string }[]>([]);
-
-  useEffect(() => {
-    if (data?.boards?.length) {
-      setFilterBoards(data.boards);
-    }
-    if (data?.tags) {
-      setFilterTags(data.tags);
-    }
-  }, [data?.boards, data?.tags]);
+  const filterBoards = filterMeta?.boards ?? [];
+  const filterTags = filterMeta?.tags ?? [];
 
   useEffect(() => {
     if (!initialTaskId || !data?.items.some((task) => task.id === initialTaskId)) {

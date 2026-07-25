@@ -41,6 +41,9 @@ export interface AllTasksResult {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export interface AllTasksFilterMeta {
   boards: AllTasksBoard[];
   tags: { id: string; name: string; color: string }[];
 }

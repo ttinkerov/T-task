@@ -13,6 +13,15 @@ import { ListAllTasksQueryDto } from './dto/list-all-tasks-query.dto';
 export class AllTasksController {
   constructor(private readonly allTasksService: AllTasksService) {}
 
+  @Get('meta')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(ALL_TASKS_RATE_LIMIT)
+  @Roles(...ALL_WORKSPACE_ROLES)
+  async meta(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
+    const result = await this.allTasksService.getFilterMeta(workspaceId, user.id);
+    return successResponse(result);
+  }
+
   @Get()
   @UseGuards(AuthRateLimitGuard)
   @RateLimit(ALL_TASKS_RATE_LIMIT)

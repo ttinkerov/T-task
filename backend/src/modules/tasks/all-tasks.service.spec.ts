@@ -113,32 +113,38 @@ describe('AllTasksService', () => {
       page: 2,
       limit: 20,
       totalPages: 1,
-      boards: [],
-      tags: [],
     });
   });
 
-  it('loads boards and tags metadata only on the first page', async () => {
+  it('does not load boards/tags metadata with the task list', async () => {
     await service.list('workspace-1', 'user-1', {
       page: 1,
       limit: 20,
       sortBy: AllTasksSort.CREATED_AT,
       sortOrder: SortOrder.DESC,
     });
-    expect(prisma.board.findMany).toHaveBeenCalled();
-    expect(prisma.tag.findMany).toHaveBeenCalled();
-
-    prisma.board.findMany.mockClear();
-    prisma.tag.findMany.mockClear();
-
-    await service.list('workspace-1', 'user-1', {
-      page: 2,
-      limit: 20,
-      sortBy: AllTasksSort.CREATED_AT,
-      sortOrder: SortOrder.DESC,
-    });
     expect(prisma.board.findMany).not.toHaveBeenCalled();
     expect(prisma.tag.findMany).not.toHaveBeenCalled();
+  });
+
+  it('returns boards and tags via getFilterMeta', async () => {
+    const result = await service.getFilterMeta('workspace-1', 'user-1');
+    expect(prisma.board.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { workspaceId: 'workspace-1' } }),
+    );
+    expect(prisma.tag.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { workspaceId: 'workspace-1' } }),
+    );
+    expect(result).toEqual({
+      boards: [
+        {
+          id: 'board-1',
+          name: 'Продукт',
+          columns: [{ id: 'column-1', name: 'В работе' }],
+        },
+      ],
+      tags: [],
+    });
   });
 
   it('applies search, assignee, priority, completion, board, and overdue filters', async () => {

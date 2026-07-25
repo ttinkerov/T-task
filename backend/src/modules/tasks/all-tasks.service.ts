@@ -45,9 +45,8 @@ export class AllTasksService {
     const limit = query.limit ?? 50;
     const where = this.buildWhere(workspaceId, userId, query);
     const orderBy = this.buildOrderBy(query);
-    const includeMeta = page === 1;
 
-    const [total, tasks, boards, tags] = await Promise.all([
+    const [total, tasks] = await Promise.all([
       this.prisma.task.count({ where }),
       this.prisma.task.findMany({
         where,
@@ -56,34 +55,6 @@ export class AllTasksService {
         orderBy,
         include: MY_TASKS_LIST_INCLUDE,
       }),
-      includeMeta
-        ? this.prisma.board.findMany({
-            where: { workspaceId },
-            orderBy: { name: 'asc' },
-            select: {
-              id: true,
-              name: true,
-              columns: {
-                where: { deletedAt: null },
-                orderBy: { position: 'asc' },
-                select: { id: true, name: true },
-              },
-            },
-          })
-        : Promise.resolve(
-            [] as Array<{
-              id: string;
-              name: string;
-              columns: Array<{ id: string; name: string }>;
-            }>,
-          ),
-      includeMeta
-        ? this.prisma.tag.findMany({
-            where: { workspaceId },
-            orderBy: { name: 'asc' },
-            select: { id: true, name: true, color: true },
-          })
-        : Promise.resolve([] as Array<{ id: string; name: string; color: string }>),
     ]);
 
     return {
@@ -96,9 +67,34 @@ export class AllTasksService {
       page,
       limit,
       totalPages: Math.ceil(total / limit),
-      boards,
-      tags,
     };
+  }
+
+  async getFilterMeta(workspaceId: string, userId: string) {
+    await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
+
+    const [boards, tags] = await Promise.all([
+      this.prisma.board.findMany({
+        where: { workspaceId },
+        orderBy: { name: 'asc' },
+        select: {
+          id: true,
+          name: true,
+          columns: {
+            where: { deletedAt: null },
+            orderBy: { position: 'asc' },
+            select: { id: true, name: true },
+          },
+        },
+      }),
+      this.prisma.tag.findMany({
+        where: { workspaceId },
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, color: true },
+      }),
+    ]);
+
+    return { boards, tags };
   }
 
   async listMyTasks(workspaceId: string, userId: string, limit = 50, now: Date = new Date()) {
