@@ -36,13 +36,51 @@ export class AnalyticsService {
       ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
     };
 
-    const completedWhere: Prisma.TaskWhereInput = {
-      ...taskWhere,
-      completedAt: { gte: from, lte: to, not: null },
-    };
+    const boardFilter = query.boardId ? Prisma.sql`AND b.id = ${query.boardId}` : Prisma.empty;
+    const assigneeFilter = query.assigneeId
+      ? Prisma.sql`AND t.assignee_id = ${query.assigneeId}`
+      : Prisma.empty;
 
-    const [throughput, overdueCount, cycleSamples] = await Promise.all([
-      this.prisma.task.count({ where: completedWhere }),
+    const [cycleRows, overdueCount] = await Promise.all([
+      this.prisma.$queryRaw<
+        Array<{
+          throughput: bigint | number;
+          avg_cycle_time_hours: Prisma.Decimal | number | string | null;
+          median_cycle_time_hours: Prisma.Decimal | number | string | null;
+        }>
+      >`
+        SELECT
+          COUNT(*)::int AS throughput,
+          COALESCE(
+            ROUND(
+              AVG(EXTRACT(EPOCH FROM (t.completed_at - t.created_at)) / 3600)::numeric,
+              1
+            ),
+            0
+          ) AS avg_cycle_time_hours,
+          COALESCE(
+            ROUND(
+              (
+                PERCENTILE_CONT(0.5) WITHIN GROUP (
+                  ORDER BY EXTRACT(EPOCH FROM (t.completed_at - t.created_at)) / 3600
+                )
+              )::numeric,
+              1
+            ),
+            0
+          ) AS median_cycle_time_hours
+        FROM tasks t
+        INNER JOIN board_columns c ON c.id = t.column_id
+        INNER JOIN boards b ON b.id = c.board_id
+        WHERE t.deleted_at IS NULL
+          AND t.completed_at IS NOT NULL
+          AND t.completed_at >= ${from}
+          AND t.completed_at <= ${to}
+          AND b.workspace_id = ${workspaceId}
+          AND EXTRACT(EPOCH FROM (t.completed_at - t.created_at)) >= 0
+          ${boardFilter}
+          ${assigneeFilter}
+      `,
       this.prisma.task.count({
         where: {
           ...taskWhere,
@@ -50,35 +88,16 @@ export class AnalyticsService {
           dueDate: { lt: new Date() },
         },
       }),
-      this.prisma.task.findMany({
-        where: completedWhere,
-        select: { createdAt: true, completedAt: true },
-        take: 2000,
-      }),
     ]);
 
-    const cycleHours = cycleSamples
-      .filter((task) => task.completedAt)
-      .map((task) => (task.completedAt!.getTime() - task.createdAt.getTime()) / (1000 * 60 * 60))
-      .filter((hours) => Number.isFinite(hours) && hours >= 0)
-      .sort((a, b) => a - b);
-
-    const avgCycleTimeHours =
-      cycleHours.length === 0
-        ? 0
-        : Math.round((cycleHours.reduce((sum, h) => sum + h, 0) / cycleHours.length) * 10) / 10;
-
-    const medianCycleTimeHours =
-      cycleHours.length === 0
-        ? 0
-        : Math.round(cycleHours[Math.floor(cycleHours.length / 2)] * 10) / 10;
+    const cycle = cycleRows[0];
 
     return {
       from: from.toISOString(),
       to: to.toISOString(),
-      throughput,
-      avgCycleTimeHours,
-      medianCycleTimeHours,
+      throughput: toFiniteNumber(cycle?.throughput),
+      avgCycleTimeHours: toFiniteNumber(cycle?.avg_cycle_time_hours),
+      medianCycleTimeHours: toFiniteNumber(cycle?.median_cycle_time_hours),
       overdueCount,
     };
   }
@@ -234,4 +253,10 @@ export class AnalyticsService {
       tasks: items,
     };
   }
+}
+
+function toFiniteNumber(value: unknown): number {
+  if (value == null) return 0;
+  const numeric = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(numeric) ? numeric : 0;
 }

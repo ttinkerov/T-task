@@ -5,6 +5,7 @@ function makePrisma() {
   return {
     board: { findMany: vi.fn() },
     task: { findMany: vi.fn(), count: vi.fn() },
+    $queryRaw: vi.fn(),
   };
 }
 
@@ -102,25 +103,47 @@ describe('AnalyticsService.summary', () => {
     );
   });
 
-  it('uses count for throughput and a capped sample for cycle time', async () => {
-    prisma.task.count.mockResolvedValueOnce(42).mockResolvedValueOnce(3);
-    prisma.task.findMany.mockResolvedValue([
+  it('computes cycle time in SQL without sampling completed tasks in JS', async () => {
+    prisma.$queryRaw.mockResolvedValue([
       {
-        createdAt: new Date('2026-07-01T00:00:00.000Z'),
-        completedAt: new Date('2026-07-02T12:00:00.000Z'),
+        throughput: 42,
+        avg_cycle_time_hours: 36.5,
+        median_cycle_time_hours: 24,
       },
     ]);
+    prisma.task.count.mockResolvedValue(3);
 
     const result = await service.summary('workspace-1', 'user-1', {});
 
-    expect(result.throughput).toBe(42);
-    expect(result.overdueCount).toBe(3);
-    expect(prisma.task.count).toHaveBeenCalledTimes(2);
-    expect(prisma.task.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        take: 2000,
-        select: { createdAt: true, completedAt: true },
-      }),
-    );
+    expect(result).toMatchObject({
+      throughput: 42,
+      avgCycleTimeHours: 36.5,
+      medianCycleTimeHours: 24,
+      overdueCount: 3,
+    });
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(prisma.task.count).toHaveBeenCalledTimes(1);
+    expect(prisma.task.findMany).not.toHaveBeenCalled();
+  });
+
+  it('returns zero cycle metrics when SQL aggregate is empty', async () => {
+    prisma.$queryRaw.mockResolvedValue([
+      {
+        throughput: 0,
+        avg_cycle_time_hours: 0,
+        median_cycle_time_hours: 0,
+      },
+    ]);
+    prisma.task.count.mockResolvedValue(0);
+
+    const result = await service.summary('workspace-1', 'user-1', {
+      boardId: 'board-1',
+      assigneeId: 'user-2',
+    });
+
+    expect(result.throughput).toBe(0);
+    expect(result.avgCycleTimeHours).toBe(0);
+    expect(result.medianCycleTimeHours).toBe(0);
+    expect(result.overdueCount).toBe(0);
   });
 });
