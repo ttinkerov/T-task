@@ -1,0 +1,110 @@
+@use 'variables' as *;
+
+.task-doc-editor {
+  display: grid;
+  gap: 0.55rem;
+
+  &__hint {
+    margin: 0;
+    color: $color-text-muted;
+    font-size: 0.6875rem;
+    line-height: 1.4;
+  }
+
+  &__blocks {
+    display: grid;
+    gap: 0.45rem;
+  }
+}
+
+.task-doc-block {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  border-radius: $radius-sm;
+  padding: 0.35rem 0.4rem;
+
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  &__type {
+    max-width: 10.5rem;
+    min-height: 1.85rem;
+    padding: 0.2rem 0.45rem;
+    font-size: 0.75rem;
+  }
+
+  &__icon-btn {
+    display: grid;
+    width: 1.75rem;
+    height: 1.75rem;
+    place-items: center;
+    border: 1px solid var(--tt-border);
+    border-radius: 0.4rem;
+    background: transparent;
+    color: $color-text-muted;
+    cursor: pointer;
+    font-size: 0.95rem;
+    line-height: 1;
+
+    &:hover {
+      background: var(--tt-hover-strong);
+      color: $color-white;
+    }
+  }
+
+  &__list-row {
+    display: grid;
+    grid-template-columns: 1.1rem 1fr;
+    gap: 0.4rem;
+    align-items: start;
+  }
+
+  &__marker {
+    padding-top: 0.45rem;
+    color: $color-text-muted;
+    font-size: 0.85rem;
+    font-weight: 650;
+    text-align: center;
+  }
+
+  &__toggle {
+    display: grid;
+    gap: 0.35rem;
+    padding-left: 0.35rem;
+    border-left: 2px solid var(--tt-border);
+  }
+
+  &__input {
+    min-height: 2rem;
+    resize: vertical;
+
+    &--heading1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    &--heading2 {
+      font-size: 0.95rem;
+      font-weight: 650;
+    }
+
+    &--toggle-title {
+      font-weight: 650;
+    }
+  }
+
+  &--callout {
+    border: 1px solid color-mix(in srgb, var(--tt-brand) 35%, var(--tt-border));
+    background: color-mix(in srgb, var(--tt-brand) 10%, transparent);
+    border-left: 3px solid var(--tt-brand);
+  }
+
+  &--heading1,
+  &--heading2 {
+    padding-top: 0.45rem;
+  }
+}

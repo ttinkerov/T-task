@@ -37,4 +37,29 @@ describe('buildTaskUpdatePayload', () => {
     expect(payload.priority).toBe('HIGH');
     expect(payload.recurrenceOriginColumnId).toBeNull();
   });
+
+  it('sends descriptionDoc and derived plain description', () => {
+    const values = toFormValues(task);
+    values.descriptionDoc = {
+      version: 1,
+      blocks: [
+        { id: 'h1', type: 'heading1', text: 'Цели' },
+        { id: 'c1', type: 'callout', text: 'Важно' },
+      ],
+    };
+    const payload = buildTaskUpdatePayload(values, task);
+    expect(payload.description).toBe('Цели\nВажно');
+    expect(payload.descriptionDoc).toEqual(values.descriptionDoc);
+  });
+
+  it('clears both fields when doc is empty', () => {
+    const values = toFormValues(task);
+    values.descriptionDoc = {
+      version: 1,
+      blocks: [{ id: 'empty', type: 'paragraph', text: '   ' }],
+    };
+    const payload = buildTaskUpdatePayload(values, task);
+    expect(payload.description).toBeNull();
+    expect(payload.descriptionDoc).toBeNull();
+  });
 });

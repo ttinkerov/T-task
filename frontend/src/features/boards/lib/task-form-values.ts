@@ -1,3 +1,9 @@
+import type { DescriptionDoc } from '../../task-description/types';
+import {
+  hydrateDescriptionDoc,
+  isDescriptionDocEmpty,
+  plainTextFromDescriptionDoc,
+} from '../../task-description/types';
 import type { BoardTask, TaskPriority, TaskRecurrenceAction, TaskRecurrenceRule } from '../types';
 
 export function toDateInputValue(iso: string | null) {
@@ -8,6 +14,7 @@ export function toDateInputValue(iso: string | null) {
 export interface TaskFormValues {
   title: string;
   description: string;
+  descriptionDoc: DescriptionDoc;
   priority: TaskPriority | '';
   complexity: number | '';
   timeEstimateMinutes: number | '';
@@ -23,9 +30,11 @@ export interface TaskFormValues {
 }
 
 export function toFormValues(task: BoardTask): TaskFormValues {
+  const descriptionDoc = hydrateDescriptionDoc(task.descriptionDoc, task.description);
   return {
     title: task.title,
-    description: task.description ?? '',
+    description: plainTextFromDescriptionDoc(descriptionDoc),
+    descriptionDoc,
     priority: task.priority ?? '',
     complexity: task.complexity ?? '',
     timeEstimateMinutes: task.timeEstimateMinutes ?? '',
@@ -42,9 +51,13 @@ export function toFormValues(task: BoardTask): TaskFormValues {
 }
 
 export function buildTaskUpdatePayload(values: TaskFormValues, task: BoardTask) {
+  const plain = plainTextFromDescriptionDoc(values.descriptionDoc).trim();
+  const empty = isDescriptionDocEmpty(values.descriptionDoc);
+
   return {
     title: values.title.trim(),
-    description: values.description.trim() || null,
+    description: plain || null,
+    descriptionDoc: empty ? null : values.descriptionDoc,
     priority: values.priority || null,
     complexity: values.complexity === '' ? null : Number(values.complexity),
     timeEstimateMinutes:

@@ -2,7 +2,7 @@
 
 import { FormEvent } from 'react';
 import { TaskAiAssistant } from '@/features/ai';
-import { MentionTextarea } from '@/features/mentions';
+import { TaskDescriptionEditor } from '@/features/task-description';
 import { WikiLinkChips } from '@/features/wiki-links';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import type { BoardTask, TaskRelationCandidate } from '../../types';
@@ -59,21 +59,17 @@ export function TaskDrawerForm({
         />
       </label>
 
-      <label className="task-drawer__field">
+      <div className="task-drawer__field">
         <span className="task-drawer__label">Описание</span>
-        <MentionTextarea
-          value={form.description}
-          onChange={form.setDescription}
+        <TaskDescriptionEditor
+          value={form.descriptionDoc}
+          onChange={form.setDescriptionDoc}
           members={members}
           wikiLinkTasks={wikiLinkTasks}
           excludeWikiTaskId={task.id}
-          className="glass-input task-drawer__textarea"
-          rows={4}
-          maxLength={2000}
-          placeholder="Подробности… @ — коллега, [[ — ссылка на задачу"
         />
         <WikiLinkChips text={form.description} excludeTaskId={task.id} onOpenTask={onOpenTask} />
-      </label>
+      </div>
 
       <TaskAiAssistant
         workspaceId={workspaceId}

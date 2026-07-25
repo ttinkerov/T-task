@@ -1,6 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import {
+  hydrateDescriptionDoc,
+  plainTextFromDescriptionDoc,
+  type DescriptionDoc,
+} from '@/features/task-description';
 import { toDateInputValue } from '../../../lib/task-form-values';
 import type {
   BoardTask,
@@ -13,7 +18,9 @@ const EMPTY_WEEKDAYS: number[] = [];
 
 export function useTaskFormState(detailTask: BoardTask) {
   const [title, setTitle] = useState(detailTask.title);
-  const [description, setDescription] = useState(detailTask.description ?? '');
+  const [descriptionDoc, setDescriptionDoc] = useState<DescriptionDoc>(() =>
+    hydrateDescriptionDoc(detailTask.descriptionDoc, detailTask.description),
+  );
   const [priority, setPriority] = useState<TaskPriority | ''>(detailTask.priority ?? '');
   const [complexity, setComplexity] = useState<number | ''>(detailTask.complexity ?? '');
   const [timeEstimateMinutes, setTimeEstimateMinutes] = useState<number | ''>(
@@ -37,7 +44,7 @@ export function useTaskFormState(detailTask: BoardTask) {
 
   useEffect(() => {
     setTitle(detailTask.title);
-    setDescription(detailTask.description ?? '');
+    setDescriptionDoc(hydrateDescriptionDoc(detailTask.descriptionDoc, detailTask.description));
     setPriority(detailTask.priority ?? '');
     setComplexity(detailTask.complexity ?? '');
     setTimeEstimateMinutes(detailTask.timeEstimateMinutes ?? '');
@@ -54,6 +61,7 @@ export function useTaskFormState(detailTask: BoardTask) {
     detailTask.id,
     detailTask.title,
     detailTask.description,
+    detailTask.descriptionDoc,
     detailTask.priority,
     detailTask.complexity,
     detailTask.timeEstimateMinutes,
@@ -68,11 +76,14 @@ export function useTaskFormState(detailTask: BoardTask) {
     detailTask.recurrenceWeekdays,
   ]);
 
+  const description = plainTextFromDescriptionDoc(descriptionDoc);
+
   return {
     title,
     setTitle,
     description,
-    setDescription,
+    descriptionDoc,
+    setDescriptionDoc,
     priority,
     setPriority,
     complexity,

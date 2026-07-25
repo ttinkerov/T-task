@@ -1,6 +1,6 @@
 'use client';
 
-import { MentionTextarea } from '@/features/mentions';
+import { MentionTextarea, type WikiLinkTaskOption } from '@/features/mentions';
 import type { WorkspaceMember } from '@/features/workspaces/types';
 import { useCallback } from 'react';
 import {
@@ -16,9 +16,17 @@ interface TaskDescriptionEditorProps {
   value: DescriptionDoc;
   onChange: (next: DescriptionDoc) => void;
   members: WorkspaceMember[];
+  wikiLinkTasks?: WikiLinkTaskOption[];
+  excludeWikiTaskId?: string;
 }
 
-export function TaskDescriptionEditor({ value, onChange, members }: TaskDescriptionEditorProps) {
+export function TaskDescriptionEditor({
+  value,
+  onChange,
+  members,
+  wikiLinkTasks = [],
+  excludeWikiTaskId,
+}: TaskDescriptionEditorProps) {
   const fallback = emptyDescriptionDoc();
   const blocks = value.blocks.length > 0 ? value.blocks : fallback.blocks;
 
@@ -64,10 +72,16 @@ export function TaskDescriptionEditor({ value, onChange, members }: TaskDescript
     });
   };
 
+  const mentionProps = {
+    members,
+    wikiLinkTasks,
+    excludeWikiTaskId,
+  };
+
   return (
     <div className="task-doc-editor" role="group" aria-label="Описание задачи">
       <p className="task-doc-editor__hint">
-        Блоки как в Notion: заголовки, списки, выноски, toggle. Enter — новый блок.
+        Блоки: заголовки, списки, выноски. @ — коллега, [[ — задача. Enter — новый блок.
       </p>
       <div className="task-doc-editor__blocks">
         {blocks.map((block, index) => {
@@ -119,11 +133,11 @@ export function TaskDescriptionEditor({ value, onChange, members }: TaskDescript
                   <MentionTextarea
                     value={block.text}
                     onChange={(text) => updateBlock(index, { text })}
-                    members={members}
+                    {...mentionProps}
                     className="glass-input task-doc-block__input"
                     rows={1}
                     maxLength={2000}
-                    placeholder="Пункт списка… @mention"
+                    placeholder="Пункт списка…"
                     onKeyDown={(event) => {
                       if (event.key === 'Enter' && !event.shiftKey) {
                         event.preventDefault();
@@ -137,7 +151,7 @@ export function TaskDescriptionEditor({ value, onChange, members }: TaskDescript
                   <MentionTextarea
                     value={block.text}
                     onChange={(text) => updateBlock(index, { text })}
-                    members={members}
+                    {...mentionProps}
                     className="glass-input task-doc-block__input task-doc-block__input--toggle-title"
                     rows={1}
                     maxLength={2000}
@@ -146,7 +160,7 @@ export function TaskDescriptionEditor({ value, onChange, members }: TaskDescript
                   <MentionTextarea
                     value={block.body ?? ''}
                     onChange={(body) => updateBlock(index, { body })}
-                    members={members}
+                    {...mentionProps}
                     className="glass-input task-doc-block__input"
                     rows={2}
                     maxLength={2000}
@@ -157,18 +171,18 @@ export function TaskDescriptionEditor({ value, onChange, members }: TaskDescript
                 <MentionTextarea
                   value={block.text}
                   onChange={(text) => updateBlock(index, { text })}
-                  members={members}
+                  {...mentionProps}
                   className={`glass-input task-doc-block__input task-doc-block__input--${block.type}`}
-                  rows={typeof block.type === 'string' && block.type.startsWith('heading') ? 1 : 2}
+                  rows={block.type.startsWith('heading') ? 1 : block.type === 'callout' ? 2 : 2}
                   maxLength={2000}
                   placeholder={
                     block.type === 'callout'
-                      ? 'Важная заметка…'
+                      ? 'Выноска…'
                       : block.type === 'heading1'
                         ? 'Заголовок'
                         : block.type === 'heading2'
                           ? 'Подзаголовок'
-                          : 'Текст… @mention'
+                          : 'Текст…'
                   }
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' && !event.shiftKey && block.type === 'paragraph') {
