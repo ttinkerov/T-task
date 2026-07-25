@@ -12,6 +12,8 @@ export interface AllTasksFilters {
   boardId: string;
   columnId: string;
   tagId: string;
+  epicId?: string;
+  isEpic?: boolean;
   status: AllTasksStatus;
   due: AllTasksDueFilter;
   watching: boolean;

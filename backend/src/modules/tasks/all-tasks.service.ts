@@ -161,6 +161,8 @@ export class AllTasksService {
       ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
       ...(query.watching ? { watchers: { some: { userId } } } : {}),
       ...(query.tagId ? { taskTags: { some: { tagId: query.tagId } } } : {}),
+      ...(query.epicId ? { epicId: query.epicId } : {}),
+      ...(typeof query.isEpic === 'boolean' ? { isEpic: query.isEpic } : {}),
       ...(query.priority ? { priority: query.priority } : {}),
       ...(query.status === AllTasksStatus.OPEN ? { completedAt: null } : {}),
       ...(query.status === AllTasksStatus.COMPLETED ? { completedAt: { not: null } } : {}),

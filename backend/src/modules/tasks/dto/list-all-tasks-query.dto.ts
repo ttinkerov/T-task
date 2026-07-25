@@ -79,6 +79,15 @@ export class ListAllTasksQueryDto {
   tagId?: string;
 
   @IsOptional()
+  @IsEntityId()
+  epicId?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true' || value === '1')
+  @IsBoolean()
+  isEpic?: boolean;
+
+  @IsOptional()
   @IsEnum(AllTasksStatus)
   status?: AllTasksStatus;
 
