@@ -14,8 +14,11 @@ const contentSecurityPolicy = [
   `script-src ${scriptSrc.join(' ')}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
-  "font-src 'self'",
-  `connect-src ${connectSrc.join(' ')}`,
+  "font-src 'self' data:",
+  // blob:/data: — tldraw paste/export; assets are self-hosted under /tldraw
+  `connect-src ${[...connectSrc, 'blob:', 'data:'].join(' ')}`,
+  // tldraw uses blob: workers for some editor features
+  "worker-src 'self' blob:",
   'frame-src https://docs.google.com https://drive.google.com https://www.figma.com https://miro.com https://airtable.com',
   "frame-ancestors 'none'",
   "base-uri 'self'",
@@ -58,6 +61,8 @@ const nextConfig: NextConfig = {
       '@dnd-kit/utilities',
     ],
   },
+  // tldraw ships ESM that Next should transpile for App Router client chunks
+  transpilePackages: ['tldraw', '@tldraw/assets'],
   async headers() {
     return [
       {

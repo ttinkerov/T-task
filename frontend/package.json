@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3000",
-    "build": "next build",
+    "copy:tldraw-assets": "node ./scripts/copy-tldraw-assets.mjs",
+    "postinstall": "node ./scripts/copy-tldraw-assets.mjs",
+    "dev": "node ./scripts/copy-tldraw-assets.mjs && next dev --port 3000",
+    "build": "node ./scripts/copy-tldraw-assets.mjs && next build",
     "start": "next start --port 3000",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "test": "vitest run",
@@ -17,6 +19,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@tanstack/react-query": "^5.80.6",
     "@tanstack/react-virtual": "^3.14.8",
+    "@tldraw/assets": "^5.2.5",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "framer-motion": "^12.16.0",
@@ -26,6 +29,7 @@
     "react-dom": "^19.1.0",
     "socket.io-client": "^4.8.3",
     "tailwind-merge": "^3.3.0",
+    "tldraw": "^5.2.5",
     "zustand": "^5.0.5"
   },
   "devDependencies": {

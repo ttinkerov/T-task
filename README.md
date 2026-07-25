@@ -14,7 +14,8 @@ CRM — воронки, сделки, связь со задачами
 Forms — публичные формы → задачи / сделки  
 DoD / Templates — чеклисты и шаблоны карточек  
 Analytics — throughput, cycle time, workload  
-Apps — календарь iCal, импорт, AI-помощник, корзина
+Apps — календарь iCal, импорт, AI-помощник, корзина  
+Whiteboard — рисование (tldraw), автосохранение на workspace
 
 ## Запуск
 

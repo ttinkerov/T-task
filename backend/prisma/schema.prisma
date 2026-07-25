@@ -124,6 +124,7 @@ model User {
   sentNotifications     Notification[]       @relation("NotificationActor")
   savedFilters          SavedFilter[]
   watchedTasks          TaskWatcher[]
+  whiteboardUpdates     WorkspaceWhiteboard[] @relation("WhiteboardUpdater")
 
   @@map("users")
 }
@@ -172,6 +173,7 @@ model Workspace {
   activityLogs ActivityLog[]
   notifications Notification[]
   aiSetting     AiWorkspaceSetting?
+  whiteboard    WorkspaceWhiteboard?
   sprints       Sprint[]
   dodTemplates  DodTemplate[]
   taskTemplates TaskTemplate[]
@@ -819,4 +821,20 @@ model AiWorkspaceSetting {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@map("ai_workspace_settings")
+}
+
+/** Solo tldraw canvas snapshot per workspace (document only; no realtime). */
+model WorkspaceWhiteboard {
+  id          String   @id @default(cuid())
+  workspaceId String   @unique @map("workspace_id")
+  snapshot    Json     @default("{}")
+  updatedById String?  @map("updated_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  updatedBy User?     @relation("WhiteboardUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([updatedById])
+  @@map("workspace_whiteboards")
 }

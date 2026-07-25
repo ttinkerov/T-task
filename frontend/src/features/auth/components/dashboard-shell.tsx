@@ -33,6 +33,7 @@ import {
   Upload,
   UserRound,
   Bookmark,
+  PenLine,
 } from 'lucide-react';
 import { BrandLogo } from '@/components/marketing/brand-logo';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
@@ -156,6 +157,7 @@ export function DashboardShell({
           { href: '/dashboard/all-tasks', label: 'Все задачи', icon: ListTodo },
           { href: '/dashboard/roadmap', label: 'Роадмап', icon: Milestone },
           { href: '/dashboard/epic-board', label: 'Эпик-борд', icon: StickyNote },
+          { href: '/dashboard/whiteboard', label: 'Доска', icon: PenLine },
           { href: '/dashboard/my-tasks', label: 'Мои задачи', icon: UserRound },
           { href: '/dashboard/focus', label: 'Фокус', icon: Focus },
           { href: '/dashboard/ai', label: 'ИИ', icon: Sparkles },
