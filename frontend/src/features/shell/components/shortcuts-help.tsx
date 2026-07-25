@@ -26,7 +26,7 @@ export function ShortcutsHelp({ open, onClose }: { open: boolean; onClose: () =>
         <ul className="shortcuts-help__list">
           <li>
             <kbd>⌘K</kbd>
-            <span>Командная палитра</span>
+            <span>Быстрый переход к задачам</span>
           </li>
           {SHORTCUTS.map((shortcut) => (
             <li key={shortcut.id}>

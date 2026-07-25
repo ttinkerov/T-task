@@ -32,9 +32,11 @@ const TaskDetailDrawer = dynamic(
 export function KanbanBoard({
   workspaceId,
   initialTaskId = null,
+  initialBoardId = null,
 }: {
   workspaceId: string;
   initialTaskId?: string | null;
+  initialBoardId?: string | null;
 }) {
   const { data: session } = useMeQuery();
   const [boardId, setBoardId] = useState<string | null>(null);
@@ -106,6 +108,7 @@ export function KanbanBoard({
         <BoardSwitcher
           workspaceId={workspaceId}
           boardId={boardId}
+          preferredBoardId={initialBoardId}
           onBoardChange={handleBoardChange}
         />
         <BoardSkeleton />
@@ -140,6 +143,7 @@ export function KanbanBoard({
       <BoardSwitcher
         workspaceId={workspaceId}
         boardId={boardId}
+        preferredBoardId={initialBoardId}
         onBoardChange={handleBoardChange}
       />
       <BoardFiltersBar

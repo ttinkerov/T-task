@@ -30,10 +30,16 @@ export function storeSelectedBoardId(workspaceId: string, boardId: string) {
 interface BoardSwitcherProps {
   workspaceId: string;
   boardId: string | null;
+  preferredBoardId?: string | null;
   onBoardChange: (boardId: string) => void;
 }
 
-export function BoardSwitcher({ workspaceId, boardId, onBoardChange }: BoardSwitcherProps) {
+export function BoardSwitcher({
+  workspaceId,
+  boardId,
+  preferredBoardId = null,
+  onBoardChange,
+}: BoardSwitcherProps) {
   const { data: boards = [], isLoading } = useBoardsQuery(workspaceId);
   const createMutation = useCreateBoardMutation(workspaceId);
   const updateMutation = useUpdateBoardMutation(workspaceId);
@@ -54,13 +60,17 @@ export function BoardSwitcher({ workspaceId, boardId, onBoardChange }: BoardSwit
 
   useEffect(() => {
     if (!boards.length) return;
+    const preferred =
+      preferredBoardId && boards.some((board) => board.id === preferredBoardId)
+        ? preferredBoardId
+        : null;
     const stored = readStoredBoardId(workspaceId);
-    const exists = stored && boards.some((board) => board.id === stored);
-    const nextId = exists ? stored! : boards[0].id;
+    const storedExists = Boolean(stored && boards.some((board) => board.id === stored));
+    const nextId = preferred ?? (storedExists ? stored! : boards[0].id);
     if (boardId !== nextId) {
       onBoardChange(nextId);
     }
-  }, [boardId, boards, onBoardChange, workspaceId]);
+  }, [boardId, boards, onBoardChange, preferredBoardId, workspaceId]);
 
   const selected = boards.find((board) => board.id === boardId) ?? null;
 

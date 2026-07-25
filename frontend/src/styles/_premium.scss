@@ -103,6 +103,22 @@
       background var(--tt-duration-fast),
       transform var(--tt-duration-fast) var(--tt-ease-out);
 
+    .cmdk__item-label {
+      display: grid;
+      flex: 1;
+      min-width: 0;
+      gap: 0.1rem;
+    }
+
+    .cmdk__item-hint {
+      overflow: hidden;
+      color: var(--tt-text-dim);
+      font-size: 0.6875rem;
+      line-height: 1.35;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     kbd {
       margin-left: auto;
       padding: 0.1rem 0.35rem;

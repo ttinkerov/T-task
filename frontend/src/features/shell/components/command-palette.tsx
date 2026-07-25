@@ -80,6 +80,7 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
             ...response.data.tasks.map((task) => ({
               id: `task-${task.id}`,
               label: task.title,
+              hint: task.matchIn === 'description' && task.snippet ? task.snippet : task.columnName,
               group: 'Задачи',
               href: task.href,
               icon: SquareKanban,
@@ -174,7 +175,7 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
             className="cmdk"
             role="dialog"
             aria-modal="true"
-            aria-label="Командная палитра"
+            aria-label="Быстрый переход"
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
@@ -187,8 +188,8 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
                 ref={inputRef}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Перейти, создать, найти…"
-                aria-label="Поиск команд"
+                placeholder="Найти задачу, сделку или страницу…"
+                aria-label="Быстрый переход"
               />
               <kbd>esc</kbd>
             </div>
@@ -216,8 +217,12 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
                           onClick={() => runItem(item)}
                         >
                           <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
-                          <span className="cmdk__item-label">{item.label}</span>
-                          {item.hint ? <kbd>{item.hint}</kbd> : null}
+                          <span className="cmdk__item-label">
+                            <span>{item.label}</span>
+                            {item.hint ? (
+                              <small className="cmdk__item-hint">{item.hint}</small>
+                            ) : null}
+                          </span>
                           <ArrowRight size={14} className="cmdk__item-arrow" aria-hidden="true" />
                         </button>
                       );

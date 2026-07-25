@@ -30,7 +30,11 @@ function BoardPageContent() {
   return (
     <DashboardShell boardMode>
       {workspaceId ? (
-        <KanbanBoard workspaceId={workspaceId} initialTaskId={searchParams.get('task')} />
+        <KanbanBoard
+          workspaceId={workspaceId}
+          initialTaskId={searchParams.get('task')}
+          initialBoardId={searchParams.get('board')}
+        />
       ) : (
         <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
       )}

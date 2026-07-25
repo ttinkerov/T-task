@@ -2,7 +2,15 @@ import { apiFetch } from '@/shared/api/client';
 import { getApiBaseUrl } from '@/shared/lib/env';
 
 export type SearchResult = {
-  tasks: Array<{ id: string; title: string; boardId: string; href: string }>;
+  tasks: Array<{
+    id: string;
+    title: string;
+    boardId: string;
+    columnName?: string;
+    matchIn?: 'title' | 'description';
+    snippet?: string | null;
+    href: string;
+  }>;
   deals: Array<{ id: string; title: string; funnelId: string; href: string }>;
   comments: Array<{
     id: string;
@@ -15,7 +23,7 @@ export type SearchResult = {
 
 export async function searchWorkspace(workspaceId: string, q: string) {
   return apiFetch<SearchResult>(
-    `/api/v1/workspaces/${workspaceId}/search?q=${encodeURIComponent(q)}&limit=8`,
+    `/api/v1/workspaces/${workspaceId}/search?q=${encodeURIComponent(q)}&limit=12`,
     { headers: { 'x-workspace-id': workspaceId } },
   );
 }
