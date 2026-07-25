@@ -155,28 +155,68 @@ export class TaskTemplatesService {
 
     const subtasks = normalizeLines(template.subtaskTitles);
     if (subtasks.length > 0) {
+      const lastSubtask = await tx.subtask.findFirst({
+        where: { taskId },
+        orderBy: { position: 'desc' },
+        select: { position: true },
+      });
+      const base = (lastSubtask?.position ?? -1) + 1;
       await tx.subtask.createMany({
         data: subtasks.map((title, index) => ({
           taskId,
           title,
           completed: false,
-          position: index,
+          position: base + index,
         })),
       });
     }
 
     const checklist = normalizeLines(template.checklistItems);
     if (checklist.length > 0) {
+      const lastItem = await tx.taskChecklistItem.findFirst({
+        where: { taskId },
+        orderBy: { position: 'desc' },
+        select: { position: true },
+      });
+      const base = (lastItem?.position ?? -1) + 1;
       await tx.taskChecklistItem.createMany({
         data: checklist.map((text, index) => ({
           taskId,
           text,
           completed: false,
           required: template.checklistGates,
-          position: index,
+          position: base + index,
         })),
       });
     }
+  }
+
+  /** Fill only empty scalar fields from template defaults (never overwrite filled values). */
+  fillEmptyTaskFields(
+    current: {
+      title: string;
+      description: string | null;
+      priority: TaskPriority | null;
+      complexity: number | null;
+      timeEstimateMinutes: number | null;
+    },
+    defaults: ReturnType<TaskTemplatesService['taskFieldDefaults']>,
+  ) {
+    return {
+      ...(defaults.title && !current.title.trim() ? { title: defaults.title.slice(0, 200) } : {}),
+      ...(defaults.description && !current.description?.trim()
+        ? { description: defaults.description }
+        : {}),
+      ...(defaults.priority != null && current.priority == null
+        ? { priority: defaults.priority }
+        : {}),
+      ...(defaults.complexity != null && current.complexity == null
+        ? { complexity: defaults.complexity }
+        : {}),
+      ...(defaults.timeEstimateMinutes != null && current.timeEstimateMinutes == null
+        ? { timeEstimateMinutes: defaults.timeEstimateMinutes }
+        : {}),
+    };
   }
 
   taskFieldDefaults(template: TaskTemplateRecord) {

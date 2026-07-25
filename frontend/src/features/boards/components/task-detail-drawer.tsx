@@ -38,6 +38,7 @@ import { TaskRelationsSection } from './task-relations-section';
 import { TaskRollupSection } from './task-rollup-section';
 import { TaskSubtasksSection } from './task-subtasks-section';
 import { TaskChecklistSection } from '@/features/dod';
+import { ApplyTaskTemplateControl } from '@/features/templates';
 import { TaskTagsSection } from './task-tags-section';
 import { FieldHint } from './field-hint';
 import { TaskAiAssistant, EpicAiBreakdown } from '@/features/ai';
@@ -619,10 +620,12 @@ export function TaskDetailDrawer({
             </div>
           </form>
 
+          <ApplyTaskTemplateControl workspaceId={workspaceId} taskId={task.id} />
+
           <TaskTagsSection
             workspaceId={workspaceId}
             taskId={task.id}
-            selected={task.tags ?? EMPTY_TAGS}
+            selected={detailTask.tags ?? task.tags ?? EMPTY_TAGS}
           />
 
           <LazyMount eagerMs={150}>

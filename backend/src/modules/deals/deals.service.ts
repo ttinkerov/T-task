@@ -150,6 +150,21 @@ export class DealsService {
     return { success: true };
   }
 
+  async applyTemplate(workspaceId: string, dealId: string, userId: string, templateId: string) {
+    const deal = await this.assertDealInWorkspace(workspaceId, dealId, userId);
+    const template = await this.dealTemplatesService.getForApply(workspaceId, templateId);
+    const defaults = this.dealTemplatesService.dealFieldDefaults(template);
+    const fieldPatch = this.dealTemplatesService.fillEmptyDealFields(deal, defaults);
+
+    const updated = await this.prisma.deal.update({
+      where: { id: dealId },
+      data: fieldPatch,
+      include: dealWithAssignee,
+    });
+
+    return this.funnelsService.serializeDeal(updated);
+  }
+
   private async assertDealInWorkspace(workspaceId: string, dealId: string, userId: string) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
 

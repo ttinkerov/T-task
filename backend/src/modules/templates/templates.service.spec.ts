@@ -33,6 +33,34 @@ describe('TaskTemplatesService helpers', () => {
       timeEstimateMinutes: 60,
     });
   });
+
+  it('fills only empty task fields when applying to an existing card', () => {
+    const service = Object.create(TaskTemplatesService.prototype) as TaskTemplatesService;
+    const defaults = {
+      title: 'From template',
+      description: 'Template body',
+      priority: TaskPriority.URGENT,
+      complexity: 5,
+      timeEstimateMinutes: 30,
+    };
+
+    expect(
+      service.fillEmptyTaskFields(
+        {
+          title: 'Already named',
+          description: null,
+          priority: null,
+          complexity: 2,
+          timeEstimateMinutes: null,
+        },
+        defaults,
+      ),
+    ).toEqual({
+      description: 'Template body',
+      priority: TaskPriority.URGENT,
+      timeEstimateMinutes: 30,
+    });
+  });
 });
 
 describe('DealTemplatesService helpers', () => {
@@ -58,6 +86,32 @@ describe('DealTemplatesService helpers', () => {
       amount: 15000,
       contactName: 'Ann',
       companyName: 'Acme',
+    });
+  });
+
+  it('fills only empty deal fields when applying to an existing card', () => {
+    const service = Object.create(DealTemplatesService.prototype) as DealTemplatesService;
+    expect(
+      service.fillEmptyDealFields(
+        {
+          title: 'Existing deal',
+          description: null,
+          amount: null,
+          contactName: '',
+          companyName: 'Acme',
+        },
+        {
+          title: 'Template title',
+          description: 'Template notes',
+          amount: 1000,
+          contactName: 'Bob',
+          companyName: 'Other Co',
+        },
+      ),
+    ).toEqual({
+      description: 'Template notes',
+      amount: 1000,
+      contactName: 'Bob',
     });
   });
 });

@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { boardKeys, invalidateWorkspaceBoards } from '@/features/boards/hooks';
+import { crmKeys } from '@/features/crm/hooks';
+import { dodKeys } from '@/features/dod/hooks';
+import { subtaskKeys } from '@/features/subtasks/hooks';
 import { tagKeys } from '@/features/tags/hooks';
 import {
+  applyDealTemplate,
+  applyTaskTemplate,
   createDealTemplate,
   createTaskTemplate,
   deleteDealTemplate,
@@ -158,6 +164,41 @@ export function useSeedDealTemplatesMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: templateKeys.deals(workspaceId) });
+    },
+  });
+}
+
+export function useApplyTaskTemplateMutation(workspaceId: string, taskId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (templateId: string) => {
+      const response = await applyTaskTemplate(workspaceId, taskId, templateId);
+      return response.data;
+    },
+    onSuccess: () => {
+      invalidateWorkspaceBoards(queryClient, workspaceId);
+      void queryClient.invalidateQueries({ queryKey: boardKeys.task(workspaceId, taskId) });
+      void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
+      void queryClient.invalidateQueries({ queryKey: subtaskKeys.list(workspaceId, taskId) });
+      void queryClient.invalidateQueries({ queryKey: dodKeys.checklist(workspaceId, taskId) });
+      void queryClient.invalidateQueries({ queryKey: tagKeys.list(workspaceId) });
+    },
+  });
+}
+
+export function useApplyDealTemplateMutation(
+  workspaceId: string,
+  funnelId: string,
+  dealId: string,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (templateId: string) => {
+      const response = await applyDealTemplate(workspaceId, dealId, templateId);
+      return response.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: crmKeys.funnel(workspaceId, funnelId) });
     },
   });
 }

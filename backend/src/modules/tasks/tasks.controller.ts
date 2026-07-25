@@ -16,6 +16,7 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { BulkUpdateTasksDto } from './dto/bulk-update-tasks.dto';
+import { ApplyTaskTemplateDto } from '../templates/dto/apply-task-template.dto';
 import { TasksService } from './tasks.service';
 
 @Controller('workspaces/:workspaceId/tasks')
@@ -103,6 +104,23 @@ export class TasksController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const task = await this.tasksService.duplicate(workspaceId, taskId, user.id);
+    return successResponse(task);
+  }
+
+  @Post(':taskId/apply-template')
+  @Roles(...MEMBER_PLUS_ROLES)
+  async applyTemplate(
+    @Param('workspaceId') workspaceId: string,
+    @Param('taskId') taskId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ApplyTaskTemplateDto,
+  ) {
+    const task = await this.tasksService.applyTemplate(
+      workspaceId,
+      taskId,
+      user.id,
+      dto.templateId,
+    );
     return successResponse(task);
   }
 }

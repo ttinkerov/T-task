@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useMembersQuery } from '@/features/workspaces/hooks';
+import { ApplyDealTemplateControl } from '@/features/templates';
 import { useDeleteDealMutation, useUpdateDealMutation } from '../hooks';
 import type { FunnelDeal } from '../types';
 import { DealTasksSection } from './deal-tasks-section';
@@ -181,6 +182,20 @@ export function DealDetailDrawer({
           {updateMutation.error ? (
             <p className="text-sm text-red-400">{updateMutation.error.message}</p>
           ) : null}
+
+          <ApplyDealTemplateControl
+            workspaceId={workspaceId}
+            funnelId={funnelId}
+            dealId={deal.id}
+            onApplied={(next) => {
+              setTitle(next.title);
+              setDescription(next.description ?? '');
+              setAmount(next.amount?.toString() ?? '');
+              setContactName(next.contactName ?? '');
+              setCompanyName(next.companyName ?? '');
+              setAssigneeId(next.assigneeId ?? '');
+            }}
+          />
 
           <div className="task-drawer__actions">
             <button

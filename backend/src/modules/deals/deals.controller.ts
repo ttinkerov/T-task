@@ -6,6 +6,7 @@ import { WorkspaceScope } from '../../common/auth/scopes';
 import { ALL_WORKSPACE_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
+import { ApplyDealTemplateDto } from '../templates/dto/apply-deal-template.dto';
 import { CreateDealDto } from './dto/create-deal.dto';
 import { MoveDealDto } from './dto/move-deal.dto';
 import { UpdateDealDto } from './dto/update-deal.dto';
@@ -50,6 +51,24 @@ export class DealsController {
     @Body() dto: MoveDealDto,
   ) {
     const deal = await this.dealsService.move(workspaceId, dealId, user.id, dto);
+    return successResponse(deal);
+  }
+
+  @Post(':dealId/apply-template')
+  @Roles(...ALL_WORKSPACE_ROLES)
+  @Scopes(WorkspaceScope.CRM_WRITE)
+  async applyTemplate(
+    @Param('workspaceId') workspaceId: string,
+    @Param('dealId') dealId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ApplyDealTemplateDto,
+  ) {
+    const deal = await this.dealsService.applyTemplate(
+      workspaceId,
+      dealId,
+      user.id,
+      dto.templateId,
+    );
     return successResponse(deal);
   }
 

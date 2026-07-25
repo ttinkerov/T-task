@@ -870,6 +870,77 @@ export class TasksService {
     return { success: true };
   }
 
+  async applyTemplate(workspaceId: string, taskId: string, userId: string, templateId: string) {
+    const task = await this.assertTaskInWorkspace(workspaceId, taskId, userId);
+    const template = await this.taskTemplatesService.getForApply(workspaceId, templateId);
+    const defaults = this.taskTemplatesService.taskFieldDefaults(template);
+    const fieldPatch = this.taskTemplatesService.fillEmptyTaskFields(task, defaults);
+
+    let descriptionPatch:
+      | {
+          description: string | null;
+          descriptionDoc: Prisma.InputJsonValue | typeof Prisma.JsonNull;
+          recipientIds: string[];
+        }
+      | undefined;
+
+    if (fieldPatch.description) {
+      const prepared = await this.mentionsService.prepare(
+        workspaceId,
+        userId,
+        fieldPatch.description,
+      );
+      descriptionPatch = {
+        description: prepared.text,
+        descriptionDoc: prepared.text
+          ? (descriptionDocFromPlain(prepared.text) as unknown as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
+        recipientIds: prepared.recipientIds,
+      };
+    }
+
+    const updated = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const next = await tx.task.update({
+        where: { id: taskId },
+        data: {
+          ...(fieldPatch.title !== undefined ? { title: fieldPatch.title } : {}),
+          ...(descriptionPatch
+            ? {
+                description: descriptionPatch.description,
+                descriptionDoc: descriptionPatch.descriptionDoc,
+              }
+            : {}),
+          ...(fieldPatch.priority !== undefined ? { priority: fieldPatch.priority } : {}),
+          ...(fieldPatch.complexity !== undefined ? { complexity: fieldPatch.complexity } : {}),
+          ...(fieldPatch.timeEstimateMinutes !== undefined
+            ? { timeEstimateMinutes: fieldPatch.timeEstimateMinutes }
+            : {}),
+        },
+        include: taskWithAssignee,
+      });
+
+      await this.taskTemplatesService.applyInTransaction(tx, workspaceId, taskId, template);
+
+      if (descriptionPatch?.description) {
+        await this.mentionsService.notify(
+          tx,
+          {
+            workspaceId,
+            actorId: userId,
+            taskId,
+            sourceType: MentionSourceType.TASK_DESCRIPTION,
+            preview: descriptionPatch.description,
+          },
+          descriptionPatch.recipientIds,
+        );
+      }
+
+      return next;
+    });
+
+    return this.toTask(updated);
+  }
+
   async duplicate(workspaceId: string, taskId: string, userId: string) {
     const source = await this.assertTaskInWorkspace(workspaceId, taskId, userId);
     await this.boardsService.getBoardForWorkspace(workspaceId);

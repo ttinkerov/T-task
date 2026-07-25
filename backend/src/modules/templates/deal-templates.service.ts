@@ -124,6 +124,32 @@ export class DealTemplatesService {
     };
   }
 
+  /** Fill only empty scalar fields from template defaults (never overwrite filled values). */
+  fillEmptyDealFields(
+    current: {
+      title: string;
+      description: string | null;
+      amount: number | null;
+      contactName: string | null;
+      companyName: string | null;
+    },
+    defaults: ReturnType<DealTemplatesService['dealFieldDefaults']>,
+  ) {
+    return {
+      ...(defaults.title && !current.title.trim() ? { title: defaults.title.slice(0, 200) } : {}),
+      ...(defaults.description && !current.description?.trim()
+        ? { description: defaults.description }
+        : {}),
+      ...(defaults.amount != null && current.amount == null ? { amount: defaults.amount } : {}),
+      ...(defaults.contactName && !current.contactName?.trim()
+        ? { contactName: defaults.contactName }
+        : {}),
+      ...(defaults.companyName && !current.companyName?.trim()
+        ? { companyName: defaults.companyName }
+        : {}),
+    };
+  }
+
   private async requireTemplate(workspaceId: string, templateId: string, userId: string) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
     const template = await this.prisma.dealTemplate.findFirst({

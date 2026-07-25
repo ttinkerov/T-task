@@ -97,3 +97,19 @@ export function seedDealTemplates(workspaceId: string) {
     },
   );
 }
+
+export function applyTaskTemplate(workspaceId: string, taskId: string, templateId: string) {
+  return apiFetch(`/api/v1/workspaces/${workspaceId}/tasks/${taskId}/apply-template`, {
+    method: 'POST',
+    headers: withWorkspace(workspaceId),
+    body: JSON.stringify({ templateId }),
+  });
+}
+
+export function applyDealTemplate(workspaceId: string, dealId: string, templateId: string) {
+  return apiFetch(`/api/v1/workspaces/${workspaceId}/deals/${dealId}/apply-template`, {
+    method: 'POST',
+    headers: withWorkspace(workspaceId),
+    body: JSON.stringify({ templateId }),
+  });
+}
