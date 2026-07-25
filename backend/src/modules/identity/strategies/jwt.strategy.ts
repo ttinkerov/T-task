@@ -4,20 +4,20 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AccessTokenDenyService } from '../../../common/auth/services/access-token-deny.service';
+import { AuthUserCacheService } from '../../../common/auth/services/auth-user-cache.service';
 import { TokenExtractorService } from '../../../common/auth/services/token-extractor.service';
 import {
   AuthenticatedUser,
   JwtPayload,
 } from '../../../common/auth/interfaces/authenticated-user.interface';
-import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     configService: ConfigService,
-    private readonly prisma: PrismaService,
     tokenExtractor: TokenExtractorService,
     private readonly accessTokenDeny: AccessTokenDenyService,
+    private readonly authUserCache: AuthUserCacheService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
@@ -35,17 +35,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     await this.accessTokenDeny.assertNotRevoked(payload);
 
-    const user = await this.prisma.user.findFirst({
-      where: {
-        id: payload.sub,
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-      },
-    });
+    const user = await this.authUserCache.getActiveUser(payload.sub);
 
     if (!user) {
       throw new UnauthorizedException('User not found');

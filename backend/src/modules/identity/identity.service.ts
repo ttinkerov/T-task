@@ -13,6 +13,7 @@ import {
   parseDurationToSeconds,
 } from '../../common/auth/utils/token.util';
 import { AccessTokenDenyService } from '../../common/auth/services/access-token-deny.service';
+import { AuthUserCacheService } from '../../common/auth/services/auth-user-cache.service';
 import { ACCESS_TOKEN_COOKIE } from '../../common/auth/services/token-extractor.service';
 import { DomainEvents } from '../../common/events/domain-events';
 import {
@@ -55,6 +56,7 @@ export class IdentityService {
     private readonly configService: ConfigService,
     private readonly workspacesService: WorkspacesService,
     private readonly accessTokenDeny: AccessTokenDenyService,
+    private readonly authUserCache: AuthUserCacheService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -215,6 +217,7 @@ export class IdentityService {
     });
 
     await this.accessTokenDeny.revokeAllForUser(userId);
+    await this.authUserCache.invalidate(userId);
     this.eventEmitter.emit(DomainEvents.USER_ACCESS_REVOKED, { userId });
     this.clearAuthCookies(response);
 
