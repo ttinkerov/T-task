@@ -160,18 +160,6 @@
       color: var(--tt-text);
       box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tt-brand) 18%, transparent);
 
-      &::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 20%;
-        bottom: 20%;
-        width: 2px;
-        border-radius: 2px;
-        background: var(--tt-brand);
-        box-shadow: 0 0 10px var(--tt-brand-glow);
-      }
-
       svg {
         opacity: 1;
         color: var(--tt-brand);
@@ -199,10 +187,6 @@
   .app-sidebar__link {
     justify-content: center;
     padding-inline: 0.5rem;
-
-    &--active::before {
-      display: none;
-    }
   }
 
   .app-sidebar__collapse {
@@ -324,8 +308,10 @@
     display: flex;
     flex-direction: column;
     height: calc(100vh - #{$topbar-height});
+    height: calc(100dvh - #{$topbar-height});
     padding-bottom: 0.75rem;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   @media (max-width: $breakpoint-lg) {
@@ -334,8 +320,28 @@
 
     &--board {
       height: calc(100vh - #{$topbar-height} - #{$mobile-nav-height});
+      height: calc(100dvh - #{$topbar-height} - #{$mobile-nav-height});
     }
   }
+}
+
+.dashboard-page-transition {
+  width: 100%;
+
+  &--fill {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+}
+
+.view-mode-transition {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
 }
 
 .mobile-nav {

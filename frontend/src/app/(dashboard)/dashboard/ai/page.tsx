@@ -1,7 +1,6 @@
 'use client';
 
 import { AiChatPanel, AiSummaryPanel } from '@/features/ai';
-import { DashboardShell } from '@/features/auth/components/dashboard-shell';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { useRouter } from 'next/navigation';
@@ -18,16 +17,12 @@ export default function AiChatRoutePage() {
     }
   }, [isLoading, router, workspaces.length]);
 
-  return (
-    <DashboardShell>
-      {workspaceId ? (
-        <div className="ai-page">
-          <AiSummaryPanel workspaceId={workspaceId} scope="day" />
-          <AiChatPanel workspaceId={workspaceId} />
-        </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
-      )}
-    </DashboardShell>
+  return workspaceId ? (
+    <div className="ai-page">
+      <AiSummaryPanel workspaceId={workspaceId} scope="day" />
+      <AiChatPanel workspaceId={workspaceId} />
+    </div>
+  ) : (
+    <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
   );
 }

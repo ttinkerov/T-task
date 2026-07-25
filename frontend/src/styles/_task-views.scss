@@ -5,7 +5,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.875rem;
   flex-wrap: wrap;
 
   &__lead {
@@ -15,17 +15,13 @@
     min-width: 0;
   }
 
-  &__eyebrow {
-    margin: 0;
-    color: $color-text-muted;
-    font-size: 0.625rem;
-    font-weight: 650;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+  &__controls {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-wrap: wrap;
   }
 
-  &__modes,
-  &__ranges,
   &__dates {
     display: flex;
     align-items: center;
@@ -34,52 +30,32 @@
     border-radius: $radius-sm;
     background: var(--tt-surface);
     padding: 0.2rem;
-  }
 
-  &__controls {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    flex-wrap: wrap;
-  }
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 1.9rem;
+      border: 0;
+      border-radius: 0.4rem;
+      background: transparent;
+      padding: 0.3rem 0.55rem;
+      color: $color-text-muted;
+      cursor: pointer;
+      font-size: 0.6875rem;
+      font-weight: 600;
 
-  button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.3rem;
-    min-height: 1.9rem;
-    border: 0;
-    border-radius: 0.4rem;
-    background: transparent;
-    padding: 0.3rem 0.55rem;
-    color: $color-text-muted;
-    cursor: pointer;
-    font-size: 0.6875rem;
-    font-weight: 600;
+      &:hover {
+        background: var(--tt-hover);
+        color: $color-white;
+      }
 
-    &:hover {
-      background: var(--tt-hover);
-      color: $color-white;
+      &:focus-visible {
+        outline: 2px solid var(--tt-brand);
+        outline-offset: 1px;
+      }
     }
 
-    &:focus-visible {
-      outline: 2px solid var(--tt-brand);
-      outline-offset: 1px;
-    }
-
-    span {
-      font-size: 0.8rem;
-      font-weight: 750;
-    }
-  }
-
-  &__mode--active {
-    background: var(--tt-brand-muted) !important;
-    color: var(--tt-brand) !important;
-  }
-
-  &__dates {
     strong {
       min-width: 12rem;
       color: $color-white;
@@ -585,15 +561,9 @@
     align-items: stretch;
     flex-direction: column;
 
-    &__modes,
-    &__ranges,
     &__dates,
     &__controls {
       overflow-x: auto;
-    }
-
-    &__modes button {
-      flex: 0 0 auto;
     }
 
     &__dates {

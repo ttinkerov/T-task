@@ -44,6 +44,7 @@ import { NotificationBell } from '@/features/notifications';
 import { usePinnedSavedFiltersQuery } from '@/features/saved-filters/hooks';
 import { AppSidebar, type NavGroup } from '@/features/shell/components/app-sidebar';
 import { CommandPalette, type CommandItem } from '@/features/shell/components/command-palette';
+import { DashboardPageTransition } from '@/features/shell/components/dashboard-page-transition';
 import { MobileBottomNav } from '@/features/shell/components/mobile-bottom-nav';
 import { ShortcutsHelp } from '@/features/shell/components/shortcuts-help';
 import {
@@ -389,7 +390,7 @@ export function DashboardShell({
         tabIndex={-1}
         className={`app-main${boardMode ? ' app-main--board' : ''}`}
       >
-        {children}
+        <DashboardPageTransition fill={boardMode}>{children}</DashboardPageTransition>
       </main>
 
       <MobileBottomNav

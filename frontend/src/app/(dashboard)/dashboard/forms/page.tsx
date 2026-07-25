@@ -1,6 +1,5 @@
 'use client';
 
-import { DashboardShell } from '@/features/auth/components/dashboard-shell';
 import { FormsListPage } from '@/features/forms';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';
@@ -18,13 +17,9 @@ export default function FormsPage() {
     }
   }, [isLoading, router, workspaces.length]);
 
-  return (
-    <DashboardShell>
-      {workspaceId ? (
-        <FormsListPage workspaceId={workspaceId} />
-      ) : (
-        <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
-      )}
-    </DashboardShell>
+  return workspaceId ? (
+    <FormsListPage workspaceId={workspaceId} />
+  ) : (
+    <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
   );
 }

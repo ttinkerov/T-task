@@ -397,32 +397,26 @@
 
 .calendar-provider {
   display: grid;
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 0.6rem;
-  font-size: 0.75rem;
-  font-weight: 800;
+  border-radius: 0.65rem;
+  overflow: hidden;
+  background: transparent;
 
-  &--google {
-    background: color-mix(in srgb, #4285f4 16%, transparent);
-    color: #1f5da8;
+  &__glyph {
+    display: block;
+    width: 2.25rem;
+    height: 2.25rem;
+    object-fit: contain;
   }
 
   &--yandex {
-    background: color-mix(in srgb, #ffcc00 15%, transparent);
-    color: #705700;
-  }
-
-  &--apple {
-    background: var(--tt-hover-strong);
-    color: $color-white;
-  }
-
-  &--caldav {
-    background: var(--tt-brand-muted);
-    color: var(--tt-brand);
+    .calendar-provider__glyph {
+      width: 1.85rem;
+      height: 1.85rem;
+    }
   }
 }
 
@@ -433,14 +427,6 @@
     &:hover {
       color: #ffadb4;
     }
-  }
-
-  .calendar-provider--google {
-    color: #8ab4f8;
-  }
-
-  .calendar-provider--yandex {
-    color: #f2d15b;
   }
 }
 

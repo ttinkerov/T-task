@@ -1,0 +1,123 @@
+@use 'variables' as *;
+
+/* T-Bank-inspired segmented control: muted track + sliding elevated pill. */
+.segmented {
+  --segmented-pill-left: 2px;
+  --segmented-pill-width: 0px;
+  --segmented-ease: cubic-bezier(0.2, 0, 0.4, 0.9);
+  --segmented-duration: 150ms;
+  --segmented-track: color-mix(in srgb, var(--tt-text) 6%, transparent);
+  --segmented-hover: color-mix(in srgb, var(--tt-text) 9%, transparent);
+  --segmented-separator: color-mix(in srgb, var(--tt-text) 12%, transparent);
+  --segmented-pill-bg: var(--tt-surface);
+  --segmented-pill-shadow: 0 5px 20px color-mix(in srgb, #000 10%, transparent);
+  --segmented-text: var(--tt-text);
+
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+  max-width: 100%;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--segmented-track);
+  isolation: isolate;
+
+  &__pill {
+    position: absolute;
+    top: 2px;
+    left: var(--segmented-pill-left);
+    z-index: 0;
+    width: var(--segmented-pill-width);
+    height: calc(100% - 4px);
+    border-radius: 6px;
+    background: var(--segmented-pill-bg);
+    box-shadow: var(--segmented-pill-shadow);
+    pointer-events: none;
+    transition:
+      left var(--segmented-duration) var(--segmented-ease),
+      width var(--segmented-duration) var(--segmented-ease);
+  }
+
+  &__tab {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5rem;
+    margin: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    padding: 0 0.875rem;
+    color: var(--segmented-text);
+    cursor: pointer;
+    font-size: 0.9375rem;
+    font-weight: 400;
+    line-height: 1.5;
+    white-space: nowrap;
+    transition: background var(--segmented-duration) var(--segmented-ease);
+
+    &:not(:first-child) {
+      margin-left: 4px;
+    }
+
+    &:hover:not(:disabled):not(.segmented__tab--active) {
+      background: var(--segmented-hover);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--tt-brand);
+      outline-offset: 1px;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    &--separator::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: -2px;
+      width: 1px;
+      height: 1.25rem;
+      transform: translateY(-50%);
+      background: var(--segmented-separator);
+      pointer-events: none;
+    }
+
+    &--active {
+      font-weight: 400;
+    }
+  }
+
+  &--sm {
+    .segmented__tab {
+      min-height: 2rem;
+      padding: 0 0.7rem;
+      font-size: 0.8125rem;
+    }
+  }
+}
+
+[data-theme='dark'] .segmented {
+  --segmented-track: color-mix(in srgb, #fff 8%, transparent);
+  --segmented-hover: color-mix(in srgb, #fff 11%, transparent);
+  --segmented-separator: color-mix(in srgb, #fff 14%, transparent);
+  --segmented-pill-bg: var(--tt-surface-raised);
+  --segmented-pill-shadow: 0 5px 20px color-mix(in srgb, #000 35%, transparent);
+}
+
+@media (max-width: $breakpoint-md) {
+  .segmented {
+    width: 100%;
+
+    &__tab {
+      flex: 1 1 auto;
+      padding-inline: 0.55rem;
+      font-size: 0.8125rem;
+    }
+  }
+}

@@ -6,13 +6,14 @@ import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BoardSkeleton } from '@/components/ui/skeleton';
 import { useMeQuery } from '@/features/auth/hooks';
+import { ViewModeTransition } from '@/features/shell/components/view-mode-transition';
 import { BulkActionsToolbar } from './bulk-actions-toolbar';
 import { findTask } from '../lib/board-lookup';
 import { useBoardQuery } from '../hooks';
 import { EMPTY_BOARD_FILTERS, type BoardFilters } from '../types';
 import { BoardFiltersBar } from './board-filters-bar';
 import { BoardSprintPanel } from './board-sprint-panel';
-import { BoardSwitcher, storeSelectedBoardId } from './board-switcher';
+import { BoardSwitcher, readStoredBoardId, storeSelectedBoardId } from './board-switcher';
 import { BoardWorkloadPanel } from './board-workload-panel';
 import { AddColumnPanel } from './kanban/add-column-panel';
 import { useBoardBulkSelection } from './kanban/hooks/use-board-bulk-selection';
@@ -39,7 +40,10 @@ export function KanbanBoard({
   initialBoardId?: string | null;
 }) {
   const { data: session } = useMeQuery();
-  const [boardId, setBoardId] = useState<string | null>(null);
+  const [boardId, setBoardId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return initialBoardId;
+    return initialBoardId ?? readStoredBoardId(workspaceId);
+  });
   const handleBoardChange = useCallback(
     (nextId: string) => {
       setBoardId(nextId);
@@ -97,10 +101,10 @@ export function KanbanBoard({
 
   useEffect(() => {
     hydrateFromStorage(workspaceId);
-    setBoardId(null);
+    setBoardId(initialBoardId ?? readStoredBoardId(workspaceId));
     setFilters(EMPTY_BOARD_FILTERS);
     clearBulk();
-  }, [workspaceId, hydrateFromStorage, clearBulk]);
+  }, [workspaceId, hydrateFromStorage, clearBulk, initialBoardId]);
 
   if (isLoading || !board || !boardId) {
     return (
@@ -175,48 +179,52 @@ export function KanbanBoard({
       ) : null}
 
       {viewMode === 'BOARD' ? (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="kanban-board">
-            <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
-              {filteredColumns.map((column) => (
-                <SortableKanbanColumn
-                  key={column.id}
-                  column={column}
-                  allColumns={board.columns}
-                  workspaceId={workspaceId}
-                  boardId={boardId}
-                  canDelete={canDeleteColumns}
-                  canManageAutomations={canManageAutomations}
-                  cardFields={cardFields}
-                  memberNames={memberNames}
-                  selectedIds={bulkSelectedIds}
-                  selectionActive={bulkSelectedIds.size > 0}
-                  onToggleSelect={handleToggleSelect}
-                  onOpenTask={setSelectedTaskId}
-                  onCompleteTask={handleCompleteTask}
-                />
-              ))}
-            </SortableContext>
-            <AddColumnPanel workspaceId={workspaceId} boardId={boardId} />
-          </div>
+        <ViewModeTransition modeKey="BOARD" className="kanban-board-transition">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="kanban-board">
+              <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
+                {filteredColumns.map((column) => (
+                  <SortableKanbanColumn
+                    key={column.id}
+                    column={column}
+                    allColumns={board.columns}
+                    workspaceId={workspaceId}
+                    boardId={boardId}
+                    canDelete={canDeleteColumns}
+                    canManageAutomations={canManageAutomations}
+                    cardFields={cardFields}
+                    memberNames={memberNames}
+                    selectedIds={bulkSelectedIds}
+                    selectionActive={bulkSelectedIds.size > 0}
+                    onToggleSelect={handleToggleSelect}
+                    onOpenTask={setSelectedTaskId}
+                    onCompleteTask={handleCompleteTask}
+                  />
+                ))}
+              </SortableContext>
+              <AddColumnPanel workspaceId={workspaceId} boardId={boardId} />
+            </div>
 
-          <DragOverlay>
-            <KanbanDragOverlay activeColumn={activeColumn} activeTask={activeTask} />
-          </DragOverlay>
-        </DndContext>
+            <DragOverlay>
+              <KanbanDragOverlay activeColumn={activeColumn} activeTask={activeTask} />
+            </DragOverlay>
+          </DndContext>
+        </ViewModeTransition>
       ) : (
-        <TaskDisplayView
-          mode={viewMode as Exclude<typeof viewMode, 'BOARD'>}
-          columns={filteredColumns}
-          anchor={viewAnchor}
-          calendarRange={calendarRange}
-          onOpenTask={setSelectedTaskId}
-        />
+        <ViewModeTransition modeKey={viewMode}>
+          <TaskDisplayView
+            mode={viewMode as Exclude<typeof viewMode, 'BOARD'>}
+            columns={filteredColumns}
+            anchor={viewAnchor}
+            calendarRange={calendarRange}
+            onOpenTask={setSelectedTaskId}
+          />
+        </ViewModeTransition>
       )}
 
       {selectedTask ? (

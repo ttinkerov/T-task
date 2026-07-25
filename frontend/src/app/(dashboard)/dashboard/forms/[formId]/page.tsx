@@ -1,6 +1,5 @@
 'use client';
 
-import { DashboardShell } from '@/features/auth/components/dashboard-shell';
 import { FormEditorPage } from '@/features/forms';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';
@@ -19,13 +18,9 @@ export default function FormEditorRoutePage() {
     }
   }, [isLoading, router, workspaces.length]);
 
-  return (
-    <DashboardShell>
-      {workspaceId && params.formId ? (
-        <FormEditorPage workspaceId={workspaceId} formId={params.formId} />
-      ) : (
-        <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
-      )}
-    </DashboardShell>
+  return workspaceId && params.formId ? (
+    <FormEditorPage workspaceId={workspaceId} formId={params.formId} />
+  ) : (
+    <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
   );
 }

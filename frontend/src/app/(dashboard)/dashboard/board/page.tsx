@@ -1,6 +1,5 @@
 'use client';
 
-import { DashboardShell } from '@/features/auth/components/dashboard-shell';
 import { KanbanBoard } from '@/features/boards';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';
@@ -27,25 +26,17 @@ function BoardPageContent() {
     }
   }, [isLoading, router, workspaces.length]);
 
-  return (
-    <DashboardShell boardMode>
-      {workspaceId ? (
-        <KanbanBoard
-          workspaceId={workspaceId}
-          initialTaskId={searchParams.get('task')}
-          initialBoardId={searchParams.get('board')}
-        />
-      ) : (
-        <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
-      )}
-    </DashboardShell>
+  return workspaceId ? (
+    <KanbanBoard
+      workspaceId={workspaceId}
+      initialTaskId={searchParams.get('task')}
+      initialBoardId={searchParams.get('board')}
+    />
+  ) : (
+    <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
   );
 }
 
 function BoardPageFallback() {
-  return (
-    <DashboardShell boardMode>
-      <p className="text-sm text-muted-foreground">Загрузка доски...</p>
-    </DashboardShell>
-  );
+  return <p className="text-sm text-muted-foreground">Загрузка доски...</p>;
 }

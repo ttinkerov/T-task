@@ -1,6 +1,5 @@
 'use client';
 
-import { DashboardShell } from '@/features/auth/components/dashboard-shell';
 import { EpicBoardPage } from '@/features/epic-board';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { Suspense } from 'react';
@@ -18,26 +17,18 @@ function EpicBoardRouteContent() {
   const searchParams = useSearchParams();
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
 
-  return (
-    <DashboardShell boardMode>
-      {workspaceId ? (
-        <EpicBoardPage
-          key={workspaceId}
-          workspaceId={workspaceId}
-          initialEpicId={searchParams.get('epic')}
-          initialTaskId={searchParams.get('task')}
-        />
-      ) : (
-        <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
-      )}
-    </DashboardShell>
+  return workspaceId ? (
+    <EpicBoardPage
+      key={workspaceId}
+      workspaceId={workspaceId}
+      initialEpicId={searchParams.get('epic')}
+      initialTaskId={searchParams.get('task')}
+    />
+  ) : (
+    <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
   );
 }
 
 function EpicBoardFallback() {
-  return (
-    <DashboardShell boardMode>
-      <p className="text-sm text-muted-foreground">Загрузка эпик-борда...</p>
-    </DashboardShell>
-  );
+  return <p className="text-sm text-muted-foreground">Загрузка эпик-борда...</p>;
 }

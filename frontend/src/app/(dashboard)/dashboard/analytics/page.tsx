@@ -1,7 +1,6 @@
 'use client';
 
 import { AnalyticsPage } from '@/features/analytics/components/analytics-page';
-import { DashboardShell } from '@/features/auth/components/dashboard-shell';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { useRouter } from 'next/navigation';
@@ -18,13 +17,9 @@ export default function AnalyticsRoutePage() {
     }
   }, [isLoading, router, workspaces.length]);
 
-  return (
-    <DashboardShell>
-      {workspaceId ? (
-        <AnalyticsPage workspaceId={workspaceId} />
-      ) : (
-        <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
-      )}
-    </DashboardShell>
+  return workspaceId ? (
+    <AnalyticsPage workspaceId={workspaceId} />
+  ) : (
+    <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
   );
 }

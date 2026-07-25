@@ -1,5 +1,6 @@
 'use client';
 
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { useAllTasksQuery, EMPTY_ALL_TASKS_FILTERS, type AllTask } from '@/features/all-tasks';
 import { useSprintsQuery } from '@/features/sprints';
 import dynamic from 'next/dynamic';
@@ -24,7 +25,10 @@ const TaskDetailDrawer = dynamic(
   { ssr: false },
 );
 
-const MONTH_OPTIONS = [3, 6] as const;
+const MONTH_OPTIONS = [
+  { value: '3', label: '3 мес.' },
+  { value: '6', label: '6 мес.' },
+] as const;
 
 const ROADMAP_TASKS_QUERY = {
   ...EMPTY_ALL_TASKS_FILTERS,
@@ -41,7 +45,7 @@ export function RoadmapPage({
   workspaceId: string;
   initialTaskId?: string | null;
 }) {
-  const [monthCount, setMonthCount] = useState<(typeof MONTH_OPTIONS)[number]>(3);
+  const [monthCount, setMonthCount] = useState<3 | 6>(3);
   const [rangeStart, setRangeStart] = useState(() => startOfMonth(new Date()));
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
@@ -140,18 +144,13 @@ export function RoadmapPage({
       </header>
 
       <div className="task-view-toolbar">
-        <div className="task-view-toolbar__modes" role="group" aria-label="Горизонт">
-          {MONTH_OPTIONS.map((count) => (
-            <button
-              key={count}
-              type="button"
-              className={monthCount === count ? 'is-active' : undefined}
-              onClick={() => setMonthCount(count)}
-            >
-              {count} мес.
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          size="sm"
+          aria-label="Горизонт"
+          options={MONTH_OPTIONS}
+          value={String(monthCount) as '3' | '6'}
+          onChange={(value) => setMonthCount(Number(value) as 3 | 6)}
+        />
         <div className="task-view-toolbar__dates">
           <button
             type="button"

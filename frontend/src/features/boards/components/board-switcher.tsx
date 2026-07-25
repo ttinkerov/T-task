@@ -8,8 +8,10 @@ import {
   useDeleteBoardMutation,
   useUpdateBoardMutation,
 } from '../hooks';
+import type { BoardSummary } from '../types';
 
 const selectedBoardStorageKey = (workspaceId: string) => `board:selected:${workspaceId}`;
+const EMPTY_BOARDS: BoardSummary[] = [];
 
 export function readStoredBoardId(workspaceId: string): string | null {
   try {
@@ -40,7 +42,8 @@ export function BoardSwitcher({
   preferredBoardId = null,
   onBoardChange,
 }: BoardSwitcherProps) {
-  const { data: boards = [], isLoading } = useBoardsQuery(workspaceId);
+  const { data, isLoading } = useBoardsQuery(workspaceId);
+  const boards = data ?? EMPTY_BOARDS;
   const createMutation = useCreateBoardMutation(workspaceId);
   const updateMutation = useUpdateBoardMutation(workspaceId);
   const deleteMutation = useDeleteBoardMutation(workspaceId);

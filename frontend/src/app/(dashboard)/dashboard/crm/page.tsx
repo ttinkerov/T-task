@@ -1,6 +1,5 @@
 'use client';
 
-import { DashboardShell } from '@/features/auth/components/dashboard-shell';
 import { FunnelBoard } from '@/features/crm';
 import { downloadExport } from '@/features/workspace-tools/api';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
@@ -19,24 +18,20 @@ export default function CrmPage() {
     }
   }, [isLoading, router, workspaces.length]);
 
-  return (
-    <DashboardShell boardMode>
-      {workspaceId ? (
-        <>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
-            <button
-              type="button"
-              className="board-filters__chip"
-              onClick={() => void downloadExport(workspaceId, 'deals')}
-            >
-              Экспорт CSV
-            </button>
-          </div>
-          <FunnelBoard workspaceId={workspaceId} />
-        </>
-      ) : (
-        <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
-      )}
-    </DashboardShell>
+  return workspaceId ? (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.75rem' }}>
+        <button
+          type="button"
+          className="board-filters__chip"
+          onClick={() => void downloadExport(workspaceId, 'deals')}
+        >
+          Экспорт CSV
+        </button>
+      </div>
+      <FunnelBoard workspaceId={workspaceId} />
+    </>
+  ) : (
+    <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
   );
 }

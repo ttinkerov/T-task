@@ -1,5 +1,7 @@
 'use client';
 
+import { SegmentedControl } from '@/components/ui/segmented-control';
+import { useMemo } from 'react';
 import { PRIORITY_LABELS, type BoardColumn, type BoardTask } from '../types';
 import {
   addDays,
@@ -12,11 +14,11 @@ import {
   type CalendarRange,
 } from '../lib/task-view-utils';
 
-const VIEW_OPTIONS: { value: BoardViewMode; label: string; icon: string }[] = [
-  { value: 'BOARD', label: 'Доска', icon: '▦' },
-  { value: 'TABLE', label: 'Таблица', icon: '☷' },
-  { value: 'CALENDAR', label: 'Календарь', icon: '□' },
-  { value: 'TIMELINE', label: 'Таймлайн', icon: '↔' },
+const VIEW_OPTIONS: { value: BoardViewMode; label: string }[] = [
+  { value: 'BOARD', label: 'Доска' },
+  { value: 'TABLE', label: 'Таблица' },
+  { value: 'CALENDAR', label: 'Календарь' },
+  { value: 'TIMELINE', label: 'Таймлайн' },
 ];
 
 const CALENDAR_RANGE_OPTIONS: { value: CalendarRange; label: string }[] = [
@@ -56,43 +58,31 @@ export function TaskViewToolbar({
             )
           : null;
 
+  const viewOptions = useMemo(
+    () => VIEW_OPTIONS.filter((option) => !modes || modes.includes(option.value)),
+    [modes],
+  );
+
   return (
     <div className="task-view-toolbar">
       <div className="task-view-toolbar__lead">
-        <p className="task-view-toolbar__eyebrow">Одна база задач</p>
-        <div className="task-view-toolbar__modes" role="group" aria-label="Вид">
-          {VIEW_OPTIONS.filter((option) => !modes || modes.includes(option.value)).map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={mode === option.value ? 'task-view-toolbar__mode--active' : undefined}
-              onClick={() => onModeChange(option.value)}
-              aria-pressed={mode === option.value}
-            >
-              <span aria-hidden="true">{option.icon}</span>
-              {option.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          aria-label="Вид задач"
+          options={viewOptions}
+          value={mode}
+          onChange={onModeChange}
+        />
       </div>
 
       <div className="task-view-toolbar__controls">
         {mode === 'CALENDAR' && onCalendarRangeChange ? (
-          <div className="task-view-toolbar__ranges" role="group" aria-label="Период календаря">
-            {CALENDAR_RANGE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={
-                  calendarRange === option.value ? 'task-view-toolbar__mode--active' : undefined
-                }
-                onClick={() => onCalendarRangeChange(option.value)}
-                aria-pressed={calendarRange === option.value}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            size="sm"
+            aria-label="Период календаря"
+            options={CALENDAR_RANGE_OPTIONS}
+            value={calendarRange}
+            onChange={onCalendarRangeChange}
+          />
         ) : null}
 
         {hasDateNavigation ? (

@@ -1,6 +1,5 @@
 'use client';
 
-import { DashboardShell } from '@/features/auth/components/dashboard-shell';
 import { RoadmapPage } from '@/features/roadmap';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { Suspense } from 'react';
@@ -18,25 +17,17 @@ function RoadmapRouteContent() {
   const searchParams = useSearchParams();
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
 
-  return (
-    <DashboardShell boardMode>
-      {workspaceId ? (
-        <RoadmapPage
-          key={workspaceId}
-          workspaceId={workspaceId}
-          initialTaskId={searchParams.get('task')}
-        />
-      ) : (
-        <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
-      )}
-    </DashboardShell>
+  return workspaceId ? (
+    <RoadmapPage
+      key={workspaceId}
+      workspaceId={workspaceId}
+      initialTaskId={searchParams.get('task')}
+    />
+  ) : (
+    <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
   );
 }
 
 function RoadmapRouteFallback() {
-  return (
-    <DashboardShell boardMode>
-      <p className="text-sm text-muted-foreground">Загрузка роадмапа...</p>
-    </DashboardShell>
-  );
+  return <p className="text-sm text-muted-foreground">Загрузка роадмапа...</p>;
 }

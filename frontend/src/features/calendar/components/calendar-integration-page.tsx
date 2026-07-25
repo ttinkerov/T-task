@@ -7,29 +7,26 @@ import {
   useCreateOrRotateCalendarFeedMutation,
   useRevokeCalendarFeedMutation,
 } from '../hooks';
+import { CALENDAR_PROVIDER_ICONS } from './calendar-provider-icons';
 
 const PROVIDERS = [
   {
     key: 'google',
-    badge: 'G',
     name: 'Google Calendar',
     instruction: 'Настройки → Добавить календарь → Добавить по URL',
   },
   {
     key: 'yandex',
-    badge: 'Я',
     name: 'Яндекс Календарь',
     instruction: 'Новый календарь → По ссылке → вставьте URL',
   },
   {
     key: 'apple',
-    badge: 'A',
     name: 'Apple Calendar',
     instruction: 'Файл → Новая подписка на календарь',
   },
   {
     key: 'caldav',
-    badge: 'C',
     name: 'Другой календарь',
     instruction: 'Добавьте подписной календарь по URL или через webcal',
   },
@@ -295,7 +292,7 @@ export function CalendarIntegrationPage({ workspaceId }: { workspaceId: string }
                   className={`calendar-provider calendar-provider--${provider.key}`}
                   aria-hidden="true"
                 >
-                  {provider.badge}
+                  {CALENDAR_PROVIDER_ICONS[provider.key]}
                 </span>
                 <div>
                   <strong>{provider.name}</strong>
