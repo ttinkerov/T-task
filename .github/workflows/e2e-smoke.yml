@@ -1,0 +1,92 @@
+name: E2E Smoke
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: e2e-smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ttask
+          POSTGRES_PASSWORD: ttask_secret
+          POSTGRES_DB: ttask
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ttask -d ttask"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: development
+      ALLOW_INSECURE_DEV: 'true'
+      POSTGRES_USER: ttask
+      POSTGRES_PASSWORD: ttask_secret
+      POSTGRES_DB: ttask
+      DATABASE_URL: postgresql://ttask:ttask_secret@127.0.0.1:5432/ttask?schema=public&connection_limit=10
+      DIRECT_DATABASE_URL: postgresql://ttask:ttask_secret@127.0.0.1:5432/ttask?schema=public
+      REDIS_URL: redis://127.0.0.1:6379
+      JWT_ACCESS_SECRET: ci_e2e_jwt_secret_for_github_actions_ok_48chars
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_TTL: 30d
+      CORS_ORIGIN: http://localhost:3000
+      APP_URL: http://localhost:3000
+      BACKEND_PORT: '3001'
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      E2E_BASE_URL: http://localhost:3000
+      E2E_API_URL: http://localhost:3001
+      CI: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate -w backend
+
+      - name: Apply migrations
+        run: npm run prisma:migrate:deploy -w backend
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+
+      - name: Run smoke E2E
+        run: npm run test:e2e:smoke -w frontend
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-smoke-report
+          path: frontend/test-results
+          if-no-files-found: ignore

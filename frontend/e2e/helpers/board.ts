@@ -18,16 +18,64 @@ export async function registerAndOpenBoard(page: Page, label: string) {
   await page.getByRole('button', { name: 'Создать и открыть доску' }).click();
 
   await expect(page).toHaveURL(/\/dashboard\/board/);
-  await expect(page.locator('[data-testid^="kanban-column-"]').first()).toBeVisible();
+  await closeTaskDrawerIfOpen(page);
+  await ensureKanbanReady(page);
 
   return { email, password };
 }
 
+export async function login(page: Page, email: string, password: string) {
+  await page.goto('/login');
+  await page.locator('#email').fill(email);
+  await page.locator('#password').fill(password);
+  await page.getByRole('button', { name: 'Войти' }).click();
+  await expect(page).toHaveURL(/\/dashboard\/board/);
+  await closeTaskDrawerIfOpen(page);
+  await ensureKanbanReady(page);
+}
+
+export async function logout(page: Page) {
+  await page.getByRole('button', { name: 'Выйти' }).click();
+  await expect(page).toHaveURL(/\/login/);
+}
+
+export async function closeTaskDrawerIfOpen(page: Page) {
+  const drawer = page.getByTestId('task-detail-drawer');
+  if (!(await drawer.isVisible().catch(() => false))) {
+    return;
+  }
+  await drawer.getByRole('button', { name: 'Закрыть' }).click();
+  await expect(drawer).toBeHidden();
+}
+
+/** Empty-state CTA can hide columns until the first task exists. */
+export async function ensureKanbanReady(page: Page) {
+  const columns = page.locator('[data-testid^="kanban-column-"]');
+  if (
+    await columns
+      .first()
+      .isVisible()
+      .catch(() => false)
+  ) {
+    return;
+  }
+
+  const firstTaskCta = page.getByRole('button', { name: 'Добавить первую задачу' });
+  if (await firstTaskCta.isVisible().catch(() => false)) {
+    await firstTaskCta.click();
+  }
+
+  await expect(columns.first()).toBeVisible({ timeout: 20_000 });
+}
+
 export async function createTaskInFirstColumn(page: Page, title: string) {
+  await ensureKanbanReady(page);
   const column = page.locator('[data-testid^="kanban-column-"]').first();
   await column.locator('.kanban-column__add-input').fill(title);
   await column.getByRole('button', { name: 'Добавить задачу' }).click();
-  await expect(page.getByText(title, { exact: true }).first()).toBeVisible();
+  await expect(
+    page.locator('[data-testid^="kanban-task-"]').filter({ hasText: title }).first(),
+  ).toBeVisible();
 }
 
 /** dnd-kit needs a small move past activationConstraint.distance before the drop. */
