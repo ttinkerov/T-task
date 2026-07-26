@@ -1,0 +1,17 @@
+{
+  "name": "T-task",
+  "short_name": "T-task",
+  "description": "Канбан и CRM для небольших команд",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#BE185D",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
