@@ -16,8 +16,7 @@ export const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   DIRECT_DATABASE_URL: z.string().min(1).optional(),
   REDIS_URL: z.string().min(1),
-  // Access tokens are JWTs. Refresh tokens are opaque random bytes hashed in DB —
-  // there is no JWT_REFRESH_SECRET.
+
   JWT_ACCESS_SECRET: jwtSecretSchema,
   JWT_ACCESS_TTL: z.string().default('15m'),
   JWT_REFRESH_TTL: z.string().default('30d'),
@@ -41,8 +40,7 @@ export const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
-  // Base64-encoded 32-byte key for AES-256-GCM encryption of workspace AI tokens.
-  // Generate: node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+
   AI_TOKEN_ENC_KEY: z
     .string()
     .min(1)

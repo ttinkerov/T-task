@@ -6,12 +6,9 @@ export interface RateLimitConfig {
   keyPrefix: string;
   windowSeconds: number;
   maxAttempts: number;
-  /** Also enforce a shared budget keyed by route param workspaceId. */
+
   includeWorkspaceId?: boolean;
-  /**
-   * Also enforce a budget keyed by a route param (e.g. public form `token`).
-   * Unspoofable unlike client-controlled Forwarded IP.
-   */
+
   includeRouteParam?: string;
 }
 
@@ -30,7 +27,6 @@ export const PUBLIC_FORM_GET_RATE_LIMIT: RateLimitConfig = {
   includeRouteParam: 'token',
 };
 
-/** Per-IP + per-form token (route param). Token budget survives IP spoofing. */
 export const PUBLIC_FORM_SUBMIT_RATE_LIMIT: RateLimitConfig = {
   keyPrefix: 'public-form:submit',
   windowSeconds: 60,
@@ -38,7 +34,6 @@ export const PUBLIC_FORM_SUBMIT_RATE_LIMIT: RateLimitConfig = {
   includeRouteParam: 'token',
 };
 
-/** Shared budget across all public forms in a workspace (applied after form lookup). */
 export const PUBLIC_FORM_SUBMIT_WORKSPACE_RATE_LIMIT: RateLimitConfig = {
   keyPrefix: 'public-form:submit-ws',
   windowSeconds: 60,
@@ -125,7 +120,6 @@ export const AI_EPIC_BREAKDOWN_APPLY_RATE_LIMIT: RateLimitConfig = {
   includeWorkspaceId: true,
 };
 
-/** CSV export is DB/CPU heavy — stricter than list endpoints. */
 export const EXPORT_RATE_LIMIT: RateLimitConfig = {
   keyPrefix: 'export:csv',
   windowSeconds: 60,

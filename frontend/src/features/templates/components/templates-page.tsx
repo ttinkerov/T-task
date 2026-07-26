@@ -120,7 +120,7 @@ function TaskTemplatesPanel({
       setChecklistText('');
       setChecklistGates(true);
     } catch {
-      // surfaced below
+      /* ignore */
     }
   };
 
@@ -129,7 +129,7 @@ function TaskTemplatesPanel({
     try {
       await deleteMutation.mutateAsync(templateId);
     } catch {
-      // surfaced below
+      /* ignore */
     } finally {
       setPendingId(null);
     }
@@ -365,7 +365,7 @@ function DealTemplatesPanel({
       setContactName('');
       setCompanyName('');
     } catch {
-      // surfaced below
+      /* ignore */
     }
   };
 
@@ -374,7 +374,7 @@ function DealTemplatesPanel({
     try {
       await deleteMutation.mutateAsync(templateId);
     } catch {
-      // surfaced below
+      /* ignore */
     } finally {
       setPendingId(null);
     }

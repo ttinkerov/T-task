@@ -3,15 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AccessTokenDenyService } from './access-token-deny.service';
 
 describe('AccessTokenDenyService', () => {
-  let get: ReturnType<typeof vi.fn>;
+  let mget: ReturnType<typeof vi.fn>;
   let setex: ReturnType<typeof vi.fn>;
   let service: AccessTokenDenyService;
 
   beforeEach(() => {
-    get = vi.fn();
+    mget = vi.fn();
     setex = vi.fn();
     service = new AccessTokenDenyService({
-      getClient: () => ({ get, setex }),
+      getClient: () => ({ mget, setex }),
     } as never);
   });
 
@@ -21,7 +21,7 @@ describe('AccessTokenDenyService', () => {
   });
 
   it('rejects denylisted jti', async () => {
-    get.mockResolvedValueOnce('1');
+    mget.mockResolvedValueOnce(['1', null]);
     await expect(
       service.assertNotRevoked({
         sub: 'u1',
@@ -34,7 +34,7 @@ describe('AccessTokenDenyService', () => {
   });
 
   it('rejects tokens issued before user revoke epoch', async () => {
-    get.mockResolvedValueOnce(null).mockResolvedValueOnce('200');
+    mget.mockResolvedValueOnce([null, '200']);
     await expect(
       service.assertNotRevoked({
         sub: 'u1',
@@ -47,7 +47,7 @@ describe('AccessTokenDenyService', () => {
   });
 
   it('allows fresh tokens after user revoke epoch', async () => {
-    get.mockResolvedValueOnce(null).mockResolvedValueOnce('200');
+    mget.mockResolvedValueOnce([null, '200']);
     await expect(
       service.assertNotRevoked({
         sub: 'u1',
@@ -60,7 +60,7 @@ describe('AccessTokenDenyService', () => {
   });
 
   it('soft-fails when Redis is unavailable during assert', async () => {
-    get.mockRejectedValueOnce(new Error('redis down'));
+    mget.mockRejectedValueOnce(new Error('redis down'));
     await expect(
       service.assertNotRevoked({
         sub: 'u1',

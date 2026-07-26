@@ -41,7 +41,6 @@ export class WatchersService {
     return this.list(workspaceId, taskId, userId);
   }
 
-  /** Notify watchers about an event; skips actor and already-notified recipients. */
   async notifyWatchers(params: {
     workspaceId: string;
     taskId: string;

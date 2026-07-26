@@ -8,7 +8,6 @@ export interface WorkloadRow {
   taskCount: number;
 }
 
-/** Minimal task shape for workload math (board flatten or analytics/workload API). */
 export interface WorkloadTask {
   id: string;
   title: string;

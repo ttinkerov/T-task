@@ -7,14 +7,16 @@ import { FieldHint } from './field-hint';
 export function TaskTagsSection({
   workspaceId,
   taskId,
+  boardId,
   selected,
 }: {
   workspaceId: string;
   taskId: string;
+  boardId?: string | null;
   selected: TaskTag[];
 }) {
   const { data: tags = [] } = useTagsQuery(workspaceId);
-  const setTagsMutation = useSetTaskTagsMutation(workspaceId, taskId);
+  const setTagsMutation = useSetTaskTagsMutation(workspaceId, taskId, boardId);
   const selectedIds = new Set(selected.map((tag) => tag.id));
 
   const toggle = (tagId: string) => {

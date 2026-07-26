@@ -34,7 +34,7 @@ export function TaskCustomFieldsSection({
     try {
       await setValueMutation.mutateAsync({ fieldId, value });
     } catch {
-      // error surfaced below
+      /* ignore */
     } finally {
       setPendingId(null);
     }

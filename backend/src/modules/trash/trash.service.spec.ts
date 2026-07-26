@@ -1,39 +1,3 @@
-/**
- * TDD test suite for TrashService — workspace shared trash MVP.
- *
- * RED/GREEN priority order is encoded in the section headings.
- * Run: cd backend && npm test -- trash.service
- *
- * Implementation contract assumed by these tests:
- *
- *   class TrashService {
- *     constructor(private readonly prisma: PrismaService) {}
- *     list(workspaceId, userId, { page, limit }): Promise<ListTrashResult>
- *     restore(workspaceId, userId, entityType, entityId): Promise<{ success: true }>
- *     purge(workspaceId, userId, entityType, entityId): Promise<{ success: true }>
- *   }
- *
- *   type TrashEntityType = 'TASK' | 'DEAL' | 'APP';
- *
- *   interface TrashItem {
- *     entityType: TrashEntityType;
- *     entityId: string;
- *     entityName: string;
- *     deletedAt: string; // ISO-8601
- *     metadata: Record<string, string | number | boolean | null>;
- *   }
- *
- *   interface ListTrashResult {
- *     items: TrashItem[];
- *     meta: { total: number; page: number; limit: number };
- *   }
- *
- * Schema prerequisites (add to prisma/schema.prisma before running migrations):
- *   model Task            { ...; deletedAt DateTime? @map("deleted_at") }
- *   model Deal            { ...; deletedAt DateTime? @map("deleted_at") }
- *   model WorkspaceExternalApp { ...; deletedAt DateTime? @map("deleted_at") }
- */
-
 import {
   BadRequestException,
   ConflictException,
@@ -44,10 +8,6 @@ import { WorkspaceRole } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TrashService } from './trash.service';
 import { TrashEntityType } from './trash.types';
-
-// ---------------------------------------------------------------------------
-// Shared mock factory
-// ---------------------------------------------------------------------------
 
 function makePrisma() {
   return {
@@ -105,10 +65,6 @@ function makeActivityService() {
     record: vi.fn().mockResolvedValue(undefined),
   };
 }
-
-// ---------------------------------------------------------------------------
-// PHASE 1 — List: core happy paths
-// ---------------------------------------------------------------------------
 
 describe('TrashService.list — core happy paths', () => {
   let prisma: ReturnType<typeof makePrisma>;
@@ -239,7 +195,7 @@ describe('TrashService.list — core happy paths', () => {
     const result = await service.list('workspace-1', 'user-1', { page: 1, limit: 25 });
 
     expect(result.items).toHaveLength(2);
-    expect(result.items[0].entityId).toBe('deal-1'); // newest first
+    expect(result.items[0].entityId).toBe('deal-1');
     expect(result.items[1].entityId).toBe('task-1');
     expect(result.meta.total).toBe(2);
   });
@@ -255,7 +211,6 @@ describe('TrashService.list — core happy paths', () => {
 
     await service.list('workspace-1', 'user-1', { page: 1, limit: 25 });
 
-    // Tasks must be scoped through the board→workspace chain
     expect(prisma.task.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -267,7 +222,6 @@ describe('TrashService.list — core happy paths', () => {
       }),
     );
 
-    // Deals must be scoped through the funnel→workspace chain
     expect(prisma.deal.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -279,7 +233,6 @@ describe('TrashService.list — core happy paths', () => {
       }),
     );
 
-    // Apps are directly scoped
     expect(prisma.workspaceExternalApp.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -290,10 +243,6 @@ describe('TrashService.list — core happy paths', () => {
     );
   });
 });
-
-// ---------------------------------------------------------------------------
-// PHASE 2 — List: authorization
-// ---------------------------------------------------------------------------
 
 describe('TrashService.list — authorization', () => {
   let prisma: ReturnType<typeof makePrisma>;
@@ -372,10 +321,6 @@ describe('TrashService.list — authorization', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// PHASE 3 — List: pagination
-// ---------------------------------------------------------------------------
-
 describe('TrashService.list — pagination', () => {
   let prisma: ReturnType<typeof makePrisma>;
   let service: TrashService;
@@ -387,7 +332,6 @@ describe('TrashService.list — pagination', () => {
   });
 
   it('returns correct meta for second page with items spanning multiple types', async () => {
-    // 20 tasks + 15 deals = 35 total; page 2 with limit 20 → skip 20 items
     const makeDeletedTask = (id: string, deletedAt: Date) => ({
       id,
       title: `Task ${id}`,
@@ -414,7 +358,7 @@ describe('TrashService.list — pagination', () => {
     const result = await service.list('workspace-1', 'user-1', { page: 2, limit: 20 });
 
     expect(result.meta).toEqual({ total: 35, page: 2, limit: 20 });
-    expect(result.items).toHaveLength(15); // 35 total - 20 skipped
+    expect(result.items).toHaveLength(15);
   });
 
   it('returns empty items array on a page beyond total', async () => {
@@ -434,10 +378,6 @@ describe('TrashService.list — pagination', () => {
     expect(result.meta).toEqual({ total: 1, page: 3, limit: 25 });
   });
 });
-
-// ---------------------------------------------------------------------------
-// PHASE 4 — Restore: core happy paths
-// ---------------------------------------------------------------------------
 
 describe('TrashService.restore — core happy paths', () => {
   let prisma: ReturnType<typeof makePrisma>;
@@ -542,10 +482,6 @@ describe('TrashService.restore — core happy paths', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// PHASE 5 — Restore: authorization
-// ---------------------------------------------------------------------------
-
 describe('TrashService.restore — authorization', () => {
   let prisma: ReturnType<typeof makePrisma>;
   let service: TrashService;
@@ -617,10 +553,6 @@ describe('TrashService.restore — authorization', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// PHASE 6 — Restore: not-found and cross-workspace isolation
-// ---------------------------------------------------------------------------
-
 describe('TrashService.restore — not-found and isolation', () => {
   let prisma: ReturnType<typeof makePrisma>;
   let service: TrashService;
@@ -661,10 +593,8 @@ describe('TrashService.restore — not-found and isolation', () => {
   });
 
   it('does not find task from a different workspace (workspace scoping via findFirst)', async () => {
-    // The workspace scoping is enforced in the query itself via the nested where.
-    // findFirst returns null when the task belongs to another workspace → NotFoundException.
     prisma.workspaceMember.findUnique.mockResolvedValue(adminMembership());
-    prisma.task.findFirst.mockResolvedValue(null); // other-workspace task filtered out
+    prisma.task.findFirst.mockResolvedValue(null);
 
     await expect(
       service.restore('workspace-1', 'user-1', TrashEntityType.TASK, 'task-other-ws'),
@@ -680,10 +610,6 @@ describe('TrashService.restore — not-found and isolation', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// PHASE 7 — Restore: idempotency and conflict detection
-// ---------------------------------------------------------------------------
-
 describe('TrashService.restore — idempotency and conflicts', () => {
   let prisma: ReturnType<typeof makePrisma>;
   let service: TrashService;
@@ -696,20 +622,17 @@ describe('TrashService.restore — idempotency and conflicts', () => {
 
   it('throws ConflictException when restoring an already-active (non-deleted) task', async () => {
     prisma.workspaceMember.findUnique.mockResolvedValue(adminMembership());
-    // findFirst with deletedAt: { not: null } returns null for an active entity
+
     prisma.task.findFirst.mockResolvedValue(null);
 
     await expect(
       service.restore('workspace-1', 'user-1', TrashEntityType.TASK, 'active-task'),
     ).rejects.toBeInstanceOf(NotFoundException);
 
-    // The service must not attempt an update
     expect(prisma.task.update).not.toHaveBeenCalled();
   });
 
   it('throws ConflictException when restoring a task whose parent column is soft-deleted', async () => {
-    // Scenario: task is in trash, but its column was also soft-deleted.
-    // Restoring the task without its column is a conflict.
     prisma.workspaceMember.findUnique.mockResolvedValue(adminMembership());
     prisma.task.findFirst.mockResolvedValue({
       id: 'task-1',
@@ -719,7 +642,7 @@ describe('TrashService.restore — idempotency and conflicts', () => {
     });
     prisma.boardColumn.findUnique.mockResolvedValue({
       id: 'col-deleted',
-      deletedAt: new Date('2026-07-01T00:00:00.000Z'), // column itself is soft-deleted
+      deletedAt: new Date('2026-07-01T00:00:00.000Z'),
     });
 
     await expect(
@@ -750,20 +673,14 @@ describe('TrashService.restore — idempotency and conflicts', () => {
   });
 
   it('is idempotent: second restore call on an already-restored task fails predictably', async () => {
-    // After a successful restore, deletedAt is null. A second call with the same
-    // entityId finds no soft-deleted record → NotFoundException (not a silent success).
     prisma.workspaceMember.findUnique.mockResolvedValue(adminMembership());
-    prisma.task.findFirst.mockResolvedValue(null); // already restored → not found in trash
+    prisma.task.findFirst.mockResolvedValue(null);
 
     await expect(
       service.restore('workspace-1', 'user-1', TrashEntityType.TASK, 'task-1'),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
-
-// ---------------------------------------------------------------------------
-// PHASE 8 — Purge (permanent delete): OWNER-only hard delete from trash
-// ---------------------------------------------------------------------------
 
 describe('TrashService.purge — permanent deletion', () => {
   let prisma: ReturnType<typeof makePrisma>;

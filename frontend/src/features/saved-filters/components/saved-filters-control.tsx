@@ -15,7 +15,7 @@ interface SavedFiltersControlProps {
   view: SavedFilterView;
   filters: BoardFilters;
   onApply: (filters: BoardFilters) => void;
-  /** When true, skip applying the default filter on load (e.g. already applied). */
+
   skipDefaultApply?: boolean;
 }
 

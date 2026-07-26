@@ -2,9 +2,9 @@
 [data-theme='light'] {
   color-scheme: light;
 
-  /* Quiet Instrument — light */
   --tt-bg: #f3f4f6;
-  --tt-bg-mesh: radial-gradient(1200px 600px at 10% -10%, rgba(190, 24, 93, 0.06), transparent 55%),
+  --tt-bg-mesh:
+    radial-gradient(1200px 600px at 10% -10%, rgba(190, 24, 93, 0.06), transparent 55%),
     radial-gradient(900px 500px at 100% 0%, rgba(20, 24, 36, 0.04), transparent 50%), #f3f4f6;
   --tt-surface-0: #f3f4f6;
   --tt-surface: #ffffff;
@@ -61,7 +61,8 @@
   color-scheme: dark;
 
   --tt-bg: #0a0a0b;
-  --tt-bg-mesh: radial-gradient(1000px 500px at 0% 0%, rgba(190, 24, 93, 0.12), transparent 50%),
+  --tt-bg-mesh:
+    radial-gradient(1000px 500px at 0% 0%, rgba(190, 24, 93, 0.12), transparent 50%),
     radial-gradient(800px 400px at 100% 0%, rgba(255, 255, 255, 0.03), transparent 45%), #0a0a0b;
   --tt-surface-0: #0a0a0b;
   --tt-surface: #141416;

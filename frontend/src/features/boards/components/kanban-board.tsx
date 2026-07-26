@@ -335,6 +335,7 @@ export function KanbanBoard({
         <TaskDetailDrawer
           key={selectedTask.id}
           workspaceId={workspaceId}
+          boardId={boardId}
           task={selectedTask}
           columnName={selectedColumnName}
           relationCandidates={relationCandidates}

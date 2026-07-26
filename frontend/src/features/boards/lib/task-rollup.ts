@@ -16,7 +16,6 @@ export type TaskLinkRollup = {
   nearestDue: string | null;
 };
 
-/** Notion-style rollup over related tasks + linked deals. */
 export function computeTaskLinkRollup(
   relatedTasks: RollupTaskLike[],
   deals: RollupDealLike[],
@@ -72,7 +71,6 @@ export function computeDealLinkRollup(
   };
 }
 
-/** Prefer the soonest upcoming due; if all past, the most recent past due. */
 export function pickNearestDue(dueDates: Array<string | null | undefined>, now: Date = new Date()) {
   const parsed = dueDates
     .map((value) => {

@@ -38,6 +38,11 @@ services:
       AUTH_TYPE: scram-sha-256
     ports:
       - '127.0.0.1:6432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'nc -z 127.0.0.1 5432 || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 10
     depends_on:
       postgres:
         condition: service_healthy
@@ -45,7 +50,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ['redis-server', '--maxmemory', '256mb', '--maxmemory-policy', 'allkeys-lru']
+    command: ['redis-server', '--maxmemory', '256mb', '--maxmemory-policy', 'noeviction']
     ports:
       - '127.0.0.1:6379:6379'
     healthcheck:
@@ -62,7 +67,6 @@ services:
     env_file:
       - .env
     environment:
-      # Local stack only — production must use docker-compose.prod.yml (NODE_ENV=production).
       ALLOW_INSECURE_DEV: 'true'
       DATABASE_URL: postgresql://${POSTGRES_USER:-ttask}:${POSTGRES_PASSWORD:-ttask_secret}@pgbouncer:5432/${POSTGRES_DB:-ttask}?schema=public&pgbouncer=true&connection_limit=10
       DIRECT_DATABASE_URL: postgresql://${POSTGRES_USER:-ttask}:${POSTGRES_PASSWORD:-ttask_secret}@postgres:5432/${POSTGRES_DB:-ttask}?schema=public
@@ -74,11 +78,23 @@ services:
       - '3001:3001'
     volumes:
       - uploads_data:/app/uploads
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3001/health/ready').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
     depends_on:
       postgres:
         condition: service_healthy
       pgbouncer:
-        condition: service_started
+        condition: service_healthy
       redis:
         condition: service_healthy
 

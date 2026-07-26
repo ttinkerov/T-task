@@ -115,7 +115,6 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
     await client.join(roomName(workspaceId));
 
-    // Re-check after join to close the TOCTOU window with member removal.
     const stillMember = await this.prisma.workspaceMember.findUnique({
       where: { workspaceId_userId: { workspaceId, userId } },
       select: { id: true },

@@ -100,7 +100,7 @@ export function ColumnAutomationDialog({
       });
       handleClose();
     } catch {
-      // Surface via updateMutation.error / role="alert"
+      /* ignore */
     }
   };
 

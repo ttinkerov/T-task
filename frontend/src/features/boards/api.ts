@@ -56,7 +56,6 @@ export async function fetchColumnTasks(
   );
 }
 
-/** Legacy: first board in workspace (used when boardId is unknown). */
 export async function fetchDefaultBoard(workspaceId: string) {
   return apiFetch<BoardView>(`/api/v1/workspaces/${workspaceId}/board`, {
     headers: withWorkspace(workspaceId),

@@ -144,6 +144,7 @@ model RefreshSession {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([familyId, revokedAt])
   @@map("refresh_sessions")
 }
 
@@ -590,7 +591,6 @@ model WorkspaceExternalApp {
 model ActivityLog {
   id          String   @id @default(cuid())
   workspaceId String   @map("workspace_id")
-  // Plain snapshot id — no User FK, so actor deletion cannot erase history.
   actorId     String?  @map("actor_id")
   actorName   String   @map("actor_name")
   action      String
@@ -600,7 +600,6 @@ model ActivityLog {
   metadata    Json     @default("{}")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  // Restrict: hard-deleting a workspace must not silently wipe the audit trail.
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
 
   @@index([workspaceId, createdAt(sort: Desc)])
@@ -823,7 +822,6 @@ model AiWorkspaceSetting {
   @@map("ai_workspace_settings")
 }
 
-/** Solo tldraw canvas snapshot per workspace (document only; no realtime). */
 model WorkspaceWhiteboard {
   id          String   @id @default(cuid())
   workspaceId String   @unique @map("workspace_id")

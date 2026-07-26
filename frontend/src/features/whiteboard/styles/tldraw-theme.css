@@ -1,4 +1,3 @@
-/* Match tldraw accent / tool selection to T-task brand (--primary). */
 .tl-container.tl-theme__light,
 .tl-container.tl-theme__dark {
   --tl-color-primary: hsl(var(--primary));

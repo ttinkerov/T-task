@@ -7,6 +7,4 @@ try {
       document.documentElement.dataset.theme = theme;
     }
   }
-} catch {
-  // Best-effort theme bootstrap before hydration.
-}
+} catch {}

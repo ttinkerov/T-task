@@ -62,6 +62,7 @@ export interface BoardTask {
   createdAt: string;
   customFields: TaskCustomFieldValue[];
   tags: TaskTag[];
+  subtaskStats?: { total: number; completed: number };
   subtasks: TaskSubtask[];
   sprintId: string | null;
   isEpic: boolean;

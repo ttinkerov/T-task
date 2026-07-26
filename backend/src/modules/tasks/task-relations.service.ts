@@ -75,7 +75,6 @@ export class TaskRelationsService {
 
     try {
       const relation = await this.prisma.$transaction(async (tx) => {
-        // Serialize relation edits inside a workspace so concurrent edges cannot create a cycle.
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${workspaceId}))`;
         const duplicate = await tx.taskRelation.findFirst({
           where: { pairKey: normalized.pairKey },

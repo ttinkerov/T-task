@@ -20,7 +20,6 @@ export function findWikiLinkTrigger(text: string, cursor: number): WikiLinkTrigg
   const match = /\[\[([^\]]*)$/.exec(beforeCursor);
   if (!match || match.index === undefined) return null;
 
-  // Completed tokens look like [[Title]](id) — once `]` is typed, stop suggesting.
   if (match[1].includes('[')) return null;
 
   return {

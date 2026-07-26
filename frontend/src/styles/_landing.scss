@@ -63,8 +63,6 @@ $l-brand-muted: var(--tt-brand-muted);
     radial-gradient(700px 420px at 90% 0%, rgba(255, 255, 255, 0.04), transparent 48%);
 }
 
-/* ── Nav ── */
-
 .tt-nav-wrap {
   position: sticky;
   top: 0;
@@ -177,8 +175,6 @@ $l-brand-muted: var(--tt-brand-muted);
   }
 }
 
-/* ── Buttons ── */
-
 .tt-btn {
   display: inline-flex;
   align-items: center;
@@ -235,8 +231,6 @@ $l-brand-muted: var(--tt-brand-muted);
     }
   }
 }
-
-/* ── Hero ── */
 
 .tt-hero {
   max-width: $landing-max-width;
@@ -382,8 +376,6 @@ $l-brand-muted: var(--tt-brand-muted);
     }
   }
 }
-
-/* ── Demo board (interactive preview) ── */
 
 .tt-board {
   max-width: 100%;
@@ -746,8 +738,6 @@ $l-brand-muted: var(--tt-brand-muted);
   }
 }
 
-/* ── Sections ── */
-
 .tt-section {
   max-width: $landing-max-width;
   margin: 0 auto;
@@ -858,8 +848,6 @@ $l-brand-muted: var(--tt-brand-muted);
   }
 }
 
-/* ── AI band ── */
-
 .tt-ai-band {
   max-width: $landing-max-width;
   margin: 0.5rem auto 0;
@@ -875,13 +863,12 @@ $l-brand-muted: var(--tt-brand-muted);
     padding: 1.75rem 1.35rem;
     border-radius: $radius-xl;
     border: 1px solid color-mix(in srgb, var(--tt-brand) 28%, var(--tt-border));
-    background:
-      linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--tt-brand) 10%, var(--tt-surface)) 0%,
-        var(--tt-surface) 48%,
-        color-mix(in srgb, var(--tt-text) 3%, var(--tt-surface)) 100%
-      );
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--tt-brand) 10%, var(--tt-surface)) 0%,
+      var(--tt-surface) 48%,
+      color-mix(in srgb, var(--tt-text) 3%, var(--tt-surface)) 100%
+    );
     box-shadow: var(--tt-shadow);
 
     @include md-up {
@@ -1163,8 +1150,6 @@ $l-brand-muted: var(--tt-brand-muted);
     }
   }
 }
-
-/* ── Auth (login / register) ── */
 
 .tt-auth {
   min-height: 100vh;

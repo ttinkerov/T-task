@@ -9,7 +9,6 @@ export type WorkspaceScopeValue = (typeof WorkspaceScope)[keyof typeof Workspace
 
 const ALL_SCOPES = Object.values(WorkspaceScope);
 
-/** Default scopes granted by role (additive with member.scopes). */
 export function defaultScopesForRole(role: string): WorkspaceScopeValue[] {
   switch (role) {
     case 'OWNER':

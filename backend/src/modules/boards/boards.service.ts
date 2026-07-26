@@ -18,7 +18,7 @@ import { ActivityService } from '../activity/activity.service';
 import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
 import { resolveDescriptionDocForApi } from '../tasks/utils/description-doc.util';
 
-const BOARD_COLUMN_TASK_LIMIT = 200;
+const BOARD_COLUMN_TASK_LIMIT = 50;
 
 @Injectable()
 export class BoardsService {
@@ -64,7 +64,7 @@ export class BoardsService {
 
   async getBoard(workspaceId: string, userId: string, boardId?: string) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
-    // Board GET is read-only: overdue rolling runs in DueRemindersService background tick.
+
     const board = await this.fetchBoard(workspaceId, boardId);
     return this.serializeBoard(board);
   }
@@ -75,7 +75,7 @@ export class BoardsService {
     columnId: string,
     userId: string,
     offset = 0,
-    limit = 100,
+    limit = BOARD_COLUMN_TASK_LIMIT,
   ) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
 
@@ -254,7 +254,7 @@ export class BoardsService {
     return {
       id: true,
       title: true,
-      // description omitted — load via GET /tasks/:id when drawer opens
+
       priority: true,
       complexity: true,
       timeEstimateMinutes: true,
@@ -288,9 +288,14 @@ export class BoardsService {
         include: { tag: { select: { id: true, name: true, color: true } } },
         orderBy: { tag: { name: 'asc' as const } },
       },
+      _count: {
+        select: {
+          subtasks: true,
+        },
+      },
       subtasks: {
-        // Cards only need completion progress; titles load in the drawer.
-        select: { completed: true },
+        where: { completed: true },
+        select: { id: true },
       },
     };
   }
@@ -617,19 +622,36 @@ export class BoardsService {
     taskTags?: {
       tag: { id: string; name: string; color: string };
     }[];
+    _count?: {
+      subtasks?: number;
+    };
     subtasks?: {
       id?: string;
       title?: string;
-      completed: boolean;
+      completed?: boolean;
       position?: number;
     }[];
   }) {
+    const fullSubtasks =
+      task._count === undefined
+        ? (task.subtasks ?? []).map((entry, index) => ({
+            id: entry.id ?? `subtask-${index}`,
+            title: entry.title ?? '',
+            completed: Boolean(entry.completed),
+            position: entry.position ?? index,
+          }))
+        : [];
+    const subtaskTotal = task._count?.subtasks ?? fullSubtasks.length ?? task.subtasks?.length ?? 0;
+    const subtaskCompleted =
+      task._count !== undefined
+        ? (task.subtasks?.length ?? 0)
+        : fullSubtasks.filter((entry) => entry.completed).length;
+
     return {
       id: task.id,
       title: task.title,
       description: task.description ?? null,
-      // Only return stored structured docs — never invent ephemeral docs on every board serialize
-      // (that churns object identity and forces heavy React reconciles).
+
       descriptionDoc: resolveDescriptionDocForApi(task.descriptionDoc ?? null, null),
       priority: task.priority,
       complexity: task.complexity,
@@ -663,12 +685,11 @@ export class BoardsService {
         value: entry.value,
       })),
       tags: (task.taskTags ?? []).map((entry) => entry.tag),
-      subtasks: (task.subtasks ?? []).map((entry, index) => ({
-        id: entry.id ?? `subtask-${index}`,
-        title: entry.title ?? '',
-        completed: entry.completed,
-        position: entry.position ?? index,
-      })),
+      subtaskStats: {
+        total: subtaskTotal,
+        completed: subtaskCompleted,
+      },
+      subtasks: fullSubtasks,
     };
   }
 

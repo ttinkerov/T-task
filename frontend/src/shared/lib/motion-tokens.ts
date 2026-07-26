@@ -1,4 +1,3 @@
-/** Shared motion tokens for dashboard transitions (framer-motion). */
 export const motionTokens = {
   duration: {
     fast: 0.18,

@@ -2,10 +2,6 @@ import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
 const pending = new Map<string, ReturnType<typeof setTimeout>>();
 
-/**
- * Coalesce board/list invalidations so rapid DnD / multi-mutations
- * produce one refetch instead of a thundering herd.
- */
 export function scheduleInvalidateQueries(
   queryClient: QueryClient,
   queryKey: QueryKey,

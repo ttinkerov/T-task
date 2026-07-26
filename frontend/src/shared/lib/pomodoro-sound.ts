@@ -23,6 +23,6 @@ export function playPhaseCompleteSound(): void {
     oscillator.start();
     oscillator.stop(context.currentTime + 0.5);
   } catch {
-    // Audio may be blocked until user interaction — ignore silently.
+    /* ignore */
   }
 }

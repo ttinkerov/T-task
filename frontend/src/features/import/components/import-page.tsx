@@ -109,7 +109,7 @@ export function ImportPage({ workspaceId }: { workspaceId: string }) {
       });
       setResult(data);
     } catch {
-      // error surfaced via mutation
+      /* ignore */
     }
   };
 

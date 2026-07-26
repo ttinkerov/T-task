@@ -21,9 +21,9 @@ export interface NavGroup {
   id: string;
   label: string;
   items: NavItem[];
-  /** When true, group can be collapsed in the expanded sidebar. */
+
   collapsible?: boolean;
-  /** Initial open state for collapsible groups (overridden by active route / localStorage). */
+
   defaultOpen?: boolean;
 }
 
@@ -50,7 +50,7 @@ function writeStoredOpen(next: Record<string, boolean>) {
   try {
     window.localStorage.setItem(GROUP_OPEN_KEY, JSON.stringify(next));
   } catch {
-    // ignore
+    /* ignore */
   }
 }
 

@@ -192,7 +192,6 @@ export class FormsService {
     await this.assertFieldInForm(workspaceId, formId, fieldId);
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const field = await tx.formField.findUniqueOrThrow({ where: { id: fieldId } });
       await tx.formField.delete({ where: { id: fieldId } });
 
       const remaining = await tx.formField.findMany({
@@ -208,10 +207,6 @@ export class FormsService {
           }),
         ),
       );
-
-      if (field.position !== remaining.length) {
-        // positions normalized above
-      }
     });
 
     return this.getForm(workspaceId, formId, userId);
@@ -299,7 +294,6 @@ export class FormsService {
       throw new NotFoundException('Form not found');
     }
 
-    // Workspace budget cannot be spoofed via X-Forwarded-For (applied after form lookup).
     await this.rateLimitService.consume(
       `ws:${form.workspaceId}`,
       PUBLIC_FORM_SUBMIT_WORKSPACE_RATE_LIMIT,

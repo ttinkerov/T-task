@@ -14,16 +14,18 @@ import { FieldHint } from '@/features/boards/components/field-hint';
 export function TaskChecklistSection({
   workspaceId,
   taskId,
+  boardId,
 }: {
   workspaceId: string;
   taskId: string;
+  boardId?: string | null;
 }) {
   const { data: items = [], isLoading } = useTaskChecklistQuery(workspaceId, taskId);
   const { data: templates = [] } = useDodTemplatesQuery(workspaceId);
-  const createMutation = useCreateChecklistItemMutation(workspaceId, taskId);
-  const updateMutation = useUpdateChecklistItemMutation(workspaceId, taskId);
-  const deleteMutation = useDeleteChecklistItemMutation(workspaceId, taskId);
-  const applyMutation = useApplyDodTemplateMutation(workspaceId, taskId);
+  const createMutation = useCreateChecklistItemMutation(workspaceId, taskId, boardId);
+  const updateMutation = useUpdateChecklistItemMutation(workspaceId, taskId, boardId);
+  const deleteMutation = useDeleteChecklistItemMutation(workspaceId, taskId, boardId);
+  const applyMutation = useApplyDodTemplateMutation(workspaceId, taskId, boardId);
   const [text, setText] = useState('');
   const [templateId, setTemplateId] = useState('');
 

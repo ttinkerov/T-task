@@ -36,7 +36,6 @@ export function stickyTiltForTask(taskId: string): number {
   return (hash % 7) - 3;
 }
 
-/** Group epic children onto the epic board's columns; skip foreign-board tasks. */
 export function buildEpicStickyLanes(
   columns: EpicBoardColumn[],
   children: AllTask[],

@@ -3,18 +3,27 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { io, type Socket } from 'socket.io-client';
-import { boardKeys } from '@/features/boards/hooks';
+import { useMeQuery } from '@/features/auth/hooks';
+import { applyOptimisticMoveTask, boardKeys } from '@/features/boards/hooks';
+import type { BoardView } from '@/features/boards/types';
 import { getRealtimeBaseUrl } from '@/shared/lib/env';
 
 type RealtimePayload = {
   workspaceId?: string;
   boardId?: string;
   taskId?: string;
+  columnId?: string;
+  position?: number;
+  actorId?: string;
+  assigneeId?: string | null;
 };
 
 export function useWorkspaceRealtime(workspaceId: string | null) {
   const queryClient = useQueryClient();
+  const { data: me } = useMeQuery(Boolean(workspaceId));
   const socketRef = useRef<Socket | null>(null);
+  const actorIdRef = useRef<string | null>(null);
+  actorIdRef.current = me?.user?.id ?? null;
 
   useEffect(() => {
     if (!workspaceId) return;
@@ -32,7 +41,6 @@ export function useWorkspaceRealtime(workspaceId: string | null) {
 
     const boardTimers = new Map<string, number>();
     let notificationsTimer: number | null = null;
-    let allTasksTimer: number | null = null;
 
     const schedule = (key: string, map: Map<string, number>, run: () => void) => {
       const existing = map.get(key);
@@ -70,20 +78,42 @@ export function useWorkspaceRealtime(workspaceId: string | null) {
       }, 800);
     };
 
-    const invalidateAllTasks = () => {
-      if (allTasksTimer) window.clearTimeout(allTasksTimer);
-      allTasksTimer = window.setTimeout(() => {
-        allTasksTimer = null;
-        void queryClient.invalidateQueries({
-          queryKey: ['all-tasks', workspaceId],
-        });
-      }, 800);
+    const patchMovedTask = (payload: RealtimePayload) => {
+      if (
+        !payload.boardId ||
+        !payload.taskId ||
+        !payload.columnId ||
+        typeof payload.position !== 'number'
+      ) {
+        invalidateBoard(payload.boardId);
+        return;
+      }
+
+      const key = boardKeys.detail(workspaceId, payload.boardId);
+      const current = queryClient.getQueryData<BoardView>(key);
+      if (!current) {
+        invalidateBoard(payload.boardId);
+        return;
+      }
+
+      queryClient.setQueryData(
+        key,
+        applyOptimisticMoveTask(current, payload.taskId, payload.columnId, payload.position),
+      );
     };
 
-    const onTaskBoardEvent = (payload: RealtimePayload) => {
+    const onTaskMoved = (payload: RealtimePayload) => {
+      if (payload.actorId && payload.actorId === actorIdRef.current) {
+        return;
+      }
+      patchMovedTask(payload);
+    };
+
+    const onTaskAssigned = (payload: RealtimePayload) => {
+      if (payload.actorId && payload.actorId === actorIdRef.current) {
+        return;
+      }
       invalidateBoard(payload.boardId);
-      invalidateAllTasks();
-      invalidateNotifications();
     };
 
     const onCommentCreated = (payload: RealtimePayload) => {
@@ -98,17 +128,16 @@ export function useWorkspaceRealtime(workspaceId: string | null) {
       invalidateNotifications();
     };
 
-    socket.on('task.moved', onTaskBoardEvent);
-    socket.on('task.assigned', onTaskBoardEvent);
+    socket.on('task.moved', onTaskMoved);
+    socket.on('task.assigned', onTaskAssigned);
     socket.on('comment.created', onCommentCreated);
 
     return () => {
       for (const timer of boardTimers.values()) window.clearTimeout(timer);
       boardTimers.clear();
       if (notificationsTimer) window.clearTimeout(notificationsTimer);
-      if (allTasksTimer) window.clearTimeout(allTasksTimer);
-      socket.off('task.moved', onTaskBoardEvent);
-      socket.off('task.assigned', onTaskBoardEvent);
+      socket.off('task.moved', onTaskMoved);
+      socket.off('task.assigned', onTaskAssigned);
       socket.off('comment.created', onCommentCreated);
       socket.disconnect();
       socketRef.current = null;

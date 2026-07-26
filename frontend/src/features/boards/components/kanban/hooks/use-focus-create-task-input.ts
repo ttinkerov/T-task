@@ -25,7 +25,7 @@ export function useFocusCreateTaskInput(viewMode: BoardViewMode, boardId: string
       window.sessionStorage.removeItem(FOCUS_CREATE_KEY);
       window.requestAnimationFrame(() => focusCreateTaskInput());
     } catch {
-      // ignore
+      /* ignore */
     }
   }, [boardId, viewMode]);
 }

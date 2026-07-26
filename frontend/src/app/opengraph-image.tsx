@@ -4,7 +4,6 @@ export const alt = 'T-task — канбан и CRM для небольших к�
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-/** Open Graph / social share card. */
 export default function OpenGraphImage() {
   return new ImageResponse(
     <div

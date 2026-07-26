@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { invalidateWorkspaceBoards } from '@/features/boards/hooks';
+import { invalidateBoardScoped } from '@/features/boards/hooks';
 import { createSubtask, deleteSubtask, fetchSubtasks, updateSubtask } from './api';
 
 export const subtaskKeys = {
@@ -22,24 +22,33 @@ function invalidate(
   queryClient: ReturnType<typeof useQueryClient>,
   workspaceId: string,
   taskId: string,
+  boardId?: string | null,
 ) {
   void queryClient.invalidateQueries({ queryKey: subtaskKeys.list(workspaceId, taskId) });
-  invalidateWorkspaceBoards(queryClient, workspaceId);
+  invalidateBoardScoped(queryClient, workspaceId, boardId);
   void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
 }
 
-export function useCreateSubtaskMutation(workspaceId: string, taskId: string) {
+export function useCreateSubtaskMutation(
+  workspaceId: string,
+  taskId: string,
+  boardId?: string | null,
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (title: string) => {
       const response = await createSubtask(workspaceId, taskId, title);
       return response.data;
     },
-    onSuccess: () => invalidate(queryClient, workspaceId, taskId),
+    onSuccess: () => invalidate(queryClient, workspaceId, taskId, boardId),
   });
 }
 
-export function useUpdateSubtaskMutation(workspaceId: string, taskId: string) {
+export function useUpdateSubtaskMutation(
+  workspaceId: string,
+  taskId: string,
+  boardId?: string | null,
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -52,16 +61,20 @@ export function useUpdateSubtaskMutation(workspaceId: string, taskId: string) {
       const response = await updateSubtask(workspaceId, taskId, subtaskId, data);
       return response.data;
     },
-    onSuccess: () => invalidate(queryClient, workspaceId, taskId),
+    onSuccess: () => invalidate(queryClient, workspaceId, taskId, boardId),
   });
 }
 
-export function useDeleteSubtaskMutation(workspaceId: string, taskId: string) {
+export function useDeleteSubtaskMutation(
+  workspaceId: string,
+  taskId: string,
+  boardId?: string | null,
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (subtaskId: string) => {
       await deleteSubtask(workspaceId, taskId, subtaskId);
     },
-    onSuccess: () => invalidate(queryClient, workspaceId, taskId),
+    onSuccess: () => invalidate(queryClient, workspaceId, taskId, boardId),
   });
 }

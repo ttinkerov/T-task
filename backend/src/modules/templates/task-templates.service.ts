@@ -191,7 +191,6 @@ export class TaskTemplatesService {
     }
   }
 
-  /** Fill only empty scalar fields from template defaults (never overwrite filled values). */
   fillEmptyTaskFields(
     current: {
       title: string;

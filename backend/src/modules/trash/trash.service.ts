@@ -41,7 +41,7 @@ export class TrashService {
     } as const;
 
     const skip = (opts.page - 1) * opts.limit;
-    // Need skip+limit from each stream to merge-sort correctly across types.
+
     const take = skip + opts.limit;
     const trashSelect = { id: true, title: true, deletedAt: true } as const;
 

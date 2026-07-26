@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
 import { json, urlencoded } from 'express';
 import helmet from 'helmet';
@@ -8,6 +9,7 @@ import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseEnvelopeInterceptor } from './common/interceptors/response-envelope.interceptor';
 import { assertSecureRuntime } from './common/security/assert-secure-runtime.util';
+import { RedisIoAdapter } from './infrastructure/redis/redis-io.adapter';
 
 const REQUEST_BODY_LIMIT = '100kb';
 
@@ -18,6 +20,10 @@ async function bootstrap(): Promise<void> {
   const nodeEnv = configService.get<string>('NODE_ENV', 'development');
   assertSecureRuntime(nodeEnv);
 
+  const redisIoAdapter = new RedisIoAdapter(app);
+  await redisIoAdapter.connectToRedis();
+  app.useWebSocketAdapter(redisIoAdapter);
+
   const port = configService.get<number>('BACKEND_PORT', 3001);
   const corsOrigins = configService
     .get<string>('CORS_ORIGIN', 'http://localhost')
@@ -26,7 +32,6 @@ async function bootstrap(): Promise<void> {
     .filter(Boolean);
   const isProduction = nodeEnv === 'production';
 
-  // Default: trust proxy only in production. Override with TRUST_PROXY=false|0|N|subnet.
   const trustProxyRaw = (configService.get<string>('TRUST_PROXY') ?? (isProduction ? '1' : 'false'))
     .trim()
     .toLowerCase();
@@ -41,6 +46,7 @@ async function bootstrap(): Promise<void> {
       );
   }
 
+  app.use(compression());
   app.use(json({ limit: REQUEST_BODY_LIMIT }));
   app.use(urlencoded({ extended: true, limit: REQUEST_BODY_LIMIT }));
 

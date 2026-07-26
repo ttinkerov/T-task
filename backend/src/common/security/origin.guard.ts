@@ -18,9 +18,6 @@ export class OriginGuard implements CanActivate {
     const origin = request.headers.origin;
     const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
 
-    // Cookie-authenticated browsers always send Origin on cross-origin and same-origin
-    // fetch/XHR mutations. Require it in production to block CSRF from non-browser clients
-    // that omit Origin while still carrying cookies.
     if (!origin) {
       if (isProduction) {
         throw new ForbiddenException('Origin header is required');

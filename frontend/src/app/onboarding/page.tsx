@@ -8,7 +8,7 @@ import { useEffect, useRef } from 'react';
 export default function OnboardingPage() {
   const router = useRouter();
   const { data: session, isLoading, isError } = useMeQuery();
-  /** Snapshot from first loaded session — ignore workspaces created mid-wizard. */
+
   const hadWorkspacesOnLoad = useRef<boolean | null>(null);
 
   if (session && hadWorkspacesOnLoad.current === null) {

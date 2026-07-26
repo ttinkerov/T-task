@@ -48,7 +48,7 @@ export function DodTemplatesPage({ workspaceId }: { workspaceId: string }) {
       setItemsText('');
       setGatesCompletion(true);
     } catch {
-      // surfaced below
+      /* ignore */
     }
   };
 
@@ -60,7 +60,7 @@ export function DodTemplatesPage({ workspaceId }: { workspaceId: string }) {
         data: { gatesCompletion: next },
       });
     } catch {
-      // surfaced below
+      /* ignore */
     } finally {
       setPendingId(null);
     }
@@ -71,7 +71,7 @@ export function DodTemplatesPage({ workspaceId }: { workspaceId: string }) {
     try {
       await deleteMutation.mutateAsync(templateId);
     } catch {
-      // surfaced below
+      /* ignore */
     } finally {
       setPendingId(null);
     }

@@ -7,7 +7,6 @@ export class CreateColumnDto {
   @MaxLength(80)
   name!: string;
 
-  /** When omitted, the column is added to the workspace's first (default) board. */
   @IsOptional()
   @IsEntityId()
   boardId?: string;

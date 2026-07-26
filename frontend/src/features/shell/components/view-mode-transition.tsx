@@ -4,7 +4,6 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { motionTokens } from '@/shared/lib/motion-tokens';
 import { cn } from '@/shared/lib/cn';
 
-/** Soft enter animation when switching Board / Table / Calendar / Timeline. */
 export function ViewModeTransition({
   modeKey,
   children,

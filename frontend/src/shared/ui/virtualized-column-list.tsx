@@ -3,7 +3,6 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { type ReactNode, useRef } from 'react';
 
-/** Matches `.kanban-column__tasks` gap (0.4375rem ≈ 7px). */
 const ITEM_GAP_PX = 7;
 const DEFAULT_ESTIMATE_PX = 96;
 

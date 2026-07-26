@@ -6,10 +6,6 @@ const WEBP_RIFF = Buffer.from('RIFF');
 const WEBP_WEBP = Buffer.from('WEBP');
 const PDF = Buffer.from('%PDF-');
 
-/**
- * Detect MIME from magic bytes. Returns null when content cannot be classified
- * as an allowed binary type. text/plain is validated separately.
- */
 export function detectAllowedBinaryMime(buffer: Buffer): string | null {
   if (buffer.length >= 8 && buffer.subarray(0, 8).equals(PNG)) {
     return 'image/png';
@@ -41,7 +37,6 @@ export function detectAllowedBinaryMime(buffer: Buffer): string | null {
   return null;
 }
 
-/** Reject binary / HTML disguised as plain text. */
 export function isSafePlainText(buffer: Buffer): boolean {
   if (buffer.includes(0)) {
     return false;

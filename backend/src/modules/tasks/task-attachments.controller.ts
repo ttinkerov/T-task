@@ -74,8 +74,7 @@ export class TaskAttachmentsController {
     res.setHeader('Content-Type', file.mimeType);
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; sandbox");
-    // Only images are shown inline; PDFs and plain-text files are forced to download
-    // so embedded PDF-JavaScript or MIME-confusion tricks cannot run in-browser.
+
     const disposition = file.mimeType.startsWith('image/') ? 'inline' : 'attachment';
     res.setHeader(
       'Content-Disposition',

@@ -19,7 +19,7 @@ export function MyTasksSection({
   tasks: AllTask[];
   tone?: 'danger' | 'warn';
   emptyLabel?: string;
-  /** Badge count; defaults to tasks.length */
+
   count?: number;
   onOpenTask: (taskId: string) => void;
 }) {

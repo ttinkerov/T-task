@@ -14,6 +14,7 @@ import { TaskDrawerSections } from './task-drawer/task-drawer-sections';
 
 interface TaskDetailDrawerProps {
   workspaceId: string;
+  boardId?: string | null;
   task: BoardTask;
   columnName: string;
   relationCandidates: TaskRelationCandidate[];
@@ -24,6 +25,7 @@ interface TaskDetailDrawerProps {
 
 export function TaskDetailDrawer({
   workspaceId,
+  boardId,
   task,
   columnName,
   relationCandidates,
@@ -31,7 +33,8 @@ export function TaskDetailDrawer({
   onOpenTask,
   onClose,
 }: TaskDetailDrawerProps) {
-  const updateMutation = useUpdateTaskMutation(workspaceId);
+  const resolvedBoardId = boardId ?? (isTaskWithBoard(task) ? task.board.id : null);
+  const updateMutation = useUpdateTaskMutation(workspaceId, resolvedBoardId);
   const { data: fullTask } = useTaskDetailQuery(workspaceId, task.id);
   const detailTask = fullTask ?? task;
   const form = useTaskFormState(detailTask);
@@ -85,6 +88,7 @@ export function TaskDetailDrawer({
 
           <TaskDrawerSections
             workspaceId={workspaceId}
+            boardId={resolvedBoardId}
             task={task}
             detailTask={detailTask}
             relationCandidates={relationCandidates}
@@ -95,5 +99,14 @@ export function TaskDetailDrawer({
         </div>
       </aside>
     </div>
+  );
+}
+
+function isTaskWithBoard(task: BoardTask): task is BoardTask & { board: { id: string } } {
+  return (
+    'board' in task &&
+    typeof (task as { board?: unknown }).board === 'object' &&
+    (task as { board?: { id?: unknown } }).board !== null &&
+    typeof (task as { board: { id?: unknown } }).board.id === 'string'
   );
 }

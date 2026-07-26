@@ -89,7 +89,7 @@ export class TaskAttachmentsService {
     try {
       await unlink(storagePath);
     } catch {
-      // file may already be gone
+      /* ignore */
     }
     return { deleted: true };
   }

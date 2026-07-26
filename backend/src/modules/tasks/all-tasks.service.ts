@@ -182,7 +182,6 @@ export class AllTasksService {
       ...(query.due === AllTasksDueFilter.NO_DUE ? { dueDate: null } : {}),
       ...(search
         ? {
-            // Title-only: description ILIKE is expensive on large TEXT without an index.
             title: { contains: search, mode: 'insensitive' },
           }
         : {}),

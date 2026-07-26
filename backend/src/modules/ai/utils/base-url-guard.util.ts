@@ -18,7 +18,6 @@ export type SafeAiEndpoint = {
   pinned: PinnedIp;
 };
 
-/** Normalize hostname / IP for private-range checks (handles IPv4-mapped IPv6). */
 export function normalizeHostForIpCheck(hostname: string): string {
   const bare =
     hostname
@@ -32,7 +31,6 @@ export function normalizeHostForIpCheck(hostname: string): string {
     return dottedMapped[1];
   }
 
-  // Node may canonicalize to ::ffff:a9fe:a9fe
   const hexMapped = bare.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
   if (hexMapped?.[1] && hexMapped[2]) {
     const hi = Number.parseInt(hexMapped[1], 16);
@@ -51,22 +49,21 @@ export function isBlockedIpAddress(ipOrHost: string): boolean {
     const parts = value.split('.').map((part) => Number(part));
     if (parts.length !== 4 || parts.some((part) => Number.isNaN(part))) return true;
     const [a, b] = parts;
-    if (a === 0) return true; // 0.0.0.0/8
-    if (a === 10) return true; // 10.0.0.0/8
-    if (a === 127) return true; // 127.0.0.0/8 loopback
-    if (a === 169 && b === 254) return true; // link-local / cloud metadata
-    if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
-    if (a === 192 && b === 168) return true; // 192.168.0.0/16
-    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT 100.64.0.0/10
+    if (a === 0) return true;
+    if (a === 10) return true;
+    if (a === 127) return true;
+    if (a === 169 && b === 254) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 100 && b >= 64 && b <= 127) return true;
     return false;
   }
 
   if (version === 6) {
     if (value === '::1' || value === '::') return true;
-    if (value.startsWith('fc') || value.startsWith('fd')) return true; // ULA
-    if (value.startsWith('fe80')) return true; // link-local
+    if (value.startsWith('fc') || value.startsWith('fd')) return true;
+    if (value.startsWith('fe80')) return true;
 
-    // Deprecated IPv4-compatible form ::a9fe:a9fe → 169.254.169.254 (not ::ffff:)
     const compatMatch = value.match(/^::([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
     if (compatMatch?.[1] && compatMatch[2]) {
       const hi = Number.parseInt(compatMatch[1], 16);
@@ -94,7 +91,6 @@ function isBlockedHostname(hostname: string): boolean {
   return isBlockedIpAddress(host);
 }
 
-/** Sync URL shape validation; returns normalized origin+pathname without trailing slash. */
 export function assertSafeAiBaseUrl(rawUrl: string): string {
   let url: URL;
   try {
@@ -121,10 +117,6 @@ export function assertSafeAiBaseUrl(rawUrl: string): string {
   return `${url.origin}${path}`;
 }
 
-/**
- * Resolve DNS once, reject private/metadata addresses, and return a pinned IP
- * so the outbound HTTPS client can skip a second (rebinding-prone) lookup.
- */
 export async function resolveSafeAiEndpoint(rawUrl: string): Promise<SafeAiEndpoint> {
   const baseUrl = assertSafeAiBaseUrl(rawUrl);
   const hostname = new URL(baseUrl).hostname;
@@ -179,7 +171,6 @@ export async function assertSafeAiBaseUrlResolved(rawUrl: string): Promise<strin
   return endpoint.baseUrl;
 }
 
-/** dns.lookup-compatible function that always returns the validated address. */
 export function createPinnedLookup(pinned: PinnedIp) {
   return (
     _hostname: string,

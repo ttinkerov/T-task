@@ -52,7 +52,7 @@ export function TaskAttachmentsSection({
             objectUrls.push(url);
             next[attachment.id] = url;
           } catch {
-            // preview optional
+            /* ignore */
           }
         }),
       );

@@ -29,7 +29,6 @@ interface WorkspaceWhiteboardProps {
   workspaceId: string;
 }
 
-/** Keep tldraw canvas/UI in sync with the app theme toggle. */
 function SyncTldrawTheme({ theme }: { theme: ThemeMode }) {
   const editor = useEditor();
 
@@ -63,7 +62,7 @@ function writeWelcomeDismissed(workspaceId: string) {
   try {
     window.sessionStorage.setItem(`${WELCOME_DISMISS_KEY}:${workspaceId}`, '1');
   } catch {
-    // ignore
+    /* ignore */
   }
 }
 
@@ -109,7 +108,7 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
             loadSnapshot(store, snapshot as unknown as TLEditorSnapshot);
             loadedContent = true;
           } catch {
-            // Corrupt or outdated snapshot — start empty rather than blocking the page.
+            /* ignore */
           }
         }
 

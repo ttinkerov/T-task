@@ -218,34 +218,36 @@ describe('BoardsService — multiple boards', () => {
           epicId: null,
           assignee: null,
           taskTags: [],
+          _count: { subtasks: 0 },
           subtasks: [],
         },
       ]);
 
-      const result = await service.listColumnTasks('ws-1', 'board-1', 'col-1', 'user-1', 200, 100);
+      const result = await service.listColumnTasks('ws-1', 'board-1', 'col-1', 'user-1', 200, 50);
 
       expect(prisma.task.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { columnId: 'col-1', deletedAt: null },
           skip: 200,
-          take: 100,
+          take: 50,
         }),
       );
       expect(result).toMatchObject({
         columnId: 'col-1',
         total: 250,
         offset: 200,
-        limit: 100,
+        limit: 50,
         truncated: true,
       });
       expect(result.items).toHaveLength(1);
       expect(result.items[0].id).toBe('task-201');
+      expect(result.items[0].subtaskStats).toEqual({ total: 0, completed: 0 });
     });
 
     it('throws when column is missing', async () => {
       prisma.boardColumn.findFirst.mockResolvedValue(null);
       await expect(
-        service.listColumnTasks('ws-1', 'board-1', 'missing', 'user-1', 0, 100),
+        service.listColumnTasks('ws-1', 'board-1', 'missing', 'user-1', 0, 50),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
   });

@@ -84,7 +84,7 @@ export function DashboardShell({
     try {
       setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === '1');
     } catch {
-      // ignore
+      /* ignore */
     }
   }, []);
 
@@ -122,7 +122,7 @@ export function DashboardShell({
       try {
         window.sessionStorage.setItem(FOCUS_CREATE_KEY, '1');
       } catch {
-        // ignore
+        /* ignore */
       }
       router.push('/dashboard/board');
     },
@@ -135,7 +135,7 @@ export function DashboardShell({
       try {
         window.localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0');
       } catch {
-        // ignore
+        /* ignore */
       }
       return next;
     });
@@ -261,7 +261,7 @@ export function DashboardShell({
           try {
             window.sessionStorage.setItem(FOCUS_CREATE_KEY, '1');
           } catch {
-            // ignore
+            /* ignore */
           }
           router.push('/dashboard/board');
         },
@@ -287,7 +287,7 @@ export function DashboardShell({
           try {
             window.localStorage.setItem('ttask-theme', next);
           } catch {
-            // ignore
+            /* ignore */
           }
         },
       },

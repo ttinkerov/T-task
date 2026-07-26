@@ -43,7 +43,6 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<Api
   return body;
 }
 
-/** Multipart upload — omits Content-Type so the browser sets the boundary. */
 export async function apiUpload<T>(
   path: string,
   formData: FormData,

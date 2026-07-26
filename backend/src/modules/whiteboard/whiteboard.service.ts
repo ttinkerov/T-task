@@ -4,7 +4,6 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 import { UpsertWhiteboardDto } from './dto/upsert-whiteboard.dto';
 
-/** ~2 MiB of JSON — enough for a dense solo board without abusing storage. */
 const MAX_SNAPSHOT_BYTES = 2 * 1024 * 1024;
 
 @Injectable()

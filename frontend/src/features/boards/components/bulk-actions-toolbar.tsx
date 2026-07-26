@@ -33,7 +33,7 @@ export function BulkActionsToolbar({
       });
       onClear();
     } catch {
-      // error shown below
+      /* ignore */
     }
   };
 

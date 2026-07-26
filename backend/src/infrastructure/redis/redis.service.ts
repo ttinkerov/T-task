@@ -25,7 +25,6 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       this.logger.error(
         `Redis connect failed: ${error instanceof Error ? error.message : 'unknown'}`,
       );
-      // Leave client disconnected; callers (deny-list) fail closed, rate-limit falls back.
     }
   }
 

@@ -1,4 +1,3 @@
-/** RFC-4180 CSV cell escaping + formula injection mitigation. */
 export function csvEscape(value: string | number | null | undefined): string {
   if (value === null || value === undefined) {
     return '';

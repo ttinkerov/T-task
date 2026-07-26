@@ -11,10 +11,6 @@ export class ActivityService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Best-effort append-only write. Never throws — audit failure must not
-   * abort the primary business operation.
-   */
   async record(input: RecordActivityInput): Promise<void> {
     try {
       const actorName =

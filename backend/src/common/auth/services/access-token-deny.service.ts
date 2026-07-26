@@ -13,7 +13,6 @@ export class AccessTokenDenyService {
 
   constructor(private readonly redis: RedisService) {}
 
-  /** Deny a single access token (logout). TTL should match remaining JWT lifetime. */
   async revokeJti(jti: string, ttlSeconds: number): Promise<void> {
     if (!jti || ttlSeconds <= 0) return;
     try {
@@ -26,10 +25,8 @@ export class AccessTokenDenyService {
     }
   }
 
-  /** Invalidate all access tokens for a user issued at or before now (logout-all). */
   async revokeAllForUser(userId: string): Promise<void> {
     try {
-      // Keep longer than max access TTL (15m default) — 1h covers clock skew / config bumps.
       await this.redis
         .getClient()
         .setex(this.userEpochKey(userId), 3600, String(Math.floor(Date.now() / 1000)));
@@ -44,16 +41,33 @@ export class AccessTokenDenyService {
   async assertNotRevoked(payload: JwtPayload): Promise<void> {
     try {
       const client = this.redis.getClient();
+      const keys: string[] = [];
+      const hasJti = Boolean(payload.jti);
+      const hasEpochCheck = Boolean(payload.sub && typeof payload.iat === 'number');
 
-      if (payload.jti) {
-        const denied = await client.get(this.jtiKey(payload.jti));
+      if (hasJti && payload.jti) {
+        keys.push(this.jtiKey(payload.jti));
+      }
+      if (hasEpochCheck && payload.sub) {
+        keys.push(this.userEpochKey(payload.sub));
+      }
+
+      if (keys.length === 0) {
+        return;
+      }
+
+      const values = await client.mget(...keys);
+      let offset = 0;
+
+      if (hasJti) {
+        const denied = values[offset++];
         if (denied) {
           throw new UnauthorizedException('Access token revoked');
         }
       }
 
-      if (payload.sub && typeof payload.iat === 'number') {
-        const epochRaw = await client.get(this.userEpochKey(payload.sub));
+      if (hasEpochCheck && typeof payload.iat === 'number') {
+        const epochRaw = values[offset];
         if (epochRaw) {
           const epoch = Number(epochRaw);
           if (Number.isFinite(epoch) && payload.iat <= epoch) {
@@ -65,8 +79,7 @@ export class AccessTokenDenyService {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      // Soft-fail reads: Redis outage must not lock out the whole product.
-      // Revocation writes remain fail-closed.
+
       this.logger.warn(
         `Access deny check skipped (Redis unavailable): ${
           error instanceof Error ? error.message : 'unknown'

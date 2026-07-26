@@ -1,4 +1,3 @@
-// Theme-aware palette (values from _theme.scss CSS variables)
 $color-white: var(--tt-text);
 $color-bg: var(--tt-bg);
 $color-bg-elevated: var(--tt-surface);
@@ -42,7 +41,12 @@ $color-yellow-glow: transparent;
 $color-surface: $color-bg-elevated;
 $color-surface-hover: var(--tt-surface-hover);
 
-$font-ui: 'Inter', 'Ttask', system-ui, -apple-system, sans-serif;
+$font-ui:
+  'Inter',
+  'Ttask',
+  system-ui,
+  -apple-system,
+  sans-serif;
 $font-display-fallback: 'Ttask', 'Inter', system-ui, sans-serif;
 
 $radius-sm: 8px;

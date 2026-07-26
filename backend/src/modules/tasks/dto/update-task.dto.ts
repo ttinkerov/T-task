@@ -31,7 +31,6 @@ export class UpdateTaskDto {
   @MaxLength(2000)
   description?: string | null;
 
-  /** Notion-style block document for the task description. */
   @IsOptional()
   @ValidateIf((_, value) => value !== null)
   @IsObject()

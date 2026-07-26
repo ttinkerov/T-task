@@ -12,14 +12,16 @@ import { FieldHint } from './field-hint';
 export function TaskSubtasksSection({
   workspaceId,
   taskId,
+  boardId,
 }: {
   workspaceId: string;
   taskId: string;
+  boardId?: string | null;
 }) {
   const { data: subtasks = [], isLoading } = useSubtasksQuery(workspaceId, taskId);
-  const createMutation = useCreateSubtaskMutation(workspaceId, taskId);
-  const updateMutation = useUpdateSubtaskMutation(workspaceId, taskId);
-  const deleteMutation = useDeleteSubtaskMutation(workspaceId, taskId);
+  const createMutation = useCreateSubtaskMutation(workspaceId, taskId, boardId);
+  const updateMutation = useUpdateSubtaskMutation(workspaceId, taskId, boardId);
+  const deleteMutation = useDeleteSubtaskMutation(workspaceId, taskId, boardId);
   const [title, setTitle] = useState('');
 
   const completed = subtasks.filter((item) => item.completed).length;

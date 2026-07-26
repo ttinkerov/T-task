@@ -15,13 +15,11 @@ const LEGACY_VIEW_MODE_MAP: Record<string, BoardViewMode> = {
   TIMELINE: 'TIMELINE',
 };
 
-/** Maps current + legacy stored values onto the four product views. */
 export function normalizeBoardViewMode(value: string | null | undefined): BoardViewMode | null {
   if (!value) return null;
   return LEGACY_VIEW_MODE_MAP[value] ?? null;
 }
 
-/** If the stored value was WEEK/MONTH, recover the calendar range. */
 export function calendarRangeFromStoredView(
   value: string | null | undefined,
 ): CalendarRange | null {

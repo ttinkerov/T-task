@@ -46,7 +46,6 @@ function parseCsvLine(line: string): string[] {
   return cells;
 }
 
-/** Split CSV text into rows, respecting quoted newlines. */
 export function splitCsvRows(text: string): string[] {
   const rows: string[] = [];
   let current = '';

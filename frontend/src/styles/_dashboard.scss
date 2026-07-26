@@ -75,7 +75,9 @@
   font-weight: 500;
   flex: 0 0 auto;
   color: $color-text-muted;
-  transition: color $transition-fast, background $transition-fast;
+  transition:
+    color $transition-fast,
+    background $transition-fast;
 
   &:hover {
     color: $color-text;
@@ -125,7 +127,10 @@
   background: transparent;
   color: $color-text-muted;
   font-size: 0.875rem;
-  transition: background $transition-fast, color $transition-fast, border-color $transition-fast;
+  transition:
+    background $transition-fast,
+    color $transition-fast,
+    border-color $transition-fast;
 
   &:hover {
     color: $color-text;
@@ -140,7 +145,6 @@
 }
 
 .dashboard-main {
-  /* Layout owned by .app-main in shell; keep alias for older pages */
   margin: 0;
   padding: 0;
   max-width: none;

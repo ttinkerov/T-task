@@ -61,17 +61,34 @@ export function invalidateWorkspaceBoards(
   scheduleInvalidateQueries(queryClient, boardKeys.workspace(workspaceId));
 }
 
-function invalidateBoardAndLists(
+export function invalidateBoardScoped(
   queryClient: ReturnType<typeof useQueryClient>,
   workspaceId: string,
   boardId?: string | null,
 ) {
   if (boardId) {
     scheduleInvalidateQueries(queryClient, boardKeys.detail(workspaceId, boardId));
-  } else {
-    invalidateWorkspaceBoards(queryClient, workspaceId);
+    return;
   }
+  invalidateWorkspaceBoards(queryClient, workspaceId);
+}
+
+function invalidateBoardAndLists(
+  queryClient: ReturnType<typeof useQueryClient>,
+  workspaceId: string,
+  boardId?: string | null,
+) {
+  invalidateBoardScoped(queryClient, workspaceId, boardId);
   scheduleInvalidateQueries(queryClient, ['all-tasks', workspaceId]);
+}
+
+export function applyOptimisticMoveTask(
+  board: BoardView,
+  taskId: string,
+  targetColumnId: string,
+  targetPosition: number,
+): BoardView {
+  return optimisticMoveTask(board, taskId, targetColumnId, targetPosition);
 }
 
 export function useBoardsQuery(workspaceId: string | null) {
@@ -112,7 +129,7 @@ export function useLoadMoreColumnTasksMutation(workspaceId: string, boardId: str
     mutationFn: async ({
       columnId,
       offset,
-      limit = 100,
+      limit = 50,
     }: {
       columnId: string;
       offset: number;
@@ -350,9 +367,6 @@ export function useMoveTaskMutation(workspaceId: string, boardId: string) {
       if (context?.previous) {
         queryClient.setQueryData(boardKeys.detail(workspaceId, boardId), context.previous);
       }
-    },
-    onSettled: () => {
-      invalidateBoardAndLists(queryClient, workspaceId, boardId);
     },
   });
 }

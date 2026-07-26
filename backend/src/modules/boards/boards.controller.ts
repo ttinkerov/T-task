@@ -30,7 +30,6 @@ import { UpdateBoardDto } from './dto/update-board.dto';
 import { UpdateColumnDto } from './dto/update-column.dto';
 import { UpdateColumnAutomationsDto } from './dto/update-column-automations.dto';
 
-/** Legacy singular board routes — default/first board + column mutations. */
 @Controller('workspaces/:workspaceId/board')
 export class BoardsController {
   constructor(private readonly boardsService: BoardsService) {}
@@ -126,7 +125,6 @@ export class BoardsController {
   }
 }
 
-/** Multi-board routes under `/boards`. */
 @Controller('workspaces/:workspaceId/boards')
 export class WorkspaceBoardsController {
   constructor(private readonly boardsService: BoardsService) {}

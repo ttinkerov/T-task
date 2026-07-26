@@ -15,7 +15,7 @@ export type DescriptionBlock = {
   id: string;
   type: DescriptionBlockType;
   text: string;
-  /** Toggle body only */
+
   body?: string;
 };
 
@@ -153,7 +153,7 @@ export function resolveDescriptionDocForApi(
     try {
       return parseDescriptionDoc(descriptionDoc);
     } catch {
-      // fall through to legacy plain text
+      /* ignore */
     }
   }
   if (description?.trim()) {

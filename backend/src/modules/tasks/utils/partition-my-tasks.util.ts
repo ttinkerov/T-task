@@ -13,7 +13,6 @@ export type MyTasksBuckets<T extends MyTasksBucketTask> = {
   watching: T[];
 };
 
-/** Split assigned open tasks into overdue / due soon / rest; watching excludes already shown. */
 export function partitionMyTasks<T extends MyTasksBucketTask>(
   assignedTasks: T[],
   watchingTasks: T[],

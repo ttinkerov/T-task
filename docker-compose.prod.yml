@@ -23,6 +23,8 @@ services:
   pgbouncer:
     environment:
       DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env for production}
+      # Raise DEFAULT_POOL_SIZE when adding backend replicas.
+      # Prisma connection_limit ≈ floor(DEFAULT_POOL_SIZE / replicas).
     ports: !reset []
 
   redis:
@@ -33,7 +35,7 @@ services:
       - --maxmemory
       - 256mb
       - --maxmemory-policy
-      - allkeys-lru
+      - noeviction
       - --requirepass
       - ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env for production}
     ports: !reset []
@@ -41,6 +43,10 @@ services:
       test: ['CMD-SHELL', 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG']
 
   backend:
+    # Scale replicas only after Socket.IO Redis adapter is enabled (see main.ts).
+    # Sticky sessions are only needed if clients fall back to long-polling.
+    # deploy:
+    #   replicas: 2
     environment:
       NODE_ENV: production
       ALLOW_INSECURE_DEV: 'false'
@@ -49,6 +55,18 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       CORS_ORIGIN: ${CORS_ORIGIN:?Set CORS_ORIGIN to your https frontend origin}
       APP_URL: ${APP_URL:-}
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3001/health/ready').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
 
   frontend:
     environment:

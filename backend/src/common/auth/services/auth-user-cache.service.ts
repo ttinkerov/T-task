@@ -3,7 +3,6 @@ import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { RedisService } from '../../../infrastructure/redis/redis.service';
 import type { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
 
-/** Short TTL: cuts findFirst volume while bounding soft-delete/rename staleness. */
 export const AUTH_USER_CACHE_TTL_SECONDS = 45;
 
 @Injectable()

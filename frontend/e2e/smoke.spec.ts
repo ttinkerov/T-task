@@ -7,10 +7,6 @@ import {
   registerAndOpenBoard,
 } from './helpers/board';
 
-/**
- * Critical-path smoke for a public repo: auth must work, tasks must create,
- * and kanban DnD must move cards between columns.
- */
 test.describe('Smoke @smoke', () => {
   test('login → create task → drag to another column', async ({ page }) => {
     const { email, password } = await registerAndOpenBoard(page, 'smoke');

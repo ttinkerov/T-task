@@ -2,10 +2,6 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
-/**
- * Mounts children only when the sentinel enters the viewport (or after `eagerMs`).
- * Cuts drawer request storms for below-the-fold sections.
- */
 export function LazyMount({
   children,
   eagerMs = 0,

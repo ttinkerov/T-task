@@ -7,10 +7,6 @@ export type PinnedHttpsResponse = {
   text: string;
 };
 
-/**
- * HTTPS request that always connects to a pre-validated IP while keeping the
- * original hostname for SNI / certificate verification (blocks DNS rebinding).
- */
 export function pinnedHttpsRequest(
   urlString: string,
   pinned: PinnedIp,
@@ -54,9 +50,7 @@ export function pinnedHttpsRequest(
         const chunks: Buffer[] = [];
         let size = 0;
 
-        res.on('error', () => {
-          // Swallow post-destroy noise after maxResponseBytes abort.
-        });
+        res.on('error', () => {});
 
         res.on('data', (chunk: Buffer) => {
           size += chunk.length;

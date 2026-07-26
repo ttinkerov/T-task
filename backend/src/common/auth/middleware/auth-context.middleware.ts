@@ -21,11 +21,10 @@ export class AuthContextMiddleware implements NestMiddleware {
     }
 
     try {
-      // Sync verify only — Redis deny + user load happen once in JwtStrategy.
       const payload = this.tokenExtractor.verifyAccessToken(token);
       request.authPayload = { sub: payload.sub, email: payload.email };
     } catch {
-      // Guard will enforce auth on protected routes.
+      /* ignore */
     }
 
     next();

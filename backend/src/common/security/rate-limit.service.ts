@@ -9,7 +9,6 @@ export class RateLimitService {
 
   constructor(private readonly redis: RedisService) {}
 
-  /** Consume one attempt for `rateKey` under `config`; throws 429 when over budget. */
   async consume(rateKey: string, config: RateLimitConfig): Promise<void> {
     try {
       await this.checkRedisRateLimit(rateKey, config);

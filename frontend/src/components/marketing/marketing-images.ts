@@ -1,4 +1,3 @@
-/** Реальные фото (Unsplash) — офисы, команды, планирование. */
 export const MARKETING_IMAGES = {
   featureKanban:
     'https://images.unsplash.com/photo-1611224923853-80b023f02d71?auto=format&fit=crop&w=900&q=80',

@@ -77,7 +77,6 @@ export class AiService {
       if (dto.provider === AiProvider.CUSTOM) {
         baseUrl = assertSafeAiBaseUrl(dto.baseUrl ?? '');
       }
-      // Non-CUSTOM providers always use built-in presets — ignore client baseUrl (SSRF surface).
     } catch (error) {
       throw new BadRequestException(
         error instanceof Error ? error.message : 'Некорректный base URL',
@@ -874,7 +873,6 @@ function endOfDay(date: Date): Date {
   return result;
 }
 
-/** Parse YYYY-MM-DD as local calendar day (avoids UTC midnight shift). */
 function parseDateOnly(value: string): Date {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
   if (!match) return new Date(value);

@@ -13,8 +13,6 @@ const browserApiUrl = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001
 
 const connectSrc = ["'self'", browserApiUrl];
 
-// Next.js HMR / React Refresh evaluate and inject inline scripts in development.
-// Keep production strict; use nonces later if production bootstrap scripts require it.
 const scriptSrc = isProduction ? ["'self'"] : ["'self'", "'unsafe-inline'", "'unsafe-eval'"];
 
 const contentSecurityPolicy = [
@@ -23,9 +21,9 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  // blob:/data: — tldraw paste/export; assets are self-hosted under /tldraw
+
   `connect-src ${[...connectSrc, 'blob:', 'data:', 'ws:', 'wss:'].join(' ')}`,
-  // tldraw uses blob: workers for some editor features
+
   "worker-src 'self' blob:",
   'frame-src https://docs.google.com https://drive.google.com https://www.figma.com https://miro.com https://airtable.com',
   "frame-ancestors 'none'",
@@ -69,7 +67,7 @@ const nextConfig: NextConfig = {
       '@dnd-kit/utilities',
     ],
   },
-  // tldraw ships ESM that Next should transpile for App Router client chunks
+
   transpilePackages: ['tldraw', '@tldraw/assets'],
   async rewrites() {
     return [

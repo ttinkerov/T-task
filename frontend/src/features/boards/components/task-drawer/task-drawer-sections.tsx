@@ -17,12 +17,14 @@ const EMPTY_TAGS: TaskTag[] = [];
 
 export function TaskDrawerSections({
   workspaceId,
+  boardId,
   task,
   detailTask,
   relationCandidates,
   onOpenTask,
 }: {
   workspaceId: string;
+  boardId?: string | null;
   task: BoardTask;
   detailTask: BoardTask;
   relationCandidates: TaskRelationCandidate[];
@@ -35,12 +37,13 @@ export function TaskDrawerSections({
       <TaskTagsSection
         workspaceId={workspaceId}
         taskId={task.id}
+        boardId={boardId}
         selected={detailTask.tags ?? task.tags ?? EMPTY_TAGS}
       />
 
       <LazyMount eagerMs={150}>
-        <TaskSubtasksSection workspaceId={workspaceId} taskId={task.id} />
-        <TaskChecklistSection workspaceId={workspaceId} taskId={task.id} />
+        <TaskSubtasksSection workspaceId={workspaceId} taskId={task.id} boardId={boardId} />
+        <TaskChecklistSection workspaceId={workspaceId} taskId={task.id} boardId={boardId} />
         <TaskAttachmentsSection workspaceId={workspaceId} taskId={task.id} />
         <TaskCustomFieldsSection
           workspaceId={workspaceId}

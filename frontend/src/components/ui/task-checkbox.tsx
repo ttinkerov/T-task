@@ -10,7 +10,7 @@ interface TaskCheckboxProps {
   disabled?: boolean;
   ariaLabel?: string;
   className?: string;
-  /** Skip framer-motion — use on dense lists (kanban cards). */
+
   animated?: boolean;
 }
 

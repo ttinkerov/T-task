@@ -1,6 +1,5 @@
 import { CookieOptions } from 'express';
 
-/** Access cookie must stay path=/ so Next middleware + Socket.IO receive it. */
 export function buildAccessCookieOptions(maxAgeMs: number, isProduction: boolean): CookieOptions {
   return {
     httpOnly: true,
@@ -11,7 +10,6 @@ export function buildAccessCookieOptions(maxAgeMs: number, isProduction: boolean
   };
 }
 
-/** Refresh is only needed on auth routes — shrink CSRF/XSS cookie surface. */
 export function buildRefreshCookieOptions(maxAgeMs: number, isProduction: boolean): CookieOptions {
   return {
     httpOnly: true,

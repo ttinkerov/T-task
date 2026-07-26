@@ -41,7 +41,6 @@ export function createBlockId(): string {
   return `b${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/** Stable empty doc ids — never mint random ids for the empty fallback. */
 export function emptyDescriptionDoc(): DescriptionDoc {
   return {
     version: DESCRIPTION_DOC_VERSION,

@@ -445,6 +445,8 @@ export class TasksService {
       return a.position - b.position;
     });
 
+    let bulkMoveBasePosition = 0;
+
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       if (hasColumn && targetColumn) {
         for (const task of orderedForMove) {
@@ -498,6 +500,7 @@ export class TasksService {
         );
 
         const basePosition = targetStaying.length;
+        bulkMoveBasePosition = basePosition;
         const now = new Date();
         await Promise.all(
           orderedForMove.map((task, index) =>
@@ -527,12 +530,13 @@ export class TasksService {
     });
 
     if (hasColumn && targetColumn) {
-      for (const task of tasks) {
+      for (const [index, task] of orderedForMove.entries()) {
         this.eventEmitter.emit(DomainEvents.TASK_MOVED, {
           workspaceId,
           boardId: targetColumn.boardId,
           taskId: task.id,
-          columnId: dto.columnId,
+          columnId: dto.columnId!,
+          position: bulkMoveBasePosition + index,
           actorId: userId,
         });
       }

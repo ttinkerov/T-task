@@ -102,7 +102,6 @@ export class AnalyticsService {
     };
   }
 
-  /** Slim task rows for workload charts — avoids loading a full board payload. */
   async workload(workspaceId: string, userId: string, query: AnalyticsQueryDto) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
 

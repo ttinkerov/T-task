@@ -53,11 +53,6 @@ export class WorkspacesService {
     return this.toWorkspaceSummary(membership);
   }
 
-  /**
-   * Cached membership for auth guards (Redis TTL).
-   * Returns null when the user is not a member / workspace is deleted.
-   * Throws ForbiddenException when workspace is archived for non-admins.
-   */
   async resolveGuardMembership(
     workspaceId: string,
     userId: string,
@@ -174,7 +169,7 @@ export class WorkspacesService {
         where: { id: workspaceId },
         data: { archivedAt: new Date() },
       });
-      // Public tokens must stop working while the workspace is frozen.
+
       await tx.form.updateMany({
         where: { workspaceId, isPublic: true },
         data: { isPublic: false },
@@ -516,7 +511,6 @@ export class WorkspacesService {
 
     await this.invalidateMembershipCache(workspaceId, targetMember.userId);
 
-    // ICS feed tokens live in URLs — revoke when the member leaves.
     await this.prisma.calendarFeed.updateMany({
       where: { workspaceId, userId: targetMember.userId, revokedAt: null },
       data: { revokedAt: new Date() },

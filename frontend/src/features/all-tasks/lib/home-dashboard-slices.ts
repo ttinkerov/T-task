@@ -14,10 +14,6 @@ export type HomeDashboardSlices = {
   };
 };
 
-/**
- * Build home dashboard lists from my-tasks buckets + optional recently updated tasks.
- * Next actions = due soon first, then other assigned (no duplicates).
- */
 export function buildHomeDashboardSlices(
   myTasks: Pick<MyTasksResult, 'overdue' | 'dueSoon' | 'assigned' | 'watching'>,
   recentCandidates: AllTask[] = [],

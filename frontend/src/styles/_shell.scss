@@ -1,7 +1,5 @@
 @use 'variables' as *;
 
-/* ── Quiet Instrument shell ── */
-
 .app-frame {
   display: grid;
   grid-template-columns: $sidebar-width 1fr;
@@ -13,7 +11,6 @@
     grid-template-columns: $sidebar-collapsed 1fr;
   }
 
-  /* Opaque chrome while scrolling dense boards — avoids backdrop-filter GPU thrash. */
   &--board {
     .app-sidebar,
     .app-topbar,
@@ -474,7 +471,6 @@
   }
 }
 
-/* Back-compat aliases used by older pages */
 .dashboard-header__icon-btn {
   display: inline-flex;
   align-items: center;
@@ -561,4 +557,3 @@
     }
   }
 }
-

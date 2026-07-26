@@ -124,7 +124,6 @@ export class DealTemplatesService {
     };
   }
 
-  /** Fill only empty scalar fields from template defaults (never overwrite filled values). */
   fillEmptyDealFields(
     current: {
       title: string;

@@ -6,7 +6,6 @@ export class CreateExternalAppDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(120)
-  // Reject ASCII controls and common BiDi / zero-width spoofing characters.
   // eslint-disable-next-line no-control-regex -- intentional control-character allowlist
   @Matches(/^[^\u0000-\u001F\u007F\u200B-\u200F\u202A-\u202E\uFEFF]+$/, {
     message: 'Название не должно содержать невидимые или управляющие символы',

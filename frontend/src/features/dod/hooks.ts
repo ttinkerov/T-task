@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { invalidateWorkspaceBoards } from '@/features/boards/hooks';
+import { invalidateBoardScoped } from '@/features/boards/hooks';
 import {
   applyDodTemplate,
   createChecklistItem,
@@ -79,9 +79,10 @@ function invalidateChecklist(
   queryClient: ReturnType<typeof useQueryClient>,
   workspaceId: string,
   taskId: string,
+  boardId?: string | null,
 ) {
   void queryClient.invalidateQueries({ queryKey: dodKeys.checklist(workspaceId, taskId) });
-  invalidateWorkspaceBoards(queryClient, workspaceId);
+  invalidateBoardScoped(queryClient, workspaceId, boardId);
   void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
 }
 
@@ -96,29 +97,41 @@ export function useTaskChecklistQuery(workspaceId: string, taskId: string) {
   });
 }
 
-export function useCreateChecklistItemMutation(workspaceId: string, taskId: string) {
+export function useCreateChecklistItemMutation(
+  workspaceId: string,
+  taskId: string,
+  boardId?: string | null,
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: { text: string; required?: boolean }) => {
       const response = await createChecklistItem(workspaceId, taskId, data);
       return response.data!;
     },
-    onSuccess: () => invalidateChecklist(queryClient, workspaceId, taskId),
+    onSuccess: () => invalidateChecklist(queryClient, workspaceId, taskId, boardId),
   });
 }
 
-export function useApplyDodTemplateMutation(workspaceId: string, taskId: string) {
+export function useApplyDodTemplateMutation(
+  workspaceId: string,
+  taskId: string,
+  boardId?: string | null,
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (templateId: string) => {
       const response = await applyDodTemplate(workspaceId, taskId, templateId);
       return response.data ?? [];
     },
-    onSuccess: () => invalidateChecklist(queryClient, workspaceId, taskId),
+    onSuccess: () => invalidateChecklist(queryClient, workspaceId, taskId, boardId),
   });
 }
 
-export function useUpdateChecklistItemMutation(workspaceId: string, taskId: string) {
+export function useUpdateChecklistItemMutation(
+  workspaceId: string,
+  taskId: string,
+  boardId?: string | null,
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -131,16 +144,20 @@ export function useUpdateChecklistItemMutation(workspaceId: string, taskId: stri
       const response = await updateChecklistItem(workspaceId, taskId, itemId, data);
       return response.data!;
     },
-    onSuccess: () => invalidateChecklist(queryClient, workspaceId, taskId),
+    onSuccess: () => invalidateChecklist(queryClient, workspaceId, taskId, boardId),
   });
 }
 
-export function useDeleteChecklistItemMutation(workspaceId: string, taskId: string) {
+export function useDeleteChecklistItemMutation(
+  workspaceId: string,
+  taskId: string,
+  boardId?: string | null,
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (itemId: string) => {
       await deleteChecklistItem(workspaceId, taskId, itemId);
     },
-    onSuccess: () => invalidateChecklist(queryClient, workspaceId, taskId),
+    onSuccess: () => invalidateChecklist(queryClient, workspaceId, taskId, boardId),
   });
 }

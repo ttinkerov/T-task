@@ -67,7 +67,7 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
       setUrl('');
       if (created) setSelectedAppId(created.id);
     } catch {
-      // React Query exposes a user-facing error below the form.
+      /* ignore */
     }
   };
 
@@ -79,7 +79,7 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
         setSelectedAppId(null);
       }
     } catch {
-      // React Query exposes a user-facing error in the list.
+      /* ignore */
     }
   };
 
@@ -273,11 +273,7 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
                     {iframeState === 'loading' ? (
                       <p className="apps-viewer__status">Загрузка встроенного просмотра…</p>
                     ) : null}
-                    {/*
-                      allow-scripts + allow-same-origin is required by Figma/Miro embeds.
-                      Safe here because embed URLs are forced to third-party allowlisted
-                      origins (never this app's origin) by normalizeExternalAppUrl + CSP frame-src.
-                    */}
+                    {}
                     <iframe
                       key={selectedApp.id}
                       src={safeEmbedUrl}

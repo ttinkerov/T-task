@@ -25,6 +25,9 @@ export function KanbanTaskCardMeta({
 }) {
   const tags = task.tags ?? EMPTY_TAGS;
   const subtasks = task.subtasks ?? EMPTY_SUBTASKS;
+  const subtaskTotal = task.subtaskStats?.total ?? subtasks.length;
+  const subtaskCompleted =
+    task.subtaskStats?.completed ?? subtasks.filter((item) => item.completed).length;
 
   if (!(
     task.priority ||
@@ -37,7 +40,7 @@ export function KanbanTaskCardMeta({
     recurrenceLabel ||
     overdueLabel ||
     tags.length > 0 ||
-    subtasks.length > 0 ||
+    subtaskTotal > 0 ||
     customFieldChips.length > 0 ||
     task.assignee
   )) {
@@ -56,9 +59,9 @@ export function KanbanTaskCardMeta({
           {tag.name}
         </span>
       ))}
-      {subtasks.length > 0 ? (
+      {subtaskTotal > 0 ? (
         <span className="kanban-task-chip">
-          {subtasks.filter((item) => item.completed).length}/{subtasks.length} шагов
+          {subtaskCompleted}/{subtaskTotal} шагов
         </span>
       ) : null}
       {overdueLabel ? (

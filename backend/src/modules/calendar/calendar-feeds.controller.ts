@@ -67,7 +67,7 @@ export class PublicCalendarFeedsController {
   async getCalendar(
     @Param('token') token: string,
     @Req() request: Request,
-    // Intentional manual response: the ICS endpoint must bypass the JSON envelope interceptor.
+
     @Res() response: Response,
   ): Promise<void> {
     const calendar = await this.calendarFeedsService.getCalendar(token);

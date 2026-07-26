@@ -5,10 +5,6 @@ import { usePathname } from 'next/navigation';
 import { motionTokens } from '@/shared/lib/motion-tokens';
 import { cn } from '@/shared/lib/cn';
 
-/**
- * Enter-only fade for dashboard routes.
- * Avoid AnimatePresence mode="wait" — it can stall first paint with Suspense pages.
- */
 export function DashboardPageTransition({
   children,
   fill = false,

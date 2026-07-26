@@ -14,9 +14,7 @@ export function useNotificationsQuery(workspaceId: string | null) {
       return response.data;
     },
     enabled: Boolean(workspaceId),
-    refetchInterval: 90_000,
-    refetchIntervalInBackground: false,
-    staleTime: 60_000,
+    staleTime: 120_000,
   });
 }
 

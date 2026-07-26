@@ -312,7 +312,7 @@ export class IdentityService {
     const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
     response.clearCookie(ACCESS_TOKEN_COOKIE, buildAccessCookieClearOptions(isProduction));
     response.clearCookie(REFRESH_TOKEN_COOKIE, buildRefreshCookieClearOptions(isProduction));
-    // Clear legacy path=/ refresh cookies from older deploys.
+
     response.clearCookie(REFRESH_TOKEN_COOKIE, buildAccessCookieClearOptions(isProduction));
   }
 
@@ -333,7 +333,7 @@ export class IdentityService {
         this.eventEmitter.emit(DomainEvents.USER_ACCESS_REVOKED, { userId: payload.sub });
       }
     } catch {
-      // Expired/invalid access cookie — nothing to denylist.
+      /* ignore */
     }
   }
 

@@ -63,7 +63,7 @@ export function CustomFieldsPage({ workspaceId }: CustomFieldsPageProps) {
       setShowOnCard(false);
       setType('TEXT');
     } catch {
-      // error surfaced below
+      /* ignore */
     }
   };
 
@@ -72,7 +72,7 @@ export function CustomFieldsPage({ workspaceId }: CustomFieldsPageProps) {
     try {
       await updateMutation.mutateAsync({ fieldId, data: { showOnCard: next } });
     } catch {
-      // error surfaced below
+      /* ignore */
     } finally {
       setPendingId(null);
     }
@@ -83,7 +83,7 @@ export function CustomFieldsPage({ workspaceId }: CustomFieldsPageProps) {
     try {
       await deleteMutation.mutateAsync(fieldId);
     } catch {
-      // error surfaced below
+      /* ignore */
     } finally {
       setPendingId(null);
     }

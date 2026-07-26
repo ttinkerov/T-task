@@ -1,4 +1,3 @@
-/** Parse Jira/CSV due dates into ISO date (YYYY-MM-DD) when possible. */
 export function mapDueDate(raw: string | undefined | null): string | undefined {
   if (!raw?.trim()) return undefined;
   const value = raw.trim();
@@ -17,7 +16,7 @@ export function mapDueDate(raw: string | undefined | null): string | undefined {
   if (slashed) {
     const first = Number(slashed[1]);
     const second = Number(slashed[2]);
-    // If first part > 12 it must be day-first (DD/MM/YYYY); otherwise assume MM/DD/YYYY (US/Jira).
+
     if (first > 12) {
       return `${slashed[3]}-${String(second).padStart(2, '0')}-${String(first).padStart(2, '0')}`;
     }

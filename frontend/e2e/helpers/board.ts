@@ -62,10 +62,6 @@ export async function closeTaskDrawerIfOpen(page: Page) {
   await expect(drawer).toBeHidden();
 }
 
-/**
- * Wait until kanban columns are mounted. Empty-task CTA may overlay the board
- * but columns stay in the DOM so DnD helpers can proceed after creating a task.
- */
 export async function ensureKanbanReady(page: Page) {
   const columns = page.locator('[data-testid^="kanban-column-"]');
   const firstTaskCta = page.getByRole('button', { name: 'Добавить первую задачу' });
@@ -97,7 +93,6 @@ export async function ensureKanbanReady(page: Page) {
 export async function createTaskInFirstColumn(page: Page, title: string) {
   await ensureKanbanReady(page);
 
-  // Dismiss empty overlay so the column "add task" form is interactive.
   const firstTaskCta = page.getByRole('button', { name: 'Добавить первую задачу' });
   if (await firstTaskCta.isVisible().catch(() => false)) {
     await firstTaskCta.click();
@@ -112,7 +107,6 @@ export async function createTaskInFirstColumn(page: Page, title: string) {
   ).toBeVisible();
 }
 
-/** dnd-kit needs a small move past activationConstraint.distance before the drop. */
 export async function dragTaskHandleToColumn(
   page: Page,
   taskTitle: string,
@@ -120,8 +114,7 @@ export async function dragTaskHandleToColumn(
 ) {
   const task = page.locator('[data-testid^="kanban-task-"]').filter({ hasText: taskTitle }).first();
   const handle = task.getByRole('button', { name: 'Перетащить задачу' });
-  // Drop on the column root (droppable), not the virtualized task list — empty
-  // columns have ~0 height task lists, so drops land on the add-task input instead.
+
   const targetColumn = page.getByTestId(targetColumnTestId);
 
   await handle.scrollIntoViewIfNeeded();

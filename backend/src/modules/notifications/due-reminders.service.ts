@@ -24,7 +24,6 @@ export class DueRemindersService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
-    // Stagger first tick so boot traffic settles.
     this.timer = setInterval(() => {
       void this.tick();
     }, TICK_INTERVAL_MS);
@@ -34,7 +33,6 @@ export class DueRemindersService implements OnModuleInit, OnModuleDestroy {
     if (this.timer) clearInterval(this.timer);
   }
 
-  /** Background batch — not called from request path. */
   async tick() {
     const locked = await this.tryLock();
     if (!locked) return;
@@ -139,10 +137,6 @@ export class DueRemindersService implements OnModuleInit, OnModuleDestroy {
     return eligible.length;
   }
 
-  /**
-   * Rolls overdue due dates for workspaces with autoRollOverdue enabled.
-   * Runs in background so board GET stays read-only.
-   */
   async rollOverdueBatch(limit = BATCH_SIZE) {
     const workspaces = await this.prisma.workspace.findMany({
       where: {
@@ -212,7 +206,6 @@ export class DueRemindersService implements OnModuleInit, OnModuleDestroy {
       const result = await client.set(TICK_LOCK_KEY, '1', 'EX', TICK_LOCK_TTL_SECONDS, 'NX');
       return result === 'OK';
     } catch {
-      // If Redis is down, still run once per process (worse for multi-replica, ok for single).
       return true;
     }
   }
