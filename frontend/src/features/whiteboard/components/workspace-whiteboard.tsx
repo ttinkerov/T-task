@@ -13,12 +13,15 @@ import {
 } from 'tldraw';
 import 'tldraw/tldraw.css';
 import '../styles/tldraw-theme.css';
+import { PenLine } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
 import { ApiError } from '@/shared/api/client';
 import { useThemeStore, type ThemeMode } from '@/stores/theme.store';
 import { fetchWhiteboard, saveWhiteboard } from '../api';
 import { tldrawAssetUrls } from '../lib/tldraw-asset-urls';
 
 const AUTOSAVE_MS = 1200;
+const WELCOME_DISMISS_KEY = 'ttask:whiteboard-welcome-dismissed';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -37,6 +40,33 @@ function SyncTldrawTheme({ theme }: { theme: ThemeMode }) {
   return null;
 }
 
+function FocusCanvasOnStart({ shouldFocus }: { shouldFocus: boolean }) {
+  const editor = useEditor();
+
+  useEffect(() => {
+    if (!shouldFocus) return;
+    editor.focus();
+  }, [editor, shouldFocus]);
+
+  return null;
+}
+
+function readWelcomeDismissed(workspaceId: string) {
+  try {
+    return window.sessionStorage.getItem(`${WELCOME_DISMISS_KEY}:${workspaceId}`) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeWelcomeDismissed(workspaceId: string) {
+  try {
+    window.sessionStorage.setItem(`${WELCOME_DISMISS_KEY}:${workspaceId}`, '1');
+  } catch {
+    // ignore
+  }
+}
+
 export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
   const theme = useThemeStore((state) => state.theme);
   const [storeWithStatus, setStoreWithStatus] = useState<TLStoreWithStatus>({
@@ -45,6 +75,10 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [updatedLabel, setUpdatedLabel] = useState<string | null>(null);
+  const [isBlankBoard, setIsBlankBoard] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [focusCanvas, setFocusCanvas] = useState(false);
+  const [loadNonce, setLoadNonce] = useState(0);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveInFlightRef = useRef(false);
   const pendingSnapshotRef = useRef<Record<string, unknown> | null>(null);
@@ -59,6 +93,7 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
       setStoreWithStatus({ status: 'loading' });
       setSaveStatus('idle');
       setSaveError(null);
+      setFocusCanvas(false);
       dirtyRef.current = false;
       storeRef.current = null;
 
@@ -68,9 +103,11 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
 
         const store = createTLStore();
         const snapshot = response.data?.snapshot;
+        let loadedContent = false;
         if (snapshot && typeof snapshot === 'object') {
           try {
             loadSnapshot(store, snapshot as unknown as TLEditorSnapshot);
+            loadedContent = true;
           } catch {
             // Corrupt or outdated snapshot — start empty rather than blocking the page.
           }
@@ -78,6 +115,10 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
 
         const updatedAt = response.data?.updatedAt;
         const updatedBy = response.data?.updatedBy;
+        const blank = !updatedAt && !loadedContent;
+        setIsBlankBoard(blank);
+        setShowWelcome(blank && !readWelcomeDismissed(workspaceId));
+
         if (updatedAt) {
           const when = new Date(updatedAt).toLocaleString('ru-RU', {
             day: 'numeric',
@@ -106,7 +147,7 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
     return () => {
       cancelled = true;
     };
-  }, [workspaceId]);
+  }, [workspaceId, loadNonce]);
 
   const persistSnapshot = useCallback(
     async (snapshot: Record<string, unknown>) => {
@@ -122,6 +163,8 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
       try {
         const response = await saveWhiteboard(workspaceId, snapshot);
         dirtyRef.current = false;
+        setIsBlankBoard(false);
+        setShowWelcome(false);
         const updatedAt = response.data?.updatedAt;
         const updatedBy = response.data?.updatedBy;
         if (updatedAt) {
@@ -179,6 +222,8 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
     const unsubscribe = store.listen(
       () => {
         dirtyRef.current = true;
+        setIsBlankBoard(false);
+        setShowWelcome(false);
         if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
         saveTimerRef.current = setTimeout(() => {
           const { document } = getSnapshot(store);
@@ -200,6 +245,12 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
     };
   }, [flushPendingSave, persistSnapshot, storeWithStatus]);
 
+  const dismissWelcome = () => {
+    writeWelcomeDismissed(workspaceId);
+    setShowWelcome(false);
+    setFocusCanvas(true);
+  };
+
   const statusText = useMemo(() => {
     if (saveStatus === 'saving') return 'Сохранение…';
     if (saveStatus === 'saved') return 'Сохранено';
@@ -218,10 +269,14 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
 
   if (storeWithStatus.status === 'error') {
     return (
-      <div className="flex h-full min-h-[480px] flex-col items-center justify-center gap-2 p-6 text-center">
-        <p className="text-sm font-medium text-foreground">Не удалось открыть доску</p>
-        <p className="max-w-md text-sm text-muted-foreground">{storeWithStatus.error.message}</p>
-      </div>
+      <EmptyState
+        className="empty-state--board"
+        icon={PenLine}
+        title="Не удалось открыть доску"
+        description={storeWithStatus.error.message}
+        actionLabel="Повторить"
+        onAction={() => setLoadNonce((value) => value + 1)}
+      />
     );
   }
 
@@ -245,7 +300,18 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
       <div className="relative min-h-0 flex-1">
         <Tldraw store={storeWithStatus.store} assetUrls={tldrawAssetUrls} colorScheme={theme}>
           <SyncTldrawTheme theme={theme} />
+          <FocusCanvasOnStart shouldFocus={focusCanvas} />
         </Tldraw>
+        {showWelcome && isBlankBoard ? (
+          <EmptyState
+            className="empty-state--overlay"
+            icon={PenLine}
+            title="Начните рисовать"
+            description="Одна доска на команду: схемы, наброски и заметки. Всё сохраняется автоматически."
+            actionLabel="Начать рисовать"
+            onAction={dismissWelcome}
+          />
+        ) : null}
       </div>
     </div>
   );

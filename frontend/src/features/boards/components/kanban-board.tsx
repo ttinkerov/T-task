@@ -2,14 +2,22 @@
 
 import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { Kanban, LayoutList, Plus } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { EmptyState } from '@/components/ui/empty-state';
 import { BoardSkeleton } from '@/components/ui/skeleton';
 import { useMeQuery } from '@/features/auth/hooks';
 import { ViewModeTransition } from '@/features/shell/components/view-mode-transition';
 import { BulkActionsToolbar } from './bulk-actions-toolbar';
 import { findTask } from '../lib/board-lookup';
-import { useBoardQuery } from '../hooks';
+import {
+  useBoardQuery,
+  useBoardsQuery,
+  useCreateBoardMutation,
+  useCreateColumnMutation,
+  useCreateTaskMutation,
+} from '../hooks';
 import { EMPTY_BOARD_FILTERS, type BoardFilters } from '../types';
 import { BoardFiltersBar } from './board-filters-bar';
 import { BoardSprintPanel } from './board-sprint-panel';
@@ -20,7 +28,10 @@ import { useBoardBulkSelection } from './kanban/hooks/use-board-bulk-selection';
 import { useBoardTaskMoves } from './kanban/hooks/use-board-task-moves';
 import { useBoardViewData } from './kanban/hooks/use-board-view-data';
 import { useBoardViewPrefs } from './kanban/hooks/use-board-view-prefs';
-import { useFocusCreateTaskInput } from './kanban/hooks/use-focus-create-task-input';
+import {
+  focusCreateTaskInput,
+  useFocusCreateTaskInput,
+} from './kanban/hooks/use-focus-create-task-input';
 import { KanbanDragOverlay } from './kanban/kanban-drag-overlay';
 import { SortableKanbanColumn } from './kanban/sortable-kanban-column';
 import { TaskDisplayView, TaskViewToolbar } from './task-display-views';
@@ -40,6 +51,8 @@ export function KanbanBoard({
   initialBoardId?: string | null;
 }) {
   const { data: session } = useMeQuery();
+  const { data: boards = [], isLoading: boardsLoading } = useBoardsQuery(workspaceId);
+  const createBoardMutation = useCreateBoardMutation(workspaceId);
   const [boardId, setBoardId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return initialBoardId;
     return initialBoardId ?? readStoredBoardId(workspaceId);
@@ -52,6 +65,8 @@ export function KanbanBoard({
     [workspaceId],
   );
   const { data: board, isLoading } = useBoardQuery(workspaceId, boardId);
+  const createColumnMutation = useCreateColumnMutation(workspaceId, boardId ?? '');
+  const createTaskMutation = useCreateTaskMutation(workspaceId, boardId);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const openedInitialTaskRef = useRef<string | null>(null);
   const [filters, setFilters] = useState<BoardFilters>(EMPTY_BOARD_FILTERS);
@@ -106,6 +121,56 @@ export function KanbanBoard({
     clearBulk();
   }, [workspaceId, hydrateFromStorage, clearBulk, initialBoardId]);
 
+  const openTaskCount = useMemo(() => {
+    if (!board) return 0;
+    return board.columns.reduce(
+      (sum, column) => sum + Math.max(column.tasks.length, column.taskTotal ?? 0),
+      0,
+    );
+  }, [board]);
+
+  if (boardsLoading) {
+    return (
+      <>
+        <BoardSwitcher
+          workspaceId={workspaceId}
+          boardId={boardId}
+          preferredBoardId={initialBoardId}
+          onBoardChange={handleBoardChange}
+        />
+        <BoardSkeleton />
+      </>
+    );
+  }
+
+  if (boards.length === 0) {
+    return (
+      <>
+        <BoardSwitcher
+          workspaceId={workspaceId}
+          boardId={boardId}
+          preferredBoardId={initialBoardId}
+          onBoardChange={handleBoardChange}
+        />
+        <EmptyState
+          className="empty-state--board"
+          icon={Kanban}
+          title="Создайте первую доску"
+          description="На доске появятся колонки и задачи — начните с одного пространства для команды."
+          actionLabel="Создать доску"
+          actionPending={createBoardMutation.isPending}
+          onAction={() => {
+            void createBoardMutation
+              .mutateAsync({ name: 'Основная', templateId: 'kanban' })
+              .then((created) => {
+                if (created?.id) handleBoardChange(created.id);
+              });
+          }}
+        />
+      </>
+    );
+  }
+
   if (isLoading || !board || !boardId) {
     return (
       <>
@@ -128,6 +193,8 @@ export function KanbanBoard({
   const workspaceRole = session?.workspaces.find((workspace) => workspace.id === workspaceId)?.role;
   const canManageAutomations = workspaceRole === 'OWNER' || workspaceRole === 'ADMIN';
   const canDeleteColumns = canManageAutomations && board.columns.length > 1;
+  const showBoardEmpty =
+    viewMode === 'BOARD' && (board.columns.length === 0 || openTaskCount === 0);
 
   return (
     <>
@@ -180,40 +247,78 @@ export function KanbanBoard({
 
       {viewMode === 'BOARD' ? (
         <ViewModeTransition modeKey="BOARD" className="kanban-board-transition">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="kanban-board">
-              <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
-                {filteredColumns.map((column) => (
-                  <SortableKanbanColumn
-                    key={column.id}
-                    column={column}
-                    allColumns={board.columns}
-                    workspaceId={workspaceId}
-                    boardId={boardId}
-                    canDelete={canDeleteColumns}
-                    canManageAutomations={canManageAutomations}
-                    cardFields={cardFields}
-                    memberNames={memberNames}
-                    selectedIds={bulkSelectedIds}
-                    selectionActive={bulkSelectedIds.size > 0}
-                    onToggleSelect={handleToggleSelect}
-                    onOpenTask={setSelectedTaskId}
-                    onCompleteTask={handleCompleteTask}
-                  />
-                ))}
-              </SortableContext>
-              <AddColumnPanel workspaceId={workspaceId} boardId={boardId} />
-            </div>
+          {showBoardEmpty ? (
+            <EmptyState
+              className="empty-state--board"
+              icon={board.columns.length === 0 ? LayoutList : Plus}
+              title={
+                board.columns.length === 0 ? 'Добавьте первую колонку' : 'На доске пока нет задач'
+              }
+              description={
+                board.columns.length === 0
+                  ? 'Колонки задают этапы работы — например «К выполнению», «В работе», «Готово».'
+                  : 'Одна задача — и доска оживёт. Можно перетаскивать карточки между колонками.'
+              }
+              actionLabel={
+                board.columns.length === 0 ? 'Добавить колонку' : 'Добавить первую задачу'
+              }
+              actionPending={
+                board.columns.length === 0
+                  ? createColumnMutation.isPending
+                  : createTaskMutation.isPending
+              }
+              onAction={() => {
+                if (board.columns.length === 0) {
+                  void createColumnMutation.mutateAsync('К выполнению');
+                  return;
+                }
+                const firstColumn = board.columns[0];
+                if (!firstColumn) {
+                  focusCreateTaskInput();
+                  return;
+                }
+                void createTaskMutation.mutateAsync({
+                  title: 'Новая задача',
+                  columnId: firstColumn.id,
+                });
+              }}
+            />
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCorners}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="kanban-board">
+                <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
+                  {filteredColumns.map((column) => (
+                    <SortableKanbanColumn
+                      key={column.id}
+                      column={column}
+                      allColumns={board.columns}
+                      workspaceId={workspaceId}
+                      boardId={boardId}
+                      canDelete={canDeleteColumns}
+                      canManageAutomations={canManageAutomations}
+                      cardFields={cardFields}
+                      memberNames={memberNames}
+                      selectedIds={bulkSelectedIds}
+                      selectionActive={bulkSelectedIds.size > 0}
+                      onToggleSelect={handleToggleSelect}
+                      onOpenTask={setSelectedTaskId}
+                      onCompleteTask={handleCompleteTask}
+                    />
+                  ))}
+                </SortableContext>
+                <AddColumnPanel workspaceId={workspaceId} boardId={boardId} />
+              </div>
 
-            <DragOverlay>
-              <KanbanDragOverlay activeColumn={activeColumn} activeTask={activeTask} />
-            </DragOverlay>
-          </DndContext>
+              <DragOverlay>
+                <KanbanDragOverlay activeColumn={activeColumn} activeTask={activeTask} />
+              </DragOverlay>
+            </DndContext>
+          )}
         </ViewModeTransition>
       ) : (
         <ViewModeTransition modeKey={viewMode}>

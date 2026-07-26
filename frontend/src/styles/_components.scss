@@ -106,3 +106,60 @@
     }
   }
 }
+
+.empty-state {
+  display: grid;
+  min-height: 18rem;
+  place-items: center;
+  align-content: center;
+  gap: 0.55rem;
+  border: 1px dashed var(--tt-border);
+  border-radius: $radius-lg;
+  background: var(--tt-hover);
+  padding: 2rem 1.5rem;
+  text-align: center;
+
+  &__icon {
+    display: grid;
+    width: 3rem;
+    height: 3rem;
+    place-items: center;
+    margin-bottom: 0.15rem;
+    border-radius: $radius-md;
+    background: var(--tt-brand-muted);
+    color: var(--tt-brand);
+  }
+
+  &__title {
+    margin: 0;
+    color: $color-white;
+    font-size: 1.05rem;
+    font-weight: 650;
+  }
+
+  &__description {
+    margin: 0;
+    max-width: 28rem;
+    color: $color-text-muted;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+
+  &__action {
+    margin-top: 0.55rem;
+  }
+
+  &--overlay {
+    position: absolute;
+    inset: 1rem;
+    z-index: 5;
+    min-height: 0;
+    background: color-mix(in srgb, var(--tt-surface) 92%, transparent);
+    backdrop-filter: blur(6px);
+  }
+
+  &--board {
+    min-height: 22rem;
+    flex: 1;
+  }
+}

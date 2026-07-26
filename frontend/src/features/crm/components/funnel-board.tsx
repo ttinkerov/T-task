@@ -21,6 +21,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { FormEvent, memo, useEffect, useMemo, useState, type HTMLAttributes } from 'react';
+import { ClipboardList } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
 import { useDealTemplatesQuery } from '@/features/templates';
 import { VirtualizedColumnList } from '@/shared/ui/virtualized-column-list';
 import {
@@ -53,6 +55,23 @@ export function FunnelBoard({ workspaceId }: { workspaceId: string }) {
     return <p className="text-sm text-muted-foreground">Загрузка воронок...</p>;
   }
 
+  if (funnels.length === 0) {
+    return (
+      <div className="crm-page">
+        <div className="crm-toolbar">
+          <div>
+            <h1 className="crm-toolbar__title">CRM — воронки</h1>
+            <p className="crm-toolbar__hint">
+              Сделки двигаются по этапам, как на канбан-доске. Разные воронки — для разных
+              направлений.
+            </p>
+          </div>
+        </div>
+        <CrmEmptyFunnel workspaceId={workspaceId} onCreated={setFunnelId} />
+      </div>
+    );
+  }
+
   return (
     <div className="crm-page">
       <FunnelToolbar
@@ -68,6 +87,32 @@ export function FunnelBoard({ workspaceId }: { workspaceId: string }) {
         <FunnelBoardView workspaceId={workspaceId} funnel={funnel} />
       )}
     </div>
+  );
+}
+
+function CrmEmptyFunnel({
+  workspaceId,
+  onCreated,
+}: {
+  workspaceId: string;
+  onCreated: (id: string) => void;
+}) {
+  const createFunnelMutation = useCreateFunnelMutation(workspaceId);
+
+  return (
+    <EmptyState
+      className="empty-state--board"
+      icon={ClipboardList}
+      title="Создайте первую воронку"
+      description="Воронка — это этапы продаж. Добавьте сделки и двигайте их к закрытию."
+      actionLabel="Создать воронку"
+      actionPending={createFunnelMutation.isPending}
+      onAction={() => {
+        void createFunnelMutation.mutateAsync('Основная воронка').then((created) => {
+          if (created?.id) onCreated(created.id);
+        });
+      }}
+    />
   );
 }
 

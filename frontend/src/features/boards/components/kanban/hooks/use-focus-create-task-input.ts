@@ -6,7 +6,7 @@ import type { BoardViewMode } from '../../../lib/task-view-utils';
 
 const FOCUS_CREATE_KEY = 'ttask:focus-create';
 
-function focusCreateTaskInput() {
+export function focusCreateTaskInput() {
   const input = document.querySelector<HTMLInputElement>('.kanban-column__add-input');
   input?.focus();
   input?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
