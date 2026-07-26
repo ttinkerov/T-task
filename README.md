@@ -1,27 +1,29 @@
 # T-task
 
+**Русский** | [English](README.en.md)
+
 Канбан и CRM для небольших команд. Workspaces, доски, сделки, формы, уведомления.
 
-**Стек:** Next.js, NestJS, Prisma, PostgreSQL, Redis
+**Стек:** Next.js · NestJS · Prisma · PostgreSQL · Redis
 
 ## Возможности
 
-Workspaces — команды, роли, инвайты, scopes  
-Boards — колонки, DnD, WIP, автоматизации, фильтры  
-Tasks — сабтаски, теги, комментарии, @mentions, watchers, эпики, спринты  
-My Tasks — назначенные / слежу / просрочка / скоро дедлайн  
-CRM — воронки, сделки, связь со задачами  
-Forms — публичные формы → задачи / сделки  
-DoD / Templates — чеклисты и шаблоны карточек  
-Analytics — throughput, cycle time, workload  
-Apps — календарь iCal, импорт, AI-помощник, корзина  
-Whiteboard — рисование (tldraw), автосохранение на workspace
+- **Workspaces** — команды, роли, инвайты, scopes
+- **Boards** — колонки, DnD, WIP, автоматизации, фильтры
+- **Tasks** — сабтаски, теги, комментарии, @mentions, watchers, эпики, спринты
+- **My Tasks** — назначенные / слежу / просрочка / скоро дедлайн
+- **CRM** — воронки, сделки, связь со задачами
+- **Forms** — публичные формы → задачи / сделки
+- **DoD / Templates** — чеклисты и шаблоны карточек
+- **Analytics** — throughput, cycle time, workload
+- **Apps** — календарь iCal, импорт, AI-помощник, корзина
+- **Whiteboard** — рисование (tldraw), автосохранение на workspace
 
 ## Запуск
 
 ```bash
 cp .env.example .env
-# сгенерируй JWT_ACCESS_SECRET:
+# Сгенерируй JWT_ACCESS_SECRET:
 # node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 
 docker compose up --build
@@ -30,15 +32,13 @@ docker compose up --build
 - UI: http://localhost:3000
 - API: http://localhost:3001/api/v1
 
-Локальный Docker явно ставит `ALLOW_INSECURE_DEV=true` (dev cookies / без HSTS).  
+Локальный Docker ставит `ALLOW_INSECURE_DEV=true`.
+
 **Прод** — только с production-постурой:
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
 ```
-
-В `.env` для прода обязательны сильный `POSTGRES_PASSWORD`, `REDIS_PASSWORD`, `JWT_ACCESS_SECRET`, `CORS_ORIGIN` (https).  
-Прод не публикует Postgres/Redis/PgBouncer наружу; локально они слушаются только на `127.0.0.1`.
 
 ### Без Docker
 
@@ -52,14 +52,15 @@ npm run dev:backend   # :3001
 npm run dev:frontend  # :3000
 ```
 
-## Что внутри
+## Структура
 
-|                           |                     |
-| ------------------------- | ------------------- |
-| `frontend/`               | Next.js App Router  |
-| `backend/`                | NestJS API + Prisma |
-| `docker-compose.yml`      | local stack (dev)   |
-| `docker-compose.prod.yml` | production overlay  |
+```text
+T-task/
+├── frontend/                 # Next.js App Router
+├── backend/                  # NestJS API + Prisma
+├── docker-compose.yml        # локальный стек (dev)
+└── docker-compose.prod.yml   # production overlay
+```
 
 ## Скрипты
 
@@ -70,3 +71,7 @@ npm run build
 npm run lint
 npm run prisma:migrate -w backend
 ```
+
+## Лицензия
+
+[MIT](LICENSE) © 2026 ttinkerov
