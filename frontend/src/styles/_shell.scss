@@ -97,6 +97,40 @@
     scrollbar-width: thin;
   }
 
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  &__group-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    width: 100%;
+    margin: 0;
+    border: none;
+    border-radius: $radius-sm;
+    background: transparent;
+    padding: 0 0.35rem 0.35rem 0;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      .app-sidebar__group-label,
+      .app-sidebar__group-chevron {
+        color: var(--tt-text-muted);
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--tt-brand);
+      outline-offset: 2px;
+    }
+  }
+
   &__group-label {
     padding: 0 0.65rem 0.35rem;
     font-size: 0.6875rem;
@@ -106,6 +140,22 @@
     color: var(--tt-text-dim);
     white-space: nowrap;
     overflow: hidden;
+  }
+
+  &__group-toggle .app-sidebar__group-label {
+    padding-bottom: 0;
+    flex: 1;
+  }
+
+  &__group-chevron {
+    flex-shrink: 0;
+    margin-right: 0.35rem;
+    color: var(--tt-text-dim);
+    transition: transform var(--tt-duration-fast) var(--tt-ease-out);
+  }
+
+  &__group--collapsible:not(.app-sidebar__group--open) .app-sidebar__group-chevron {
+    transform: rotate(-90deg);
   }
 
   &__links {
@@ -179,8 +229,13 @@
 .app-frame--collapsed {
   .app-sidebar__brand .tt-brand-logo__text,
   .app-sidebar__group-label,
+  .app-sidebar__group-chevron,
   .app-sidebar__link span,
   .app-sidebar__collapse-label {
+    display: none;
+  }
+
+  .app-sidebar__group-toggle {
     display: none;
   }
 

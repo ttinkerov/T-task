@@ -1,11 +1,14 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import type { LucideIcon } from 'lucide-react';
+import { ChevronDown, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 import { BrandLogo } from '@/components/marketing/brand-logo';
 import { cn } from '@/shared/lib/cn';
+
+const GROUP_OPEN_KEY = 'ttask:nav-group-open';
 
 export interface NavItem {
   href: string;
@@ -18,6 +21,10 @@ export interface NavGroup {
   id: string;
   label: string;
   items: NavItem[];
+  /** When true, group can be collapsed in the expanded sidebar. */
+  collapsible?: boolean;
+  /** Initial open state for collapsible groups (overridden by active route / localStorage). */
+  defaultOpen?: boolean;
 }
 
 interface AppSidebarProps {
@@ -27,12 +34,63 @@ interface AppSidebarProps {
   CollapseIcon: LucideIcon;
 }
 
+function readStoredOpen(): Record<string, boolean> {
+  try {
+    const raw = window.localStorage.getItem(GROUP_OPEN_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return {};
+    return parsed as Record<string, boolean>;
+  } catch {
+    return {};
+  }
+}
+
+function writeStoredOpen(next: Record<string, boolean>) {
+  try {
+    window.localStorage.setItem(GROUP_OPEN_KEY, JSON.stringify(next));
+  } catch {
+    // ignore
+  }
+}
+
 export function AppSidebar({ groups, collapsed, onToggleCollapse, CollapseIcon }: AppSidebarProps) {
   const pathname = usePathname();
+  const [openById, setOpenById] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setOpenById(readStoredOpen());
+  }, []);
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard';
-    return pathname === href || pathname.startsWith(`${href}/`);
+    const pathOnly = href.split('?')[0] ?? href;
+    return pathname === pathOnly || pathname.startsWith(`${pathOnly}/`);
+  };
+
+  const groupHasActive = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    for (const group of groups) {
+      map[group.id] = group.items.some((item) => !item.hidden && isActive(item.href));
+    }
+    return map;
+  }, [groups, pathname]);
+
+  const isGroupOpen = (group: NavGroup) => {
+    if (collapsed || !group.collapsible) return true;
+    if (groupHasActive[group.id]) return true;
+    if (typeof openById[group.id] === 'boolean') return openById[group.id];
+    return group.defaultOpen ?? false;
+  };
+
+  const toggleGroup = (groupId: string) => {
+    setOpenById((prev) => {
+      const group = groups.find((entry) => entry.id === groupId);
+      const currentlyOpen = group ? isGroupOpen(group) : Boolean(prev[groupId]);
+      const next = { ...prev, [groupId]: !currentlyOpen };
+      writeStoredOpen(next);
+      return next;
+    });
   };
 
   return (
@@ -54,16 +112,53 @@ export function AppSidebar({ groups, collapsed, onToggleCollapse, CollapseIcon }
         {groups.map((group) => {
           const visible = group.items.filter((item) => !item.hidden);
           if (visible.length === 0) return null;
+
+          const isCollapsible = Boolean(group.collapsible);
+          const isOpen = isGroupOpen(group);
+          const panelId = `nav-group-${group.id}`;
+
           return (
-            <div key={group.id}>
-              <p className="app-sidebar__group-label">{group.label}</p>
-              <div className="app-sidebar__links">
+            <div
+              key={group.id}
+              className={cn(
+                'app-sidebar__group',
+                isCollapsible && 'app-sidebar__group--collapsible',
+                isOpen && 'app-sidebar__group--open',
+              )}
+            >
+              {isCollapsible && !collapsed ? (
+                <button
+                  type="button"
+                  className="app-sidebar__group-toggle"
+                  onClick={() => toggleGroup(group.id)}
+                  aria-expanded={isOpen}
+                  aria-controls={panelId}
+                >
+                  <span className="app-sidebar__group-label">{group.label}</span>
+                  <ChevronDown
+                    className="app-sidebar__group-chevron"
+                    size={14}
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  />
+                </button>
+              ) : (
+                <p className="app-sidebar__group-label">{group.label}</p>
+              )}
+
+              <div
+                id={panelId}
+                className="app-sidebar__links"
+                hidden={!isOpen}
+                role={isCollapsible ? 'region' : undefined}
+                aria-label={isCollapsible ? group.label : undefined}
+              >
                 {visible.map((item) => {
                   const Icon = item.icon;
                   const active = isActive(item.href);
                   return (
                     <Link
-                      key={item.href}
+                      key={`${group.id}-${item.href}`}
                       href={item.href}
                       className={cn('app-sidebar__link', active && 'app-sidebar__link--active')}
                       aria-current={active ? 'page' : undefined}

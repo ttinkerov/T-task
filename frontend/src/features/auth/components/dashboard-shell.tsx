@@ -156,10 +156,10 @@ export function DashboardShell({
           { href: '/dashboard', label: 'Главная', icon: Home },
           { href: '/dashboard/board', label: 'Задачи', icon: Kanban },
           { href: '/dashboard/all-tasks', label: 'Все задачи', icon: ListTodo },
+          { href: '/dashboard/my-tasks', label: 'Мои задачи', icon: UserRound },
           { href: '/dashboard/roadmap', label: 'Роадмап', icon: Milestone },
           { href: '/dashboard/epic-board', label: 'Эпик-борд', icon: StickyNote },
           { href: '/dashboard/whiteboard', label: 'Доска', icon: PenLine },
-          { href: '/dashboard/my-tasks', label: 'Мои задачи', icon: UserRound },
           { href: '/dashboard/focus', label: 'Фокус', icon: Focus },
           { href: '/dashboard/ai', label: 'ИИ', icon: Sparkles },
         ],
@@ -183,18 +183,20 @@ export function DashboardShell({
           ]
         : []),
       {
-        id: 'crm',
+        id: 'growth',
         label: 'Рост',
         items: [
           { href: '/dashboard/crm', label: 'CRM', icon: ClipboardList },
           { href: '/dashboard/analytics', label: 'Аналитика', icon: LayoutDashboard },
-          { href: '/dashboard/forms', label: 'Формы', icon: FormInput },
         ],
       },
       {
-        id: 'system',
-        label: 'Система',
+        id: 'more',
+        label: 'Ещё',
+        collapsible: true,
+        defaultOpen: false,
         items: [
+          { href: '/dashboard/forms', label: 'Формы', icon: FormInput },
           { href: '/dashboard/apps', label: 'Приложения', icon: AppWindow },
           { href: '/dashboard/calendar', label: 'iCal', icon: CalendarDays },
           { href: '/dashboard/custom-fields', label: 'Поля', icon: Settings },
