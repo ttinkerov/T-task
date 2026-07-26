@@ -18,13 +18,20 @@ function BoardPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
+  const setCurrentWorkspaceId = useWorkspaceStore((state) => state.setCurrentWorkspaceId);
   const { data: workspaces = [], isLoading } = useWorkspacesQuery();
 
   useEffect(() => {
     if (!isLoading && workspaces.length === 0) {
       router.replace('/onboarding');
+      return;
     }
-  }, [isLoading, router, workspaces.length]);
+
+    const exists = workspaces.some((workspace) => workspace.id === workspaceId);
+    if (workspaces.length > 0 && (!workspaceId || !exists)) {
+      setCurrentWorkspaceId(workspaces[0].id);
+    }
+  }, [isLoading, router, setCurrentWorkspaceId, workspaceId, workspaces]);
 
   return workspaceId ? (
     <KanbanBoard

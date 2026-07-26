@@ -14,6 +14,12 @@
   color: #fc8181;
 }
 
+.kanban-board-stack {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .kanban-board {
   display: flex;
   flex: 1 1 auto;
@@ -23,6 +29,11 @@
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 0.25rem;
+
+  &--dimmed {
+    opacity: 0.4;
+    pointer-events: none;
+  }
 
   &::-webkit-scrollbar {
     height: 6px;
