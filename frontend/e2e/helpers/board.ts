@@ -11,12 +11,11 @@ export async function registerAndOpenBoard(page: Page, label: string) {
   await page.getByRole('button', { name: 'Создать аккаунт' }).click();
 
   await expect(page).toHaveURL(/\/onboarding/);
-  await page.getByPlaceholder('Например, Acme Team').fill(`E2E ${label}`);
-  await page.getByRole('button', { name: 'Далее' }).click();
-  await page.getByRole('button', { name: 'Только я' }).click();
-  await page.getByRole('button', { name: 'Далее' }).click();
-  await page.getByRole('button', { name: 'Разработка' }).click();
-  await page.getByRole('button', { name: 'Открыть доску' }).click();
+  await page.getByLabel('Название команды').fill(`E2E ${label}`);
+  await page.getByRole('button', { name: 'Далее — к доске' }).click();
+  await page.getByRole('button', { name: 'Далее — к задаче' }).click();
+  await page.getByLabel('Название первой задачи').fill(`E2E first task ${label}`);
+  await page.getByRole('button', { name: 'Создать и открыть доску' }).click();
 
   await expect(page).toHaveURL(/\/dashboard\/board/);
   await expect(page.locator('[data-testid^="kanban-column-"]').first()).toBeVisible();

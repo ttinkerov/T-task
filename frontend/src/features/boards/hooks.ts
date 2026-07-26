@@ -311,7 +311,8 @@ export function useCreateTaskMutation(workspaceId: string, boardId?: string | nu
       description?: string;
       templateId?: string;
     }) => {
-      await createTask(workspaceId, data);
+      const response = await createTask(workspaceId, data);
+      return response.data;
     },
     onSuccess: () => {
       invalidateBoardAndLists(queryClient, workspaceId, boardId);

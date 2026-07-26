@@ -146,7 +146,7 @@ export async function createTask(
   workspaceId: string,
   data: { title: string; columnId: string; description?: string; templateId?: string },
 ) {
-  return apiFetch(`/api/v1/workspaces/${workspaceId}/tasks`, {
+  return apiFetch<BoardTask>(`/api/v1/workspaces/${workspaceId}/tasks`, {
     method: 'POST',
     headers: withWorkspace(workspaceId),
     body: JSON.stringify(data),

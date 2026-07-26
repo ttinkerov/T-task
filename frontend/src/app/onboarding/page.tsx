@@ -33,10 +33,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main
-      className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-6 py-12"
-      style={{ background: '#000000', color: '#fff' }}
-    >
+    <main className="onboarding-page">
       <OnboardingWizard />
     </main>
   );
