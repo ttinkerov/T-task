@@ -105,16 +105,17 @@ export class WorkspacesService {
 
       await createDefaultBoard(tx, created.id);
       await createDefaultFunnel(tx, created.id);
-      await this.activityService.record({
-        workspaceId: created.id,
-        actorId: userId,
-        action: ActivityAction.WORKSPACE_CREATED,
-        entityType: ActivityEntityType.WORKSPACE,
-        entityId: created.id,
-        entityName: created.name,
-      });
 
       return created;
+    });
+
+    await this.activityService.record({
+      workspaceId: workspace.id,
+      actorId: userId,
+      action: ActivityAction.WORKSPACE_CREATED,
+      entityType: ActivityEntityType.WORKSPACE,
+      entityId: workspace.id,
+      entityName: workspace.name,
     });
 
     return {

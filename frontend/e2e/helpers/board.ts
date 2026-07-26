@@ -5,10 +5,24 @@ export async function registerAndOpenBoard(page: Page, label: string) {
   const password = 'Password123!';
 
   await page.goto('/register');
+  await expect(page.locator('#name')).toBeVisible();
   await page.locator('#name').fill(`E2E ${label}`);
   await page.locator('#email').fill(email);
   await page.locator('#password').fill(password);
+
+  const registerResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes('/api/v1/auth/register') && response.request().method() === 'POST',
+    { timeout: 30_000 },
+  );
+
   await page.getByRole('button', { name: 'Создать аккаунт' }).click();
+
+  const registerResponse = await registerResponsePromise;
+  expect(
+    registerResponse.ok(),
+    `Register failed: ${registerResponse.status()} ${await registerResponse.text()}`,
+  ).toBeTruthy();
 
   await expect(page).toHaveURL(/\/onboarding/, { timeout: 30_000 });
   await page.getByLabel('Название команды').fill(`E2E ${label}`);
@@ -106,22 +120,40 @@ export async function dragTaskHandleToColumn(
 ) {
   const task = page.locator('[data-testid^="kanban-task-"]').filter({ hasText: taskTitle }).first();
   const handle = task.getByRole('button', { name: 'Перетащить задачу' });
-  const target = page.getByTestId(targetColumnTestId).locator('.kanban-column__tasks');
+  // Drop on the column root (droppable), not the virtualized task list — empty
+  // columns have ~0 height task lists, so drops land on the add-task input instead.
+  const targetColumn = page.getByTestId(targetColumnTestId);
+
+  await handle.scrollIntoViewIfNeeded();
+  await targetColumn.scrollIntoViewIfNeeded();
 
   const from = await handle.boundingBox();
-  const to = await target.boundingBox();
+  const to = await targetColumn.boundingBox();
   if (!from || !to) {
     throw new Error('Missing drag geometry');
   }
 
   const startX = from.x + from.width / 2;
   const startY = from.y + from.height / 2;
-  const endX = to.x + Math.min(to.width / 2, 80);
-  const endY = to.y + 36;
+  const endX = to.x + to.width / 2;
+  const endY = to.y + Math.min(Math.max(to.height * 0.4, 72), to.height - 48);
+
+  const moveResponsePromise = page.waitForResponse(
+    (response) =>
+      /\/tasks\/[^/]+\/move(?:\?|$)/.test(response.url()) &&
+      response.request().method() === 'PATCH',
+    { timeout: 15_000 },
+  );
 
   await page.mouse.move(startX, startY);
   await page.mouse.down();
-  await page.mouse.move(startX + 12, startY + 4, { steps: 4 });
-  await page.mouse.move(endX, endY, { steps: 16 });
+  await page.mouse.move(startX + 24, startY + 10, { steps: 6 });
+  await page.mouse.move(endX, endY, { steps: 24 });
   await page.mouse.up();
+
+  const moveResponse = await moveResponsePromise;
+  expect(
+    moveResponse.ok(),
+    `Move failed: ${moveResponse.status()} ${await moveResponse.text()}`,
+  ).toBeTruthy();
 }

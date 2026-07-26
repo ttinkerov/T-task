@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { getApiBaseUrl } from '@/shared/lib/env';
+import { getPublicOrigin } from '@/shared/lib/env';
 import {
   useCalendarFeedStatusQuery,
   useCreateOrRotateCalendarFeedMutation,
@@ -67,7 +67,7 @@ export function CalendarIntegrationPage({ workspaceId }: { workspaceId: string }
         return;
       }
 
-      setFeedUrl(`${getApiBaseUrl()}${created.feedPath}`);
+      setFeedUrl(`${getPublicOrigin()}${created.feedPath}`);
       setNotice(
         status?.enabled
           ? 'Ссылка обновлена. Замените старую ссылку во всех календарях.'

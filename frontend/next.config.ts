@@ -1,9 +1,17 @@
 import type { NextConfig } from 'next';
 
 const isProduction = process.env.NODE_ENV === 'production';
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const apiUrl = (
+  process.env.API_INTERNAL_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  'http://localhost:3001'
+).replace(/\/$/, '');
+const browserApiUrl = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').replace(
+  /\/$/,
+  '',
+);
 
-const connectSrc = ["'self'", apiUrl];
+const connectSrc = ["'self'", browserApiUrl];
 
 // Next.js HMR / React Refresh evaluate and inject inline scripts in development.
 // Keep production strict; use nonces later if production bootstrap scripts require it.
@@ -16,7 +24,7 @@ const contentSecurityPolicy = [
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
   // blob:/data: — tldraw paste/export; assets are self-hosted under /tldraw
-  `connect-src ${[...connectSrc, 'blob:', 'data:'].join(' ')}`,
+  `connect-src ${[...connectSrc, 'blob:', 'data:', 'ws:', 'wss:'].join(' ')}`,
   // tldraw uses blob: workers for some editor features
   "worker-src 'self' blob:",
   'frame-src https://docs.google.com https://drive.google.com https://www.figma.com https://miro.com https://airtable.com',
@@ -63,6 +71,14 @@ const nextConfig: NextConfig = {
   },
   // tldraw ships ESM that Next should transpile for App Router client chunks
   transpilePackages: ['tldraw', '@tldraw/assets'],
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${apiUrl}/api/:path*`,
+      },
+    ];
+  },
   async headers() {
     return [
       {

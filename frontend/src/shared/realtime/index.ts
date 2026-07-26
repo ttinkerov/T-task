@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { io, type Socket } from 'socket.io-client';
 import { boardKeys } from '@/features/boards/hooks';
-import { getApiBaseUrl } from '@/shared/lib/env';
+import { getRealtimeBaseUrl } from '@/shared/lib/env';
 
 type RealtimePayload = {
   workspaceId?: string;
@@ -19,7 +19,7 @@ export function useWorkspaceRealtime(workspaceId: string | null) {
   useEffect(() => {
     if (!workspaceId) return;
 
-    const baseUrl = getApiBaseUrl().replace(/\/$/, '');
+    const baseUrl = getRealtimeBaseUrl();
     const socket = io(baseUrl, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
