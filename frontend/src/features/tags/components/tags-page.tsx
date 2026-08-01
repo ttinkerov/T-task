@@ -1,18 +1,45 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import TagList from '@/vue/tags/TagList.vue';
-import { useCreateTagMutation, useTagsQuery } from '../hooks';
+import {
+  useCreateTagMutation,
+  useTagsQuery,
+  useDeleteTagMutation,
+  useUpdateTagMutation,
+} from '../hooks';
 import { TAG_COLOR_OPTIONS } from '../types';
 
 export function TagsPage({ workspaceId }: { workspaceId: string }) {
   const { data: tags = [], isLoading } = useTagsQuery(workspaceId);
   const createMutation = useCreateTagMutation(workspaceId);
+  const updateMutation = useUpdateTagMutation(workspaceId);
+  const deleteMutation = useDeleteTagMutation(workspaceId);
   const [name, setName] = useState('');
   const [color, setColor] = useState<string>(TAG_COLOR_OPTIONS[4]);
 
-  const listProps = useMemo(() => ({ tags, isLoading }), [tags, isLoading]);
+  const onRename = useCallback(
+    (payload: { tagId: string; name: string }) => {
+      updateMutation.mutate({
+        tagId: payload.tagId,
+        data: { name: payload.name },
+      });
+    },
+    [updateMutation],
+  );
+
+  const onDelete = useCallback(
+    (tagId: string) => {
+      deleteMutation.mutate(tagId);
+    },
+    [deleteMutation],
+  );
+
+  const listProps = useMemo(
+    () => ({ tags, isLoading, onRename, onDelete }),
+    [tags, isLoading, onRename, onDelete],
+  );
 
   return (
     <section className="tags-page" aria-labelledby="tags-title">

@@ -10,6 +10,15 @@
                 >
                 {{ tag.name }}
                 </span>
+
+                <div class="tags-page__actions">
+                    <button type="button" @click="onRenameClick(tag)">
+                        Переименовать
+                    </button>
+                    <button type="button" @click="onDeleteClick(tag)">
+                        Удалить
+                    </button>
+                </div>
             </li>
         </ul>
 
@@ -21,9 +30,24 @@
 
 <script setup>
 
-defineProps({
+const props = defineProps({
     tags: { type: Array, required: true },
-    isLoading: { type: Boolean, default: false}
+    isLoading: { type: Boolean, default: false },
 })
+
+const emit = defineEmits(['rename', 'delete'])
+
+function onRenameClick(tag) {
+    const next = window.prompt('Новое название', tag.name)
+    if (next && next.trim() && next.trim() !== tag.name) {
+        emit('rename', { tagId: tag.id, name: next.trim() })
+    }
+}
+
+function onDeleteClick(tag) {
+    if (window.confirm('Удалить тег «' + tag.name + '»?')) {
+        emit('delete', tag.id)
+    }
+}
 
 </script>
