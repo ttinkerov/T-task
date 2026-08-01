@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { VueLoaderPlugin } from 'vue-loader';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const apiUrl = (
@@ -69,6 +70,18 @@ const nextConfig: NextConfig = {
   },
 
   transpilePackages: ['tldraw', '@tldraw/assets'],
+  // T-task frontend = Next (Webpack), не Vite. .vue нужен vue-loader.
+  // unshift: VueLoaderPlugin берёт ПЕРВОЕ правило, матчящее .vue —
+  // иначе ловит чужой Next-rule и падает с "No matching use".
+  webpack(config) {
+    config.module.rules.unshift({
+      test: /\.vue$/,
+      use: [{ loader: 'vue-loader' }],
+    });
+    config.plugins.push(new VueLoaderPlugin());
+    config.resolve.extensions = ['.vue', ...(config.resolve.extensions ?? [])];
+    return config;
+  },
   async rewrites() {
     return [
       {

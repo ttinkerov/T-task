@@ -1,21 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import {
-  useCreateTagMutation,
-  useDeleteTagMutation,
-  useTagsQuery,
-  useUpdateTagMutation,
-} from '../hooks';
+import { useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import TagList from '@/vue/tags/TagList.vue';
+import { useCreateTagMutation, useTagsQuery } from '../hooks';
 import { TAG_COLOR_OPTIONS } from '../types';
 
 export function TagsPage({ workspaceId }: { workspaceId: string }) {
   const { data: tags = [], isLoading } = useTagsQuery(workspaceId);
   const createMutation = useCreateTagMutation(workspaceId);
-  const updateMutation = useUpdateTagMutation(workspaceId);
-  const deleteMutation = useDeleteTagMutation(workspaceId);
   const [name, setName] = useState('');
   const [color, setColor] = useState<string>(TAG_COLOR_OPTIONS[4]);
+
+  const listProps = useMemo(() => ({ tags, isLoading }), [tags, isLoading]);
 
   return (
     <section className="tags-page" aria-labelledby="tags-title">
@@ -65,45 +62,7 @@ export function TagsPage({ workspaceId }: { workspaceId: string }) {
         </button>
       </form>
 
-      {isLoading ? <p role="status">Загрузка тегов...</p> : null}
-
-      <ul className="tags-page__list" role="list">
-        {tags.map((tag) => (
-          <li key={tag.id}>
-            <span className="tag-chip" style={{ background: `${tag.color}22`, color: tag.color }}>
-              <i style={{ background: tag.color }} />
-              {tag.name}
-            </span>
-            <div className="tags-page__actions">
-              <button
-                type="button"
-                onClick={() => {
-                  const next = window.prompt('Новое название', tag.name);
-                  if (next && next.trim() && next.trim() !== tag.name) {
-                    updateMutation.mutate({ tagId: tag.id, data: { name: next.trim() } });
-                  }
-                }}
-              >
-                Переименовать
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.confirm(`Удалить тег «${tag.name}»?`)) {
-                    deleteMutation.mutate(tag.id);
-                  }
-                }}
-              >
-                Удалить
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-
-      {!isLoading && tags.length === 0 ? (
-        <p className="tags-page__empty">Пока нет тегов — создайте первый выше.</p>
-      ) : null}
+      <VueIsland component={TagList} componentProps={listProps} />
     </section>
   );
 }
