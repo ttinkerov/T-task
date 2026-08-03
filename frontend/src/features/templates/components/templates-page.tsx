@@ -1,8 +1,11 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { useMeQuery } from '@/features/auth/hooks';
 import { useTagsQuery } from '@/features/tags/hooks';
+import DealTemplateList from '@/vue/templates/DealTemplateList.vue';
+import TaskTemplateList from '@/vue/templates/TaskTemplateList.vue';
 import {
   useCreateDealTemplateMutation,
   useCreateTaskTemplateMutation,
@@ -13,7 +16,7 @@ import {
   useSeedTaskTemplatesMutation,
   useTaskTemplatesQuery,
 } from '../hooks';
-import type { DealTemplate, TaskPriority, TaskTemplate } from '../types';
+import type { TaskPriority } from '../types';
 
 const PRIORITY_OPTIONS: { value: TaskPriority | ''; label: string }[] = [
   { value: '', label: 'Без приоритета' },
@@ -124,16 +127,42 @@ function TaskTemplatesPanel({
     }
   };
 
-  const handleDelete = async (templateId: string) => {
-    setPendingId(templateId);
-    try {
-      await deleteMutation.mutateAsync(templateId);
-    } catch {
-      /* ignore */
-    } finally {
-      setPendingId(null);
-    }
-  };
+  const onDelete = useCallback(
+    async (templateId: string) => {
+      setPendingId(templateId);
+      try {
+        await deleteMutation.mutateAsync(templateId);
+      } catch {
+        /* ignore */
+      } finally {
+        setPendingId(null);
+      }
+    },
+    [deleteMutation],
+  );
+
+  const listProps = useMemo(
+    () => ({
+      templates,
+      tags,
+      isLoading: templatesQuery.isLoading,
+      canManage,
+      pendingId,
+      isDeleting: deleteMutation.isPending,
+      deleteError: deleteMutation.error?.message ?? '',
+      onDelete,
+    }),
+    [
+      templates,
+      tags,
+      templatesQuery.isLoading,
+      canManage,
+      pendingId,
+      deleteMutation.isPending,
+      deleteMutation.error,
+      onDelete,
+    ],
+  );
 
   return (
     <>
@@ -252,71 +281,8 @@ function TaskTemplatesPanel({
         </section>
       ) : null}
 
-      <section className="dod-page__list-block">
-        <h2>Шаблоны задач</h2>
-        {templatesQuery.isLoading ? <p role="status">Загрузка…</p> : null}
-        {templates.length === 0 && !templatesQuery.isLoading ? (
-          <p className="dod-page__empty">Пока нет шаблонов задач.</p>
-        ) : (
-          <ul className="dod-page__list">
-            {templates.map((template) => (
-              <TaskTemplateCard
-                key={template.id}
-                template={template}
-                tagNames={tags
-                  .filter((tag) => template.tagIds.includes(tag.id))
-                  .map((tag) => tag.name)}
-                canManage={canManage}
-                pending={pendingId === template.id || deleteMutation.isPending}
-                onDelete={() => void handleDelete(template.id)}
-              />
-            ))}
-          </ul>
-        )}
-        {deleteMutation.error ? (
-          <p className="dod-page__error" role="alert">
-            {deleteMutation.error.message}
-          </p>
-        ) : null}
-      </section>
+      <VueIsland component={TaskTemplateList} componentProps={listProps} />
     </>
-  );
-}
-
-function TaskTemplateCard({
-  template,
-  tagNames,
-  canManage,
-  pending,
-  onDelete,
-}: {
-  template: TaskTemplate;
-  tagNames: string[];
-  canManage: boolean;
-  pending: boolean;
-  onDelete: () => void;
-}) {
-  return (
-    <li className="dod-page__item">
-      <div>
-        <strong>{template.name}</strong>
-        <p>
-          {[
-            template.priority ? `Приоритет: ${template.priority}` : null,
-            template.subtaskTitles.length ? `${template.subtaskTitles.length} сабтасков` : null,
-            template.checklistItems.length ? `${template.checklistItems.length} пунктов DoD` : null,
-            tagNames.length ? `Теги: ${tagNames.join(', ')}` : null,
-          ]
-            .filter(Boolean)
-            .join(' · ') || 'Только имя'}
-        </p>
-      </div>
-      {canManage ? (
-        <button type="button" className="btn-ghost" disabled={pending} onClick={onDelete}>
-          Удалить
-        </button>
-      ) : null}
-    </li>
   );
 }
 
@@ -369,16 +335,40 @@ function DealTemplatesPanel({
     }
   };
 
-  const handleDelete = async (templateId: string) => {
-    setPendingId(templateId);
-    try {
-      await deleteMutation.mutateAsync(templateId);
-    } catch {
-      /* ignore */
-    } finally {
-      setPendingId(null);
-    }
-  };
+  const onDelete = useCallback(
+    async (templateId: string) => {
+      setPendingId(templateId);
+      try {
+        await deleteMutation.mutateAsync(templateId);
+      } catch {
+        /* ignore */
+      } finally {
+        setPendingId(null);
+      }
+    },
+    [deleteMutation],
+  );
+
+  const listProps = useMemo(
+    () => ({
+      templates,
+      isLoading: templatesQuery.isLoading,
+      canManage,
+      pendingId,
+      isDeleting: deleteMutation.isPending,
+      deleteError: deleteMutation.error?.message ?? '',
+      onDelete,
+    }),
+    [
+      templates,
+      templatesQuery.isLoading,
+      canManage,
+      pendingId,
+      deleteMutation.isPending,
+      deleteMutation.error,
+      onDelete,
+    ],
+  );
 
   return (
     <>
@@ -463,65 +453,8 @@ function DealTemplatesPanel({
         </section>
       ) : null}
 
-      <section className="dod-page__list-block">
-        <h2>Шаблоны сделок</h2>
-        {templatesQuery.isLoading ? <p role="status">Загрузка…</p> : null}
-        {templates.length === 0 && !templatesQuery.isLoading ? (
-          <p className="dod-page__empty">Пока нет шаблонов сделок.</p>
-        ) : (
-          <ul className="dod-page__list">
-            {templates.map((template) => (
-              <DealTemplateCard
-                key={template.id}
-                template={template}
-                canManage={canManage}
-                pending={pendingId === template.id || deleteMutation.isPending}
-                onDelete={() => void handleDelete(template.id)}
-              />
-            ))}
-          </ul>
-        )}
-        {deleteMutation.error ? (
-          <p className="dod-page__error" role="alert">
-            {deleteMutation.error.message}
-          </p>
-        ) : null}
-      </section>
+      <VueIsland component={DealTemplateList} componentProps={listProps} />
     </>
-  );
-}
-
-function DealTemplateCard({
-  template,
-  canManage,
-  pending,
-  onDelete,
-}: {
-  template: DealTemplate;
-  canManage: boolean;
-  pending: boolean;
-  onDelete: () => void;
-}) {
-  return (
-    <li className="dod-page__item">
-      <div>
-        <strong>{template.name}</strong>
-        <p>
-          {[
-            template.title,
-            template.amount != null ? `${template.amount}` : null,
-            template.companyName,
-          ]
-            .filter(Boolean)
-            .join(' · ') || 'Только имя'}
-        </p>
-      </div>
-      {canManage ? (
-        <button type="button" className="btn-ghost" disabled={pending} onClick={onDelete}>
-          Удалить
-        </button>
-      ) : null}
-    </li>
   );
 }
 
