@@ -1,14 +1,15 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { useMeQuery } from '@/features/auth/hooks';
+import DodTemplateList from '@/vue/dod/DodTemplateList.vue';
 import {
   useCreateDodTemplateMutation,
   useDeleteDodTemplateMutation,
   useDodTemplatesQuery,
   useUpdateDodTemplateMutation,
 } from '../hooks';
-import type { DodTemplate } from '../types';
 
 export function DodTemplatesPage({ workspaceId }: { workspaceId: string }) {
   const { data: session } = useMeQuery();
@@ -52,30 +53,59 @@ export function DodTemplatesPage({ workspaceId }: { workspaceId: string }) {
     }
   };
 
-  const handleToggleGate = async (template: DodTemplate, next: boolean) => {
-    setPendingId(template.id);
-    try {
-      await updateMutation.mutateAsync({
-        templateId: template.id,
-        data: { gatesCompletion: next },
-      });
-    } catch {
-      /* ignore */
-    } finally {
-      setPendingId(null);
-    }
-  };
+  const onToggleGate = useCallback(
+    async (payload: { templateId: string; gatesCompletion: boolean }) => {
+      setPendingId(payload.templateId);
+      try {
+        await updateMutation.mutateAsync({
+          templateId: payload.templateId,
+          data: { gatesCompletion: payload.gatesCompletion },
+        });
+      } catch {
+        /* ignore */
+      } finally {
+        setPendingId(null);
+      }
+    },
+    [updateMutation],
+  );
 
-  const handleDelete = async (templateId: string) => {
-    setPendingId(templateId);
-    try {
-      await deleteMutation.mutateAsync(templateId);
-    } catch {
-      /* ignore */
-    } finally {
-      setPendingId(null);
-    }
-  };
+  const onDelete = useCallback(
+    async (templateId: string) => {
+      setPendingId(templateId);
+      try {
+        await deleteMutation.mutateAsync(templateId);
+      } catch {
+        /* ignore */
+      } finally {
+        setPendingId(null);
+      }
+    },
+    [deleteMutation],
+  );
+
+  const listProps = useMemo(
+    () => ({
+      templates,
+      isLoading: templatesQuery.isLoading,
+      canManage,
+      pendingId,
+      deleteError: deleteMutation.isError ? 'Не удалось удалить шаблон.' : '',
+      updateError: updateMutation.isError ? 'Не удалось обновить шаблон.' : '',
+      onToggleGate,
+      onDelete,
+    }),
+    [
+      templates,
+      templatesQuery.isLoading,
+      canManage,
+      pendingId,
+      deleteMutation.isError,
+      updateMutation.isError,
+      onToggleGate,
+      onDelete,
+    ],
+  );
 
   return (
     <div className="dod-page">
@@ -128,60 +158,7 @@ export function DodTemplatesPage({ workspaceId }: { workspaceId: string }) {
         </section>
       ) : null}
 
-      <section className="dod-page__list-block">
-        <h2>Шаблоны</h2>
-        {templatesQuery.isLoading ? <p>Загрузка...</p> : null}
-        {templates.length === 0 && !templatesQuery.isLoading ? (
-          <p className="dod-page__empty">Пока нет шаблонов DoD.</p>
-        ) : null}
-        <ul className="dod-page__list">
-          {templates.map((template) => (
-            <li key={template.id}>
-              <div>
-                <strong>{template.name}</strong>
-                <p>
-                  {template.items.length} пунктов
-                  {template.gatesCompletion ? ' · блокирует Done' : ' · без блокировки'}
-                </p>
-                {template.items.length > 0 ? (
-                  <ol>
-                    {template.items.map((item) => (
-                      <li key={item.id}>{item.text}</li>
-                    ))}
-                  </ol>
-                ) : null}
-              </div>
-              {canManage ? (
-                <div className="dod-page__actions">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={template.gatesCompletion}
-                      disabled={pendingId === template.id}
-                      onChange={(event) => void handleToggleGate(template, event.target.checked)}
-                    />
-                    Gate
-                  </label>
-                  <button
-                    type="button"
-                    className="btn-ghost"
-                    disabled={pendingId === template.id}
-                    onClick={() => void handleDelete(template.id)}
-                  >
-                    Удалить
-                  </button>
-                </div>
-              ) : null}
-            </li>
-          ))}
-          {deleteMutation.isError ? (
-            <p className="dod-page__error">Не удалось удалить шаблон.</p>
-          ) : null}
-          {updateMutation.isError ? (
-            <p className="dod-page__error">Не удалось обновить шаблон.</p>
-          ) : null}
-        </ul>
-      </section>
+      <VueIsland component={DodTemplateList} componentProps={listProps} />
     </div>
   );
 }

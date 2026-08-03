@@ -1,6 +1,6 @@
 'use client';
 
-import { DodTemplatesPage } from '@/features/dod';
+import { DodTemplatesPage } from '@/features/dod/components/dod-templates-page';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 
 export default function DodRoutePage() {
