@@ -1,8 +1,9 @@
 'use client';
 
-import { FormEvent, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import { useMeQuery } from '@/features/auth/hooks';
+import CustomFieldCreateForm from '@/vue/custom-fields/CustomFieldCreateForm.vue';
 import CustomFieldList from '@/vue/custom-fields/CustomFieldList.vue';
 import {
   useCreateCustomFieldMutation,
@@ -28,46 +29,24 @@ export function CustomFieldsPage({ workspaceId }: CustomFieldsPageProps) {
   const updateMutation = useUpdateCustomFieldMutation(workspaceId);
   const deleteMutation = useDeleteCustomFieldMutation(workspaceId);
 
-  const [name, setName] = useState('');
-  const [type, setType] = useState<CustomFieldType>('TEXT');
-  const [optionsText, setOptionsText] = useState('');
-  const [showOnCard, setShowOnCard] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   const role = session?.workspaces.find((workspace) => workspace.id === workspaceId)?.role;
   const canManage = role === 'OWNER' || role === 'ADMIN' || role === 'MEMBER';
 
   const fields = fieldsQuery.data ?? [];
-  const needsOptions = CHOICE_FIELD_TYPES.includes(type);
 
-  const parsedOptions = useMemo(
-    () =>
-      optionsText
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean),
-    [optionsText],
+  const onCreate = useCallback(
+    async (payload: {
+      name: string;
+      type: CustomFieldType;
+      options?: string[];
+      showOnCard?: boolean;
+    }) => {
+      await createMutation.mutateAsync(payload);
+    },
+    [createMutation],
   );
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!name.trim()) return;
-
-    try {
-      await createMutation.mutateAsync({
-        name: name.trim(),
-        type,
-        options: needsOptions ? parsedOptions : undefined,
-        showOnCard,
-      });
-      setName('');
-      setOptionsText('');
-      setShowOnCard(false);
-      setType('TEXT');
-    } catch {
-      /* ignore */
-    }
-  };
 
   const onToggleCard = useCallback(
     async (payload: { fieldId: string; showOnCard: boolean }) => {
@@ -122,6 +101,17 @@ export function CustomFieldsPage({ workspaceId }: CustomFieldsPageProps) {
     ],
   );
 
+  const formProps = useMemo(
+    () => ({
+      typeOptions: CUSTOM_FIELD_TYPE_OPTIONS,
+      choiceTypes: CHOICE_FIELD_TYPES,
+      isCreating: createMutation.isPending,
+      errorMessage: createMutation.error?.message ?? '',
+      onCreate,
+    }),
+    [createMutation.isPending, createMutation.error, onCreate],
+  );
+
   return (
     <div className="custom-fields-page">
       <header className="custom-fields-page__header">
@@ -135,85 +125,7 @@ export function CustomFieldsPage({ workspaceId }: CustomFieldsPageProps) {
       <VueIsland component={CustomFieldList} componentProps={listProps} />
 
       {canManage ? (
-        <section
-          className="custom-fields-page__form-block"
-          aria-labelledby="custom-fields-form-title"
-        >
-          <h2 id="custom-fields-form-title">Новое поле</h2>
-          <form className="custom-fields-page__form" onSubmit={handleSubmit}>
-            <label className="custom-fields-page__field">
-              <span>Название</span>
-              <input
-                className="glass-input"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                maxLength={80}
-                placeholder="Например, Бюджет"
-                required
-              />
-            </label>
-
-            <label className="custom-fields-page__field">
-              <span>Тип</span>
-              <select
-                className="glass-input"
-                value={type}
-                onChange={(event) => setType(event.target.value as CustomFieldType)}
-              >
-                {CUSTOM_FIELD_TYPE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {needsOptions ? (
-              <label className="custom-fields-page__field">
-                <span>Варианты (по одному на строку)</span>
-                <textarea
-                  className="glass-input custom-fields-page__textarea"
-                  value={optionsText}
-                  onChange={(event) => setOptionsText(event.target.value)}
-                  rows={4}
-                  placeholder={'Низкий\nСредний\nВысокий'}
-                />
-              </label>
-            ) : null}
-
-            <label className="custom-fields-page__checkbox">
-              <input
-                type="checkbox"
-                checked={showOnCard}
-                onChange={(event) => setShowOnCard(event.target.checked)}
-              />
-              <span>Показывать значение на карточке задачи</span>
-            </label>
-
-            {createMutation.error ? (
-              <p className="custom-fields-page__error" role="alert">
-                {createMutation.error.message}
-              </p>
-            ) : null}
-
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={
-                createMutation.isPending ||
-                !name.trim() ||
-                (needsOptions && parsedOptions.length < 2)
-              }
-            >
-              {createMutation.isPending ? 'Создание…' : 'Создать поле'}
-            </button>
-            {needsOptions && parsedOptions.length < 2 ? (
-              <p className="text-sm text-muted-foreground">
-                Для поля выбора нужно минимум 2 варианта.
-              </p>
-            ) : null}
-          </form>
-        </section>
+        <VueIsland component={CustomFieldCreateForm} componentProps={formProps} />
       ) : null}
     </div>
   );
