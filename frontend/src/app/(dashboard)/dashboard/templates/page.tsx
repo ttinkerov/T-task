@@ -1,6 +1,6 @@
 'use client';
 
-import { TemplatesPage } from '@/features/templates';
+import { TemplatesPage } from '@/features/templates/components/templates-page';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 
 export default function TemplatesRoutePage() {
