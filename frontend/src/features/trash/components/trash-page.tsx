@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import TrashList from '@/vue/trash/TrashList.vue';
 import {
   useCanManageTrash,
   usePurgeTrashItemMutation,
@@ -17,16 +19,8 @@ const TYPE_LABELS: Record<TrashEntityType, string> = {
   APP: 'Приложение',
 };
 
-function formatDeletedAt(value: string) {
-  return new Intl.DateTimeFormat('ru-RU', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value));
-}
-
 export function TrashPage({ workspaceId }: { workspaceId: string }) {
   const [page, setPage] = useState(1);
-  const listRef = useRef<HTMLUListElement>(null);
   const { canPurge } = useCanManageTrash();
   const query = useWorkspaceTrashQuery(workspaceId, page, PAGE_SIZE);
   const restoreMutation = useRestoreTrashItemMutation(workspaceId);
@@ -38,26 +32,54 @@ export function TrashPage({ workspaceId }: { workspaceId: string }) {
       ? `${restoreMutation.variables?.entityType ?? purgeMutation.variables?.entityType}:${restoreMutation.variables?.entityId ?? purgeMutation.variables?.entityId}`
       : null;
 
-  useEffect(() => {
-    if (!query.isFetching && result?.items.length) {
-      listRef.current?.focus();
-    }
-  }, [page, query.isFetching, result?.items.length]);
+  const onRestore = useCallback(
+    (payload: { entityType: TrashItem['entityType']; entityId: string }) => {
+      restoreMutation.mutate(payload);
+    },
+    [restoreMutation],
+  );
 
-  const handleRestore = (item: TrashItem) => {
-    restoreMutation.mutate({ entityType: item.entityType, entityId: item.entityId });
-  };
+  const onPurge = useCallback(
+    (payload: { entityType: TrashItem['entityType']; entityId: string }) => {
+      purgeMutation.mutate(payload);
+    },
+    [purgeMutation],
+  );
 
-  const handlePurge = (item: TrashItem) => {
-    const confirmed = window.confirm(
-      `Удалить «${item.entityName}» навсегда? Это действие нельзя отменить.`,
-    );
-    if (!confirmed) {
-      return;
-    }
+  const onPageChange = useCallback((nextPage: number) => {
+    setPage(Math.max(1, nextPage));
+  }, []);
 
-    purgeMutation.mutate({ entityType: item.entityType, entityId: item.entityId });
-  };
+  const listProps = useMemo(
+    () => ({
+      items: result?.items ?? [],
+      page,
+      totalPages,
+      isLoading: query.isLoading,
+      isFetching: query.isFetching,
+      isError: Boolean(query.error),
+      canPurge,
+      busyKey,
+      typeLabels: TYPE_LABELS,
+      statusText: result ? `Страница ${page} из ${totalPages}` : '',
+      onRestore,
+      onPurge,
+      onPageChange,
+    }),
+    [
+      result,
+      page,
+      totalPages,
+      query.isLoading,
+      query.isFetching,
+      query.error,
+      canPurge,
+      busyKey,
+      onRestore,
+      onPurge,
+      onPageChange,
+    ],
+  );
 
   return (
     <section className="trash-page" aria-labelledby="trash-page-title">
@@ -70,86 +92,7 @@ export function TrashPage({ workspaceId }: { workspaceId: string }) {
         </p>
       </header>
 
-      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-        {query.isLoading ? 'Загрузка корзины…' : result ? `Страница ${page} из ${totalPages}` : ''}
-      </p>
-
-      {query.isLoading ? (
-        <p className="trash-page__state" role="status">
-          Загрузка корзины…
-        </p>
-      ) : query.error ? (
-        <p className="trash-page__error" role="alert">
-          Не удалось загрузить корзину. Попробуйте обновить страницу.
-        </p>
-      ) : result?.items.length ? (
-        <>
-          <ul ref={listRef} className="trash-list" tabIndex={-1} aria-label="Элементы в корзине">
-            {result.items.map((item) => {
-              const itemKey = `${item.entityType}:${item.entityId}`;
-              const isBusy = busyKey === itemKey;
-
-              return (
-                <li key={itemKey} className="trash-list__item">
-                  <div className="trash-list__content">
-                    <span className="trash-list__type">{TYPE_LABELS[item.entityType]}</span>
-                    <p className="trash-list__name">{item.entityName}</p>
-                    <time dateTime={item.deletedAt}>Удалено {formatDeletedAt(item.deletedAt)}</time>
-                  </div>
-                  <div className="trash-list__actions">
-                    <button
-                      type="button"
-                      className="trash-list__restore"
-                      disabled={isBusy}
-                      onClick={() => handleRestore(item)}
-                    >
-                      Восстановить
-                    </button>
-                    {canPurge ? (
-                      <button
-                        type="button"
-                        className="trash-list__purge"
-                        disabled={isBusy}
-                        onClick={() => handlePurge(item)}
-                      >
-                        Удалить навсегда
-                      </button>
-                    ) : null}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-
-          {totalPages > 1 ? (
-            <nav className="trash-page__pagination" aria-label="Страницы корзины">
-              <button
-                type="button"
-                disabled={page <= 1 || query.isFetching}
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-              >
-                Назад
-              </button>
-              <span>
-                {page} / {totalPages}
-              </span>
-              <button
-                type="button"
-                disabled={page >= totalPages || query.isFetching}
-                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-              >
-                Вперёд
-              </button>
-            </nav>
-          ) : null}
-        </>
-      ) : (
-        <div className="trash-page__empty">
-          <span aria-hidden="true">🗑</span>
-          <h2>Корзина пуста</h2>
-          <p>Удалённые задачи, сделки и приложения появятся здесь.</p>
-        </div>
-      )}
+      <VueIsland component={TrashList} componentProps={listProps} />
     </section>
   );
 }

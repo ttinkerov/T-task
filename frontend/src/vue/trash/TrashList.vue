@@ -1,0 +1,104 @@
+<template>
+  <div>
+    <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">
+      {{ isLoading ? 'Загрузка корзины…' : statusText }}
+    </p>
+
+    <p v-if="isLoading" class="trash-page__state" role="status">Загрузка корзины…</p>
+
+    <p v-else-if="isError" class="trash-page__error" role="alert">
+      Не удалось загрузить корзину. Попробуйте обновить страницу.
+    </p>
+
+    <template v-else-if="items.length > 0">
+      <ul class="trash-list" tabindex="-1" aria-label="Элементы в корзине">
+        <li v-for="item in items" :key="itemKey(item)" class="trash-list__item">
+          <div class="trash-list__content">
+            <span class="trash-list__type">{{ typeLabels[item.entityType] || item.entityType }}</span>
+            <p class="trash-list__name">{{ item.entityName }}</p>
+            <time :datetime="item.deletedAt">Удалено {{ formatDeletedAt(item.deletedAt) }}</time>
+          </div>
+          <div class="trash-list__actions">
+            <button
+              type="button"
+              class="trash-list__restore"
+              :disabled="busyKey === itemKey(item)"
+              @click="emit('restore', { entityType: item.entityType, entityId: item.entityId })"
+            >
+              Восстановить
+            </button>
+            <button
+              v-if="canPurge"
+              type="button"
+              class="trash-list__purge"
+              :disabled="busyKey === itemKey(item)"
+              @click="onPurge(item)"
+            >
+              Удалить навсегда
+            </button>
+          </div>
+        </li>
+      </ul>
+
+      <nav v-if="totalPages > 1" class="trash-page__pagination" aria-label="Страницы корзины">
+        <button
+          type="button"
+          :disabled="page <= 1 || isFetching"
+          @click="emit('page-change', page - 1)"
+        >
+          Назад
+        </button>
+        <span>{{ page }} / {{ totalPages }}</span>
+        <button
+          type="button"
+          :disabled="page >= totalPages || isFetching"
+          @click="emit('page-change', page + 1)"
+        >
+          Вперёд
+        </button>
+      </nav>
+    </template>
+
+    <div v-else class="trash-page__empty">
+      <span aria-hidden="true">🗑</span>
+      <h2>Корзина пуста</h2>
+      <p>Удалённые задачи, сделки и приложения появятся здесь.</p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+defineProps({
+  items: { type: Array, required: true },
+  page: { type: Number, required: true },
+  totalPages: { type: Number, required: true },
+  isLoading: { type: Boolean, default: false },
+  isFetching: { type: Boolean, default: false },
+  isError: { type: Boolean, default: false },
+  canPurge: { type: Boolean, default: false },
+  busyKey: { type: String, default: null },
+  typeLabels: { type: Object, required: true },
+  statusText: { type: String, default: '' },
+})
+
+const emit = defineEmits(['restore', 'purge', 'page-change'])
+
+function itemKey(item) {
+  return item.entityType + ':' + item.entityId
+}
+
+function formatDeletedAt(value) {
+  return new Intl.DateTimeFormat('ru-RU', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
+}
+
+function onPurge(item) {
+  const confirmed = window.confirm(
+    'Удалить «' + item.entityName + '» навсегда? Это действие нельзя отменить.',
+  )
+  if (!confirmed) return
+  emit('purge', { entityType: item.entityType, entityId: item.entityId })
+}
+</script>

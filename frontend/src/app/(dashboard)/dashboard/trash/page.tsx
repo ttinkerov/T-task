@@ -1,6 +1,7 @@
 'use client';
 
-import { TrashPage, useCanManageTrash } from '@/features/trash';
+import { TrashPage } from '@/features/trash/components/trash-page';
+import { useCanManageTrash } from '@/features/trash';
 
 export default function WorkspaceTrashRoutePage() {
   const { canManage, isLoading, workspaceId } = useCanManageTrash();
