@@ -1,8 +1,9 @@
 'use client';
 
-import { FormEvent, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import { useMeQuery } from '@/features/auth/hooks';
+import DodTemplateCreateForm from '@/vue/dod/DodTemplateCreateForm.vue';
 import DodTemplateList from '@/vue/dod/DodTemplateList.vue';
 import {
   useCreateDodTemplateMutation,
@@ -10,6 +11,7 @@ import {
   useDodTemplatesQuery,
   useUpdateDodTemplateMutation,
 } from '../hooks';
+import type { CreateDodTemplatePayload } from '../types';
 
 export function DodTemplatesPage({ workspaceId }: { workspaceId: string }) {
   const { data: session } = useMeQuery();
@@ -18,40 +20,18 @@ export function DodTemplatesPage({ workspaceId }: { workspaceId: string }) {
   const updateMutation = useUpdateDodTemplateMutation(workspaceId);
   const deleteMutation = useDeleteDodTemplateMutation(workspaceId);
 
-  const [name, setName] = useState('');
-  const [itemsText, setItemsText] = useState('');
-  const [gatesCompletion, setGatesCompletion] = useState(true);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   const role = session?.workspaces.find((workspace) => workspace.id === workspaceId)?.role;
   const canManage = role === 'OWNER' || role === 'ADMIN' || role === 'MEMBER';
   const templates = templatesQuery.data ?? [];
 
-  const parsedItems = useMemo(
-    () =>
-      itemsText
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean),
-    [itemsText],
+  const onCreate = useCallback(
+    async (payload: CreateDodTemplatePayload) => {
+      await createMutation.mutateAsync(payload);
+    },
+    [createMutation],
   );
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!name.trim()) return;
-    try {
-      await createMutation.mutateAsync({
-        name: name.trim(),
-        gatesCompletion,
-        items: parsedItems,
-      });
-      setName('');
-      setItemsText('');
-      setGatesCompletion(true);
-    } catch {
-      /* ignore */
-    }
-  };
 
   const onToggleGate = useCallback(
     async (payload: { templateId: string; gatesCompletion: boolean }) => {
@@ -107,6 +87,15 @@ export function DodTemplatesPage({ workspaceId }: { workspaceId: string }) {
     ],
   );
 
+  const formProps = useMemo(
+    () => ({
+      isCreating: createMutation.isPending,
+      errorMessage: createMutation.isError ? 'Не удалось создать шаблон.' : '',
+      onCreate,
+    }),
+    [createMutation.isPending, createMutation.isError, onCreate],
+  );
+
   return (
     <div className="dod-page">
       <header className="dod-page__header">
@@ -118,44 +107,7 @@ export function DodTemplatesPage({ workspaceId }: { workspaceId: string }) {
       </header>
 
       {canManage ? (
-        <section className="dod-page__form-block">
-          <h2>Новый шаблон</h2>
-          <form className="dod-page__form" onSubmit={(event) => void handleSubmit(event)}>
-            <input
-              className="glass-input"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Название шаблона"
-              maxLength={120}
-              required
-            />
-            <textarea
-              className="glass-input"
-              value={itemsText}
-              onChange={(event) => setItemsText(event.target.value)}
-              placeholder={'Пункты — по одному в строке\nТесты\nCode review\nДокументация'}
-              rows={5}
-            />
-            <label className="dod-page__toggle">
-              <input
-                type="checkbox"
-                checked={gatesCompletion}
-                onChange={(event) => setGatesCompletion(event.target.checked)}
-              />
-              Блокировать завершение, пока пункты не отмечены
-            </label>
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={createMutation.isPending || !name.trim()}
-            >
-              Создать
-            </button>
-          </form>
-          {createMutation.isError ? (
-            <p className="dod-page__error">Не удалось создать шаблон.</p>
-          ) : null}
-        </section>
+        <VueIsland component={DodTemplateCreateForm} componentProps={formProps} />
       ) : null}
 
       <VueIsland component={DodTemplateList} componentProps={listProps} />
