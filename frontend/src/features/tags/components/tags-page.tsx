@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import TagList from '@/vue/tags/TagList.vue';
 import {
@@ -16,8 +16,13 @@ export function TagsPage({ workspaceId }: { workspaceId: string }) {
   const createMutation = useCreateTagMutation(workspaceId);
   const updateMutation = useUpdateTagMutation(workspaceId);
   const deleteMutation = useDeleteTagMutation(workspaceId);
-  const [name, setName] = useState('');
-  const [color, setColor] = useState<string>(TAG_COLOR_OPTIONS[4]);
+
+  const onCreate = useCallback(
+    (payload: { name: string; color: string }) => {
+      createMutation.mutate(payload);
+    },
+    [createMutation],
+  );
 
   const onRename = useCallback(
     (payload: { tagId: string; name: string }) => {
@@ -37,8 +42,16 @@ export function TagsPage({ workspaceId }: { workspaceId: string }) {
   );
 
   const listProps = useMemo(
-    () => ({ tags, isLoading, onRename, onDelete }),
-    [tags, isLoading, onRename, onDelete],
+    () => ({
+      tags,
+      isLoading,
+      isCreating: createMutation.isPending,
+      colorOptions: [...TAG_COLOR_OPTIONS],
+      onRename,
+      onDelete,
+      onCreate,
+    }),
+    [tags, isLoading, createMutation.isPending, onRename, onDelete, onCreate],
   );
 
   return (
@@ -50,44 +63,6 @@ export function TagsPage({ workspaceId }: { workspaceId: string }) {
           <p>Цветные метки для фильтрации задач на доске и в списках.</p>
         </div>
       </header>
-
-      <form
-        className="tags-page__create"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!name.trim()) return;
-          createMutation.mutate(
-            { name: name.trim(), color },
-            {
-              onSuccess: () => setName(''),
-            },
-          );
-        }}
-      >
-        <input
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="Название тега"
-          maxLength={40}
-          aria-label="Название тега"
-        />
-        <div className="tags-page__colors" role="group" aria-label="Цвет тега">
-          {TAG_COLOR_OPTIONS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={color === option ? 'is-active' : undefined}
-              style={{ background: option }}
-              aria-label={`Цвет ${option}`}
-              aria-pressed={color === option}
-              onClick={() => setColor(option)}
-            />
-          ))}
-        </div>
-        <button type="submit" disabled={createMutation.isPending || !name.trim()}>
-          Добавить
-        </button>
-      </form>
 
       <VueIsland component={TagList} componentProps={listProps} />
     </section>

@@ -1,10 +1,36 @@
-import { createApp, type Component } from 'vue';
+import { createApp, h, shallowRef, type Component } from 'vue';
 
-export function mountVueApp(host: HTMLElement, root: Component, props?: Record<string, unknown>) {
-  const app = createApp(root, props);
+export type MountedVueApp = {
+  update: (next?: Record<string, unknown>) => void;
+  unmount: () => void;
+};
+
+/**
+ * Монтирует Vue-корень один раз.
+ * update() подменяет props без unmount (нужно для React→Vue island).
+ */
+export function mountVueApp(
+  host: HTMLElement,
+  root: Component,
+  initialProps: Record<string, unknown> = {},
+): MountedVueApp {
+  const propsRef = shallowRef({ ...initialProps });
+
+  const app = createApp({
+    name: 'VueIslandRoot',
+    setup() {
+      return () => h(root, propsRef.value);
+    },
+  });
+
   app.mount(host);
 
-  return () => {
-    app.unmount();
+  return {
+    update(next = {}) {
+      propsRef.value = { ...next };
+    },
+    unmount() {
+      app.unmount();
+    },
   };
 }
