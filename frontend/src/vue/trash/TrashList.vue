@@ -18,25 +18,13 @@
             <p class="trash-list__name">{{ item.entityName }}</p>
             <time :datetime="item.deletedAt">Удалено {{ formatDeletedAt(item.deletedAt) }}</time>
           </div>
-          <div class="trash-list__actions">
-            <button
-              type="button"
-              class="trash-list__restore"
-              :disabled="busyKey === itemKey(item)"
-              @click="emit('restore', { entityType: item.entityType, entityId: item.entityId })"
-            >
-              Восстановить
-            </button>
-            <button
-              v-if="canPurge"
-              type="button"
-              class="trash-list__purge"
-              :disabled="busyKey === itemKey(item)"
-              @click="onPurge(item)"
-            >
-              Удалить навсегда
-            </button>
-          </div>
+          <TrashItemActions
+            :can-purge="canPurge"
+            :busy="busyKey === itemKey(item)"
+            :entity-name="item.entityName"
+            @restore="emit('restore', { entityType: item.entityType, entityId: item.entityId })"
+            @purge="emit('purge', { entityType: item.entityType, entityId: item.entityId })"
+          />
         </li>
       </ul>
 
@@ -68,6 +56,8 @@
 </template>
 
 <script setup>
+import TrashItemActions from './TrashItemActions.vue'
+
 defineProps({
   items: { type: Array, required: true },
   page: { type: Number, required: true },
@@ -92,13 +82,5 @@ function formatDeletedAt(value) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value))
-}
-
-function onPurge(item) {
-  const confirmed = window.confirm(
-    'Удалить «' + item.entityName + '» навсегда? Это действие нельзя отменить.',
-  )
-  if (!confirmed) return
-  emit('purge', { entityType: item.entityType, entityId: item.entityId })
 }
 </script>
