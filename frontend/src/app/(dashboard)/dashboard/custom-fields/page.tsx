@@ -1,6 +1,6 @@
 'use client';
 
-import { CustomFieldsPage } from '@/features/custom-fields';
+import { CustomFieldsPage } from '@/features/custom-fields/components/custom-fields-page';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 
 export default function CustomFieldsRoutePage() {

@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import ActivityFeed from '@/vue/activity/ActivityFeed.vue';
 import { useWorkspaceActivityQuery } from '../hooks';
 
 const PAGE_SIZE = 25;
@@ -51,7 +53,6 @@ export function ActivityPage({ workspaceId }: { workspaceId: string }) {
   const [action, setAction] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
-  const listRef = useRef<HTMLOListElement>(null);
   const filters = useMemo(
     () => ({
       ...(action ? { action } : {}),
@@ -75,11 +76,33 @@ export function ActivityPage({ workspaceId }: { workspaceId: string }) {
     setPage(1);
   }, [action, from, to]);
 
-  useEffect(() => {
-    if (!query.isFetching && result?.items.length) {
-      listRef.current?.focus();
-    }
-  }, [page, query.isFetching, result?.items.length]);
+  const onPageChange = useCallback((nextPage: number) => {
+    setPage(Math.max(1, nextPage));
+  }, []);
+
+  const feedProps = useMemo(
+    () => ({
+      items: result?.items ?? [],
+      page,
+      totalPages,
+      isLoading: query.isLoading,
+      isFetching: query.isFetching,
+      isError: Boolean(query.error),
+      statusMessage,
+      actionLabels: ACTION_LABELS,
+      onPageChange,
+    }),
+    [
+      result?.items,
+      page,
+      totalPages,
+      query.isLoading,
+      query.isFetching,
+      query.error,
+      statusMessage,
+      onPageChange,
+    ],
+  );
 
   return (
     <section className="activity-page" aria-labelledby="activity-page-title">
@@ -125,89 +148,7 @@ export function ActivityPage({ workspaceId }: { workspaceId: string }) {
         </label>
       </div>
 
-      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-        {statusMessage}
-      </p>
-
-      {query.isLoading ? (
-        <p className="activity-page__state" role="status" aria-live="polite" aria-atomic="true">
-          Загрузка журнала…
-        </p>
-      ) : query.error ? (
-        <p className="activity-page__error" role="alert">
-          Не удалось загрузить журнал. Попробуйте обновить страницу.
-        </p>
-      ) : result?.items.length ? (
-        <>
-          <ol
-            ref={listRef}
-            className="activity-list"
-            tabIndex={-1}
-            aria-label="Записи журнала действий"
-          >
-            {result.items.map((entry) => {
-              const actorName = entry.actorName.trim() || 'Удалённый пользователь';
-
-              return (
-                <li key={entry.id} className="activity-list__item">
-                  <span className="activity-list__avatar" aria-hidden="true">
-                    {actorName.slice(0, 1).toUpperCase()}
-                  </span>
-                  <div className="activity-list__content">
-                    <p>
-                      <strong>{actorName}</strong>{' '}
-                      {ACTION_LABELS[entry.action] ?? 'выполнил(а) действие'}
-                      {entry.entityName ? (
-                        <span className="activity-list__entity"> «{entry.entityName}»</span>
-                      ) : null}
-                    </p>
-                    <time dateTime={new Date(entry.createdAt).toISOString()}>
-                      {new Intl.DateTimeFormat('ru-RU', {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      }).format(new Date(entry.createdAt))}
-                    </time>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-
-          <nav
-            className="activity-pagination"
-            aria-label="Страницы журнала действий"
-            aria-busy={query.isFetching}
-          >
-            <button
-              type="button"
-              className="btn-ghost"
-              disabled={page <= 1 || query.isFetching}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-            >
-              ← Назад
-            </button>
-            <span aria-hidden="true">
-              Страница {page} из {totalPages}
-            </span>
-            <button
-              type="button"
-              className="btn-ghost"
-              disabled={page >= totalPages || query.isFetching}
-              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-            >
-              Далее →
-            </button>
-          </nav>
-        </>
-      ) : (
-        <div className="activity-page__empty">
-          <span aria-hidden="true" role="presentation">
-            ↻
-          </span>
-          <h2>Событий пока нет</h2>
-          <p>Новые административные действия появятся здесь автоматически.</p>
-        </div>
-      )}
+      <VueIsland component={ActivityFeed} componentProps={feedProps} />
     </section>
   );
 }

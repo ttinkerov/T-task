@@ -1,6 +1,6 @@
 'use client';
 
-import { ActivityPage } from '@/features/activity';
+import { ActivityPage } from '@/features/activity/components/activity-page';
 import { useCanViewActivity } from '@/features/activity/hooks';
 
 export default function WorkspaceActivityRoutePage() {

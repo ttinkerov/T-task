@@ -1,1 +1,1 @@
-export { ActivityPage } from './components/activity-page';
+export { useCanViewActivity } from './hooks';
