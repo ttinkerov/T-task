@@ -1,7 +1,9 @@
 'use client';
 
-import { ChangeEvent, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { useBoardQuery } from '@/features/boards/hooks';
+import ImportPageView from '@/vue/import/ImportPageView.vue';
 import { useImportTasksMutation } from '../hooks';
 import { mapDueDate } from '../lib/map-due-date';
 import { mapPriority } from '../lib/map-priority';
@@ -34,7 +36,17 @@ export function ImportPage({ workspaceId }: { workspaceId: string }) {
     });
   }, [columns, parsed]);
 
-  const previewRows = useMemo(() => parsed?.rows.slice(0, 8) ?? [], [parsed]);
+  const previewRows = useMemo(
+    () =>
+      (parsed?.rows.slice(0, 8) ?? []).map((row) => ({
+        title: row.title,
+        status: row.status,
+        priority: mapPriority(row.priorityRaw) ?? '—',
+        assignee: row.assignee || '—',
+        labels: row.labels.join(', ') || '—',
+      })),
+    [parsed],
+  );
 
   const allMapped =
     mappings.length > 0 &&
@@ -43,47 +55,55 @@ export function ImportPage({ workspaceId }: { workspaceId: string }) {
       return Boolean(mapping.newColumnName?.trim());
     });
 
-  const handleFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    setResult(null);
-    setParseError(null);
+  const resultIssues = useMemo(() => {
+    if (!result) return [];
+    return result.results
+      .filter((item) => item.status === 'skipped' || item.warnings.length > 0)
+      .slice(0, 30);
+  }, [result]);
 
-    if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      setParseError('Нужен файл .csv (экспорт из Jira → Export → CSV)');
-      return;
-    }
+  const onFileSelect = useCallback(
+    async (file: File | null) => {
+      setResult(null);
+      setParseError(null);
 
-    try {
-      const text = await file.text();
-      const next = parseJiraCsv(text);
-      setParsed(next);
-      setFileName(file.name);
-      setMappings(suggestColumnMappings(next.statuses, columns));
-      if (next.rows.length === 0) {
-        setParseError(next.warnings[0] ?? 'Не удалось разобрать файл');
+      if (!file) return;
+      if (!file.name.toLowerCase().endsWith('.csv')) {
+        setParseError('Нужен файл .csv (экспорт из Jira → Export → CSV)');
+        return;
       }
-    } catch {
-      setParseError('Не удалось прочитать файл');
-      setParsed(null);
-      setMappings([]);
-    }
-  };
 
-  const updateMapping = (status: string, columnValue: string) => {
+      try {
+        const text = await file.text();
+        const next = parseJiraCsv(text);
+        setParsed(next);
+        setFileName(file.name);
+        setMappings(suggestColumnMappings(next.statuses, columns));
+        if (next.rows.length === 0) {
+          setParseError(next.warnings[0] ?? 'Не удалось разобрать файл');
+        }
+      } catch {
+        setParseError('Не удалось прочитать файл');
+        setParsed(null);
+        setMappings([]);
+      }
+    },
+    [columns],
+  );
+
+  const onUpdateMapping = useCallback((payload: { status: string; columnValue: string }) => {
     setMappings((current) =>
       current.map((mapping) => {
-        if (mapping.status !== status) return mapping;
-        if (columnValue === CREATE_NEW) {
-          return { status, newColumnName: status };
+        if (mapping.status !== payload.status) return mapping;
+        if (payload.columnValue === CREATE_NEW) {
+          return { status: payload.status, newColumnName: payload.status };
         }
-        return { status, columnId: columnValue };
+        return { status: payload.status, columnId: payload.columnValue };
       }),
     );
-  };
+  }, []);
 
-  const handleImport = async () => {
+  const onImport = useCallback(async () => {
     if (!parsed || !allMapped || !boardQuery.data) return;
     setResult(null);
 
@@ -111,146 +131,51 @@ export function ImportPage({ workspaceId }: { workspaceId: string }) {
     } catch {
       /* ignore */
     }
-  };
+  }, [allMapped, boardQuery.data, importMutation, mappings, parsed]);
 
-  return (
-    <div className="import-page">
-      <header className="import-page__header">
-        <h1>Импорт из Jira / CSV</h1>
-        <p>
-          Экспортируйте задачи в CSV из Jira и загрузите сюда — сопоставим статусы с колонками доски
-          и создадим карточки за один проход.
-        </p>
-      </header>
-
-      <section className="import-page__block">
-        <h2>1. Файл</h2>
-        <label className="import-page__file">
-          <input type="file" accept=".csv,text/csv" onChange={(event) => void handleFile(event)} />
-          <span>{fileName || 'Выбрать CSV'}</span>
-        </label>
-        {parseError ? <p className="import-page__error">{parseError}</p> : null}
-        {parsed?.warnings.map((warning) => (
-          <p key={warning} className="import-page__hint">
-            {warning}
-          </p>
-        ))}
-        {parsed && parsed.rows.length > 0 ? (
-          <p className="import-page__meta">
-            Строк: {parsed.rows.length} · Статусов: {parsed.statuses.length}
-          </p>
-        ) : null}
-      </section>
-
-      {parsed && parsed.rows.length > 0 ? (
-        <>
-          <section className="import-page__block">
-            <h2>2. Статусы → колонки</h2>
-            {boardQuery.isLoading ? (
-              <p className="import-page__hint">Загружаем доску…</p>
-            ) : (
-              <ul className="import-page__mappings">
-                {mappings.map((mapping) => {
-                  const value = mapping.columnId ?? CREATE_NEW;
-                  return (
-                    <li key={mapping.status}>
-                      <span className="import-page__status">{mapping.status}</span>
-                      <select
-                        className="glass-input"
-                        value={value}
-                        onChange={(event) => updateMapping(mapping.status, event.target.value)}
-                      >
-                        {columns.map((column) => (
-                          <option key={column.id} value={column.id}>
-                            {column.name}
-                          </option>
-                        ))}
-                        <option value={CREATE_NEW}>Создать колонку «{mapping.status}»</option>
-                      </select>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-
-          <section className="import-page__block">
-            <h2>3. Превью</h2>
-            <div className="import-page__table-wrap">
-              <table className="import-page__table">
-                <thead>
-                  <tr>
-                    <th>Заголовок</th>
-                    <th>Статус</th>
-                    <th>Приоритет</th>
-                    <th>Исполнитель</th>
-                    <th>Метки</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {previewRows.map((row, index) => (
-                    <tr key={`${row.title}-${index}`}>
-                      <td>{row.title}</td>
-                      <td>{row.status}</td>
-                      <td>{mapPriority(row.priorityRaw) ?? '—'}</td>
-                      <td>{row.assignee || '—'}</td>
-                      <td>{row.labels.join(', ') || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {parsed.rows.length > previewRows.length ? (
-              <p className="import-page__hint">
-                Показаны первые {previewRows.length} из {parsed.rows.length}
-              </p>
-            ) : null}
-          </section>
-
-          <section className="import-page__actions">
-            <button
-              type="button"
-              className="btn-primary"
-              disabled={!allMapped || importMutation.isPending || columns.length === 0}
-              onClick={() => void handleImport()}
-            >
-              {importMutation.isPending
-                ? 'Импортируем…'
-                : `Импортировать ${parsed.rows.length} задач`}
-            </button>
-            {importMutation.isError ? (
-              <p className="import-page__error">
-                {(importMutation.error as Error)?.message || 'Не удалось импортировать'}
-              </p>
-            ) : null}
-          </section>
-        </>
-      ) : null}
-
-      {result ? (
-        <section className="import-page__block import-page__result">
-          <h2>Готово</h2>
-          <p>
-            Создано: {result.created} · Пропущено: {result.skipped} · Всего: {result.total}
-          </p>
-          {result.results.some((item) => item.warnings.length > 0 || item.status === 'skipped') ? (
-            <ul className="import-page__result-list">
-              {result.results
-                .filter((item) => item.status === 'skipped' || item.warnings.length > 0)
-                .slice(0, 30)
-                .map((item) => (
-                  <li key={`${item.index}-${item.title}`}>
-                    <strong>{item.title || `(строка ${item.index + 1})`}</strong>
-                    {item.reason ? ` — ${item.reason}` : null}
-                    {item.warnings.length > 0 ? ` · ${item.warnings.join('; ')}` : null}
-                  </li>
-                ))}
-            </ul>
-          ) : (
-            <p className="import-page__hint">Все строки созданы без предупреждений.</p>
-          )}
-        </section>
-      ) : null}
-    </div>
+  const viewProps = useMemo(
+    () => ({
+      fileName,
+      parseError: parseError ?? '',
+      warnings: parsed?.warnings ?? [],
+      rowCount: parsed?.rows.length ?? 0,
+      statusCount: parsed?.statuses.length ?? 0,
+      showWizard: Boolean(parsed && parsed.rows.length > 0),
+      boardLoading: boardQuery.isLoading,
+      mappings,
+      columns,
+      createNewValue: CREATE_NEW,
+      previewRows,
+      allMapped,
+      isImporting: importMutation.isPending,
+      importError: importMutation.isError
+        ? (importMutation.error as Error)?.message || 'Не удалось импортировать'
+        : '',
+      result,
+      resultIssues,
+      onFileSelect,
+      onUpdateMapping,
+      onImport,
+    }),
+    [
+      fileName,
+      parseError,
+      parsed,
+      boardQuery.isLoading,
+      mappings,
+      columns,
+      previewRows,
+      allMapped,
+      importMutation.isPending,
+      importMutation.isError,
+      importMutation.error,
+      result,
+      resultIssues,
+      onFileSelect,
+      onUpdateMapping,
+      onImport,
+    ],
   );
+
+  return <VueIsland component={ImportPageView} componentProps={viewProps} />;
 }

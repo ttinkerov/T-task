@@ -1,6 +1,6 @@
 'use client';
 
-import { ImportPage } from '@/features/import';
+import { ImportPage } from '@/features/import/components/import-page';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 
 export default function ImportRoutePage() {
