@@ -1,6 +1,8 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import InviteMemberFormView from '@/vue/workspaces/InviteMemberForm.vue';
 import { useCreateInvitationMutation } from '../hooks';
 import type { WorkspaceRole } from '../types';
 
@@ -8,57 +10,40 @@ interface InviteMemberFormProps {
   workspaceId: string;
 }
 
+const ROLE_OPTIONS: Array<{ value: WorkspaceRole; label: string }> = [
+  { value: 'VIEWER', label: 'Viewer' },
+  { value: 'MEMBER', label: 'Member' },
+  { value: 'ADMIN', label: 'Admin' },
+];
+
 export function InviteMemberForm({ workspaceId }: InviteMemberFormProps) {
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState<WorkspaceRole>('MEMBER');
-  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [inviteLink, setInviteLink] = useState('');
   const inviteMutation = useCreateInvitationMutation(workspaceId);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setInviteLink(null);
-
-    const result = await inviteMutation.mutateAsync({ email, role });
-
-    if (result?.token) {
-      const link = `${window.location.origin}/invite/${result.token}`;
-      setInviteLink(link);
-      setEmail('');
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="settings-invite-grid">
-        <input
-          type="email"
-          required
-          placeholder="email@company.com"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="glass-input"
-        />
-        <select
-          value={role}
-          onChange={(event) => setRole(event.target.value as WorkspaceRole)}
-          className="glass-input"
-        >
-          <option value="VIEWER">Viewer</option>
-          <option value="MEMBER">Member</option>
-          <option value="ADMIN">Admin</option>
-        </select>
-        <button type="submit" disabled={inviteMutation.isPending} className="btn-primary">
-          {inviteMutation.isPending ? 'Отправка...' : 'Пригласить'}
-        </button>
-      </div>
-
-      {inviteMutation.error ? (
-        <p className="text-sm text-red-400">{inviteMutation.error.message}</p>
-      ) : null}
-
-      {inviteLink ? (
-        <p className="break-all text-sm text-muted-foreground">Ссылка приглашения: {inviteLink}</p>
-      ) : null}
-    </form>
+  const onInvite = useCallback(
+    async (payload: { email: string; role: string }) => {
+      setInviteLink('');
+      const result = await inviteMutation.mutateAsync({
+        email: payload.email,
+        role: payload.role as WorkspaceRole,
+      });
+      if (result?.token) {
+        setInviteLink(`${window.location.origin}/invite/${result.token}`);
+      }
+    },
+    [inviteMutation],
   );
+
+  const formProps = useMemo(
+    () => ({
+      roleOptions: ROLE_OPTIONS,
+      isPending: inviteMutation.isPending,
+      errorMessage: inviteMutation.error?.message ?? '',
+      inviteLink,
+      onInvite,
+    }),
+    [inviteMutation.isPending, inviteMutation.error, inviteLink, onInvite],
+  );
+
+  return <VueIsland component={InviteMemberFormView} componentProps={formProps} />;
 }
