@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMeQuery } from '@/features/auth/hooks';
-import { InviteMemberForm, InvitationsList, MembersTable } from '@/features/workspaces';
+import { InviteMemberForm, InvitationsList } from '@/features/workspaces';
+import { MembersTable } from '@/features/workspaces/components/members-table';
 import { WorkspaceOverdueSettings } from '@/features/workspaces/components/workspace-overdue-settings';
 import { AiSettingsCard } from '@/features/ai';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
