@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import ActivityFeed from '@/vue/activity/ActivityFeed.vue';
+import ActivityFilters from '@/vue/activity/ActivityFilters.vue';
 import { useWorkspaceActivityQuery } from '../hooks';
 
 const PAGE_SIZE = 25;
@@ -48,6 +49,8 @@ const ACTION_LABELS: Record<string, string> = {
   AI_EPIC_BREAKDOWN_APPLIED: 'разбил(а) эпик на задачи с ИИ',
 };
 
+const ACTION_KEYS = Object.keys(ACTION_LABELS);
+
 export function ActivityPage({ workspaceId }: { workspaceId: string }) {
   const [page, setPage] = useState(1);
   const [action, setAction] = useState('');
@@ -79,6 +82,31 @@ export function ActivityPage({ workspaceId }: { workspaceId: string }) {
   const onPageChange = useCallback((nextPage: number) => {
     setPage(Math.max(1, nextPage));
   }, []);
+
+  const onUpdateAction = useCallback((value: string) => {
+    setAction(value);
+  }, []);
+
+  const onUpdateFrom = useCallback((value: string) => {
+    setFrom(value);
+  }, []);
+
+  const onUpdateTo = useCallback((value: string) => {
+    setTo(value);
+  }, []);
+
+  const filterProps = useMemo(
+    () => ({
+      action,
+      from,
+      to,
+      actionKeys: ACTION_KEYS,
+      onUpdateAction,
+      onUpdateFrom,
+      onUpdateTo,
+    }),
+    [action, from, to, onUpdateAction, onUpdateFrom, onUpdateTo],
+  );
 
   const feedProps = useMemo(
     () => ({
@@ -112,42 +140,7 @@ export function ActivityPage({ workspaceId }: { workspaceId: string }) {
         <p>История административных событий. Фильтруйте по действию и дате.</p>
       </header>
 
-      <div className="analytics-filters" style={{ marginBottom: '1rem' }}>
-        <label className="analytics-filters__group">
-          <span className="analytics-filters__label">Действие</span>
-          <select
-            className="board-filters__select"
-            value={action}
-            onChange={(event) => setAction(event.target.value)}
-          >
-            <option value="">Все</option>
-            {Object.keys(ACTION_LABELS).map((key) => (
-              <option key={key} value={key}>
-                {key}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="analytics-filters__group">
-          <span className="analytics-filters__label">С</span>
-          <input
-            type="date"
-            className="glass-input"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-          />
-        </label>
-        <label className="analytics-filters__group">
-          <span className="analytics-filters__label">По</span>
-          <input
-            type="date"
-            className="glass-input"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-          />
-        </label>
-      </div>
-
+      <VueIsland component={ActivityFilters} componentProps={filterProps} />
       <VueIsland component={ActivityFeed} componentProps={feedProps} />
     </section>
   );
