@@ -1,8 +1,10 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { useMeQuery } from '@/features/auth/hooks';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
+import AppsList from '@/vue/apps/AppsList.vue';
 import {
   useCreateExternalAppMutation,
   useDeleteExternalAppMutation,
@@ -71,17 +73,74 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
     }
   };
 
-  const handleDelete = async (appId: string) => {
-    try {
-      await deleteMutation.mutateAsync(appId);
-      setPendingDeleteId(null);
-      if (selectedAppId === appId) {
-        setSelectedAppId(null);
+  const onSelect = useCallback((appId: string) => {
+    setSelectedAppId(appId);
+  }, []);
+
+  const onRequestDelete = useCallback((appId: string) => {
+    setPendingDeleteId(appId);
+  }, []);
+
+  const onCancelDelete = useCallback(() => {
+    setPendingDeleteId(null);
+  }, []);
+
+  const onConfirmDelete = useCallback(
+    async (appId: string) => {
+      try {
+        await deleteMutation.mutateAsync(appId);
+        setPendingDeleteId(null);
+        if (selectedAppId === appId) {
+          setSelectedAppId(null);
+        }
+      } catch {
+        /* ignore */
       }
-    } catch {
-      /* ignore */
-    }
-  };
+    },
+    [deleteMutation, selectedAppId],
+  );
+
+  const listItems = useMemo(
+    () =>
+      apps.map((app) => {
+        const provider = APP_PROVIDER_META[app.provider];
+        return {
+          id: app.id,
+          title: app.title,
+          providerIcon: provider.icon,
+          providerLabel: provider.label,
+          providerTone: provider.tone,
+          createdByName: app.createdBy?.name ?? '',
+          canDelete: canAdminister || app.createdBy?.id === session?.user.id,
+        };
+      }),
+    [apps, canAdminister, session?.user.id],
+  );
+
+  const listProps = useMemo(
+    () => ({
+      items: listItems,
+      selectedId: displayedAppId,
+      pendingDeleteId,
+      isDeleting: deleteMutation.isPending,
+      deleteError: deleteMutation.error?.message ?? '',
+      onSelect,
+      onRequestDelete,
+      onConfirmDelete,
+      onCancelDelete,
+    }),
+    [
+      listItems,
+      displayedAppId,
+      pendingDeleteId,
+      deleteMutation.isPending,
+      deleteMutation.error,
+      onSelect,
+      onRequestDelete,
+      onConfirmDelete,
+      onCancelDelete,
+    ],
+  );
 
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">Загрузка приложений...</p>;
@@ -155,85 +214,10 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
       ) : null}
 
       {apps.length === 0 ? (
-        <div className="apps-empty">
-          <span>↗</span>
-          <h2>Подключите первый рабочий ресурс</h2>
-          <p>Вставьте ссылку выше — сервис определится автоматически.</p>
-        </div>
+        <VueIsland component={AppsList} componentProps={listProps} />
       ) : (
         <div className="apps-workspace">
-          <aside className="apps-list" aria-label="Подключённые приложения">
-            <ul>
-              {apps.map((app) => {
-                const provider = APP_PROVIDER_META[app.provider];
-                const canDelete = canAdminister || app.createdBy?.id === session?.user.id;
-                const isActive = displayedAppId === app.id;
-
-                return (
-                  <li
-                    key={app.id}
-                    className={`apps-list__item ${isActive ? 'apps-list__item--active' : ''}`}
-                  >
-                    <button
-                      type="button"
-                      aria-pressed={isActive}
-                      onClick={() => setSelectedAppId(app.id)}
-                    >
-                      <span
-                        className={`apps-list__provider apps-list__provider--${provider.tone}`}
-                        aria-hidden="true"
-                      >
-                        {provider.icon}
-                      </span>
-                      <span className="apps-list__copy">
-                        <strong>{app.title}</strong>
-                        <small>
-                          {provider.label}
-                          {app.createdBy ? ` · ${app.createdBy.name}` : ''}
-                        </small>
-                      </span>
-                    </button>
-                    {canDelete ? (
-                      pendingDeleteId === app.id ? (
-                        <div className="apps-list__confirm">
-                          <button
-                            type="button"
-                            className="apps-list__confirm-yes"
-                            onClick={() => void handleDelete(app.id)}
-                            disabled={deleteMutation.isPending}
-                          >
-                            Удалить
-                          </button>
-                          <button
-                            type="button"
-                            className="apps-list__confirm-no"
-                            onClick={() => setPendingDeleteId(null)}
-                          >
-                            Отмена
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          className="apps-list__delete"
-                          onClick={() => setPendingDeleteId(app.id)}
-                          disabled={deleteMutation.isPending}
-                          aria-label={`Удалить «${app.title}»`}
-                        >
-                          ×
-                        </button>
-                      )
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-            {deleteMutation.error ? (
-              <p className="apps-list__error" role="alert">
-                {deleteMutation.error.message}
-              </p>
-            ) : null}
-          </aside>
+          <VueIsland component={AppsList} componentProps={listProps} />
 
           {selectedApp ? (
             <div className="apps-viewer">
@@ -273,7 +257,6 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
                     {iframeState === 'loading' ? (
                       <p className="apps-viewer__status">Загрузка встроенного просмотра…</p>
                     ) : null}
-                    {}
                     <iframe
                       key={selectedApp.id}
                       src={safeEmbedUrl}
