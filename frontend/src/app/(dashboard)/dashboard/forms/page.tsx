@@ -1,6 +1,6 @@
 'use client';
 
-import { FormsListPage } from '@/features/forms';
+import { FormsListPage } from '@/features/forms/components/forms-list-page';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { useRouter } from 'next/navigation';
