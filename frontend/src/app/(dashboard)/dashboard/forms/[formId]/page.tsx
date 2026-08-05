@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEditorPage } from '@/features/forms';
+import { FormEditorPage } from '@/features/forms/components/form-editor-page';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { useParams, useRouter } from 'next/navigation';

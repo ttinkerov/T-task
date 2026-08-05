@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import FormEditorBuilder from '@/vue/forms/FormEditorBuilder.vue';
 import {
   useAddFormFieldMutation,
   useDeleteFormFieldMutation,
@@ -19,43 +21,66 @@ export function FormEditorPage({ workspaceId, formId }: { workspaceId: string; f
   const deleteFieldMutation = useDeleteFormFieldMutation(workspaceId, formId);
 
   const [tab, setTab] = useState<'builder' | 'responses'>('builder');
-  const [fieldType, setFieldType] = useState<FormFieldType>('SHORT_TEXT');
-  const [fieldLabel, setFieldLabel] = useState('');
-  const [fieldOptions, setFieldOptions] = useState('');
-  const [fieldRequired, setFieldRequired] = useState(false);
 
   const publicUrl = useMemo(() => {
     if (typeof window === 'undefined' || !form) return '';
     return `${window.location.origin}/f/${form.publicToken}`;
   }, [form]);
 
+  const onUpdateMeta = useCallback(
+    (payload: { createTaskOnSubmit?: boolean; isPublic?: boolean }) => {
+      updateFormMutation.mutate(payload);
+    },
+    [updateFormMutation],
+  );
+
+  const onAddField = useCallback(
+    async (payload: {
+      type: FormFieldType;
+      label: string;
+      options?: string[];
+      required?: boolean;
+    }) => {
+      await addFieldMutation.mutateAsync(payload);
+    },
+    [addFieldMutation],
+  );
+
+  const onDeleteField = useCallback(
+    (fieldId: string) => {
+      deleteFieldMutation.mutate(fieldId);
+    },
+    [deleteFieldMutation],
+  );
+
+  const builderProps = useMemo(
+    () => ({
+      fields: form?.fields ?? [],
+      createTaskOnSubmit: Boolean(form?.createTaskOnSubmit),
+      isPublic: Boolean(form?.isPublic),
+      typeOptions: FORM_FIELD_TYPE_OPTIONS,
+      typeLabels: FORM_FIELD_TYPE_LABELS,
+      isAddingField: addFieldMutation.isPending,
+      isDeletingField: deleteFieldMutation.isPending,
+      onUpdateMeta,
+      onAddField,
+      onDeleteField,
+    }),
+    [
+      form?.fields,
+      form?.createTaskOnSubmit,
+      form?.isPublic,
+      addFieldMutation.isPending,
+      deleteFieldMutation.isPending,
+      onUpdateMeta,
+      onAddField,
+      onDeleteField,
+    ],
+  );
+
   if (isLoading || !form) {
     return <p className="text-sm text-muted-foreground">Загрузка формы...</p>;
   }
-
-  const handleAddField = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!fieldLabel.trim()) return;
-
-    const options =
-      fieldType === 'SINGLE_CHOICE' || fieldType === 'MULTIPLE_CHOICE'
-        ? fieldOptions
-            .split('\n')
-            .map((item) => item.trim())
-            .filter(Boolean)
-        : undefined;
-
-    await addFieldMutation.mutateAsync({
-      type: fieldType,
-      label: fieldLabel.trim(),
-      options,
-      required: fieldRequired,
-    });
-
-    setFieldLabel('');
-    setFieldOptions('');
-    setFieldRequired(false);
-  };
 
   return (
     <div className="forms-page">
@@ -111,121 +136,8 @@ export function FormEditorPage({ workspaceId, formId }: { workspaceId: string; f
         </div>
       </div>
 
-      <div className="forms-editor__settings">
-        <label className="forms-editor__checkbox">
-          <input
-            type="checkbox"
-            checked={form.createTaskOnSubmit}
-            onChange={(event) =>
-              updateFormMutation.mutate({ createTaskOnSubmit: event.target.checked })
-            }
-          />
-          Создавать задачу на доске при отправке ответа
-        </label>
-        <label className="forms-editor__checkbox">
-          <input
-            type="checkbox"
-            checked={form.isPublic}
-            onChange={(event) => updateFormMutation.mutate({ isPublic: event.target.checked })}
-          />
-          Форма доступна по публичной ссылке
-        </label>
-      </div>
-
       {tab === 'builder' ? (
-        <div className="forms-editor__grid">
-          <section className="forms-panel">
-            <h2 className="forms-panel__title">Поля формы</h2>
-            {form.fields.length === 0 ? (
-              <p className="forms-panel__empty">Добавьте первое поле справа.</p>
-            ) : (
-              <ul className="forms-fields">
-                {form.fields.map((field, index) => (
-                  <li key={field.id} className="forms-fields__item">
-                    <div>
-                      <p className="forms-fields__label">
-                        {index + 1}. {field.label}
-                        {field.required ? ' *' : ''}
-                      </p>
-                      <p className="forms-fields__type">{FORM_FIELD_TYPE_LABELS[field.type]}</p>
-                      {field.options.length > 0 ? (
-                        <p className="forms-fields__options">{field.options.join(' · ')}</p>
-                      ) : null}
-                    </div>
-                    <button
-                      type="button"
-                      className="btn-ghost forms-list__danger"
-                      onClick={() => deleteFieldMutation.mutate(field.id)}
-                    >
-                      Удалить
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section className="forms-panel">
-            <h2 className="forms-panel__title">Добавить поле</h2>
-            <form onSubmit={handleAddField} className="forms-add-field">
-              <label className="task-drawer__field">
-                <span>Тип поля</span>
-                <select
-                  value={fieldType}
-                  onChange={(event) => setFieldType(event.target.value as FormFieldType)}
-                  className="glass-input"
-                >
-                  {FORM_FIELD_TYPE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="task-drawer__field">
-                <span>Вопрос</span>
-                <input
-                  value={fieldLabel}
-                  onChange={(event) => setFieldLabel(event.target.value)}
-                  className="glass-input"
-                  maxLength={200}
-                  required
-                />
-              </label>
-
-              {fieldType === 'SINGLE_CHOICE' || fieldType === 'MULTIPLE_CHOICE' ? (
-                <label className="task-drawer__field">
-                  <span>Варианты (по одному на строку)</span>
-                  <textarea
-                    value={fieldOptions}
-                    onChange={(event) => setFieldOptions(event.target.value)}
-                    className="glass-input task-drawer__textarea"
-                    rows={4}
-                    placeholder={'Да\nНет\nНе знаю'}
-                  />
-                </label>
-              ) : null}
-
-              <label className="forms-editor__checkbox">
-                <input
-                  type="checkbox"
-                  checked={fieldRequired}
-                  onChange={(event) => setFieldRequired(event.target.checked)}
-                />
-                Обязательное поле
-              </label>
-
-              <button
-                type="submit"
-                disabled={!fieldLabel.trim() || addFieldMutation.isPending}
-                className="btn-primary"
-              >
-                Добавить поле
-              </button>
-            </form>
-          </section>
-        </div>
+        <VueIsland component={FormEditorBuilder} componentProps={builderProps} />
       ) : (
         <FormResponsesPanel form={form} responsesData={responsesData} />
       )}
