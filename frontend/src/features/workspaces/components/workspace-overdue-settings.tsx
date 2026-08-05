@@ -1,5 +1,8 @@
 'use client';
 
+import { useCallback, useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import WorkspaceOverdueSettingsView from '@/vue/workspaces/WorkspaceOverdueSettings.vue';
 import { useWorkspaceQuery, useUpdateWorkspaceMutation } from '../hooks';
 
 export function WorkspaceOverdueSettings({
@@ -12,39 +15,23 @@ export function WorkspaceOverdueSettings({
   const { data: workspace, isLoading } = useWorkspaceQuery(workspaceId);
   const updateMutation = useUpdateWorkspaceMutation(workspaceId);
 
-  if (isLoading || !workspace) {
-    return <p className="text-sm text-muted-foreground">Загрузка настроек...</p>;
-  }
-
-  const handleToggle = async () => {
+  const onToggle = useCallback(async () => {
+    if (!workspace) return;
     await updateMutation.mutateAsync({
       autoRollOverdue: !workspace.autoRollOverdue,
     });
-  };
+  }, [workspace, updateMutation]);
 
-  return (
-    <div className="settings-card">
-      <h2 className="settings-card__title">Просроченные задачи</h2>
-      <p className="settings-card__text">
-        Если дедлайн прошёл, а задача ещё не в «Готово», можно автоматически переносить её на
-        следующий день. Счётчик дней просрочки сохраняется для всей команды.
-      </p>
-
-      <label className="forms-editor__checkbox">
-        <input
-          type="checkbox"
-          checked={Boolean(workspace.autoRollOverdue)}
-          onChange={() => void handleToggle()}
-          disabled={!canManage || updateMutation.isPending}
-        />
-        Автоматически переносить просроченные задачи на следующий день
-      </label>
-
-      {!canManage ? (
-        <p className="settings-card__hint">
-          Изменить настройку могут только администраторы команды.
-        </p>
-      ) : null}
-    </div>
+  const settingsProps = useMemo(
+    () => ({
+      isLoading: isLoading || !workspace,
+      autoRollOverdue: Boolean(workspace?.autoRollOverdue),
+      canManage,
+      isPending: updateMutation.isPending,
+      onToggle,
+    }),
+    [isLoading, workspace, canManage, updateMutation.isPending, onToggle],
   );
+
+  return <VueIsland component={WorkspaceOverdueSettingsView} componentProps={settingsProps} />;
 }
