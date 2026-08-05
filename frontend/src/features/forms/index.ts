@@ -1,1 +1,2 @@
-export { PublicFormFill } from './components/public-form-fill';
+export * from './hooks';
+export * from './types';
