@@ -1,30 +1,27 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { useCallback, useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import CreateWorkspaceFormView from '@/vue/workspaces/CreateWorkspaceForm.vue';
 import { useCreateWorkspaceMutation } from '../hooks';
 
 export function CreateWorkspaceForm() {
-  const [name, setName] = useState('');
   const createMutation = useCreateWorkspaceMutation();
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await createMutation.mutateAsync({ name });
-    setName('');
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-wrap gap-2">
-      <input
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-        placeholder="Название новой команды"
-        required
-        className="glass-input min-w-[220px] flex-1"
-      />
-      <button type="submit" disabled={createMutation.isPending} className="btn-ghost">
-        Создать команду
-      </button>
-    </form>
+  const onCreate = useCallback(
+    async (payload: { name: string }) => {
+      await createMutation.mutateAsync(payload);
+    },
+    [createMutation],
   );
+
+  const formProps = useMemo(
+    () => ({
+      isPending: createMutation.isPending,
+      onCreate,
+    }),
+    [createMutation.isPending, onCreate],
+  );
+
+  return <VueIsland component={CreateWorkspaceFormView} componentProps={formProps} />;
 }
