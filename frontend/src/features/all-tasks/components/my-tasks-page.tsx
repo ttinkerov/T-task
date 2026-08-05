@@ -1,11 +1,13 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import { PRIORITY_LABELS } from '@/features/boards/types';
+import MyTasksPageView from '@/vue/all-tasks/MyTasksPageView.vue';
 import { useMyTasksQuery } from '../hooks';
 import { DUE_SOON_DAYS } from '../lib/my-tasks-partition';
 import type { AllTask } from '../types';
-import { MyTasksSection } from './my-tasks-section';
 
 const TaskDetailDrawer = dynamic(
   () =>
@@ -69,62 +71,39 @@ export function MyTasksPage({
     buckets.assigned.length +
     buckets.watching.length;
 
-  const isLoading = myTasks.isLoading;
-  const isError = myTasks.isError;
+  const onOpenTask = useCallback((taskId: string) => {
+    setSelectedTaskId(taskId);
+  }, []);
+
+  const listProps = useMemo(
+    () => ({
+      dueSoonDays,
+      totalVisible,
+      isLoading: myTasks.isLoading,
+      isError: myTasks.isError,
+      overdue: buckets.overdue,
+      dueSoon: buckets.dueSoon,
+      assigned: buckets.assigned,
+      watching: buckets.watching,
+      priorityLabels: PRIORITY_LABELS,
+      onOpenTask,
+    }),
+    [
+      dueSoonDays,
+      totalVisible,
+      myTasks.isLoading,
+      myTasks.isError,
+      buckets.overdue,
+      buckets.dueSoon,
+      buckets.assigned,
+      buckets.watching,
+      onOpenTask,
+    ],
+  );
 
   return (
     <section className="all-tasks my-tasks" aria-labelledby="my-tasks-title">
-      <header className="all-tasks__header">
-        <div>
-          <p className="all-tasks__eyebrow">Личное</p>
-          <h1 id="my-tasks-title">Мои задачи</h1>
-          <p>
-            Как Notion «Assigned to me»: просроченные, ближайшие {dueSoonDays} дней, назначенные вам
-            и те, за которыми вы следите.
-          </p>
-        </div>
-        <strong>{totalVisible} открытых</strong>
-      </header>
-
-      {isLoading ? <p role="status">Загрузка задач...</p> : null}
-      {isError ? <p className="all-tasks__error">Не удалось загрузить задачи.</p> : null}
-
-      {!isLoading && !isError && totalVisible === 0 ? (
-        <p className="my-tasks__empty">
-          Пока пусто — назначьте себе задачу или включите «Следить» в карточке.
-        </p>
-      ) : null}
-
-      <MyTasksSection
-        id="overdue"
-        title="Просроченные"
-        hint="Дедлайн уже прошёл"
-        tasks={buckets.overdue}
-        tone="danger"
-        onOpenTask={setSelectedTaskId}
-      />
-      <MyTasksSection
-        id="dueSoon"
-        title="Скоро дедлайн"
-        hint={`В ближайшие ${dueSoonDays} дней`}
-        tasks={buckets.dueSoon}
-        tone="warn"
-        onOpenTask={setSelectedTaskId}
-      />
-      <MyTasksSection
-        id="assigned"
-        title="Назначены мне"
-        hint="Без срочного дедлайна"
-        tasks={buckets.assigned}
-        onOpenTask={setSelectedTaskId}
-      />
-      <MyTasksSection
-        id="watching"
-        title="Слежу"
-        hint="Вы подписаны, но не исполнитель"
-        tasks={buckets.watching}
-        onOpenTask={setSelectedTaskId}
-      />
+      <VueIsland component={MyTasksPageView} componentProps={listProps} />
 
       {selectedTask ? (
         <TaskDetailDrawer

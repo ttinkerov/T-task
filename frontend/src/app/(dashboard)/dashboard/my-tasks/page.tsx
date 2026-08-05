@@ -1,6 +1,6 @@
 'use client';
 
-import { MyTasksPage } from '@/features/all-tasks';
+import { MyTasksPage } from '@/features/all-tasks/components/my-tasks-page';
 import { useMeQuery } from '@/features/auth/hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { Suspense } from 'react';
