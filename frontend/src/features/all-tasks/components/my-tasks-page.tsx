@@ -23,10 +23,12 @@ export function MyTasksPage({
   workspaceId,
   userId: _userId,
   initialTaskId = null,
+  initialSection = 'all',
 }: {
   workspaceId: string;
   userId: string;
   initialTaskId?: string | null;
+  initialSection?: string | null;
 }) {
   const myTasks = useMyTasksQuery(workspaceId, SECTION_LIMIT);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(initialTaskId);
@@ -86,6 +88,7 @@ export function MyTasksPage({
       assigned: buckets.assigned,
       watching: buckets.watching,
       priorityLabels: PRIORITY_LABELS,
+      initialSection: initialSection ?? 'all',
       onOpenTask,
     }),
     [
@@ -97,6 +100,7 @@ export function MyTasksPage({
       buckets.dueSoon,
       buckets.assigned,
       buckets.watching,
+      initialSection,
       onOpenTask,
     ],
   );

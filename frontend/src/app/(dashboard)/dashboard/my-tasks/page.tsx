@@ -26,6 +26,7 @@ function MyTasksContent() {
       workspaceId={workspaceId}
       userId={userId}
       initialTaskId={searchParams.get('task')}
+      initialSection={searchParams.get('section')}
     />
   ) : (
     <p className="text-sm text-muted-foreground">
