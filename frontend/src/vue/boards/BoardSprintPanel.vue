@@ -1,5 +1,5 @@
 <template>
-  <div class="board-sprint-panel">
+  <div class="board-sprint-panel__inner">
     <div class="board-sprint-panel__head">
       <div>
         <p class="board-sprint-panel__eyebrow">Спринт</p>
@@ -11,7 +11,7 @@
           type="button"
           class="btn-ghost"
           :disabled="closePending"
-          @click="onClose?.()"
+          @click="onCloseSprint?.()"
         >
           Закрыть
         </button>
@@ -82,13 +82,11 @@
       </div>
       <p class="board-sprint-panel__meta">{{ velocityAverageLabel }}</p>
     </div>
-
-    <div ref="aiHostEl" class="board-sprint-panel__ai-host" />
   </div>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   active: { type: Object, default: null },
@@ -99,15 +97,13 @@ const props = defineProps({
   createPending: { type: Boolean, default: false },
   closePending: { type: Boolean, default: false },
   onCreate: { type: Function, default: null },
-  onClose: { type: Function, default: null },
-  onAiHost: { type: Function, default: null },
+  onCloseSprint: { type: Function, default: null },
 })
 
 const formOpen = ref(false)
 const name = ref('')
 const startDate = ref('')
 const endDate = ref('')
-const aiHostEl = ref(null)
 
 const velocityLabel = computed(() =>
   props.averageVelocity > 0 ? ` · velocity ${props.averageVelocity}` : '',
@@ -118,18 +114,6 @@ const velocityAverageLabel = computed(() =>
     ? `Средняя velocity по закрытым спринтам: ${props.averageVelocity} SP`
     : 'Средняя velocity по закрытым спринтам: —',
 )
-
-onMounted(() => {
-  props.onAiHost?.(aiHostEl.value)
-})
-
-watch(aiHostEl, (el) => {
-  props.onAiHost?.(el)
-})
-
-onBeforeUnmount(() => {
-  props.onAiHost?.(null)
-})
 
 async function submitCreate() {
   if (!name.value.trim() || !startDate.value || !endDate.value) return

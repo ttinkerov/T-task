@@ -1,7 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useMemo } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import { AiSummaryPanel } from '@/features/ai/components/ai-summary-panel';
 import {
@@ -21,7 +20,6 @@ export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
   const active =
     sprints.find((sprint) => sprint.active) ?? sprints.find((s) => !s.closedAt) ?? null;
   const { data: burndown } = useSprintBurndownQuery(workspaceId, active?.id ?? null);
-  const [aiHost, setAiHost] = useState<HTMLElement | null>(null);
 
   const activePoints = useMemo(() => {
     if (!active || !velocity) return null;
@@ -78,14 +76,10 @@ export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
     [createMutation],
   );
 
-  const onClose = useCallback(async () => {
+  const onCloseSprint = useCallback(async () => {
     if (!active) return;
     await closeMutation.mutateAsync(active.id);
   }, [active, closeMutation]);
-
-  const onAiHost = useCallback((el: HTMLElement | null) => {
-    setAiHost(el);
-  }, []);
 
   const viewProps = useMemo(
     () => ({
@@ -97,8 +91,7 @@ export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
       createPending: createMutation.isPending,
       closePending: closeMutation.isPending,
       onCreate,
-      onClose,
-      onAiHost,
+      onCloseSprint,
     }),
     [
       active,
@@ -109,26 +102,22 @@ export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
       createMutation.isPending,
       closeMutation.isPending,
       onCreate,
-      onClose,
-      onAiHost,
+      onCloseSprint,
     ],
   );
 
   return (
-    <>
+    <div className="board-sprint-panel">
       <VueIsland component={BoardSprintPanelView} componentProps={viewProps} />
-      {aiHost && active
-        ? createPortal(
-            <AiSummaryPanel
-              key={active.id}
-              workspaceId={workspaceId}
-              scope="sprint"
-              sprintId={active.id}
-              compact
-            />,
-            aiHost,
-          )
-        : null}
-    </>
+      {active ? (
+        <AiSummaryPanel
+          key={active.id}
+          workspaceId={workspaceId}
+          scope="sprint"
+          sprintId={active.id}
+          compact
+        />
+      ) : null}
+    </div>
   );
 }

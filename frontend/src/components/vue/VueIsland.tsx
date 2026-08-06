@@ -7,10 +7,12 @@ import { mountVueApp, type MountedVueApp } from '@/vue/mountVueApp';
 type Props = {
   component: Component;
   componentProps?: Record<string, unknown>;
+  /** Host participates in parent flex/grid (React siblings + Vue fields). */
+  displayContents?: boolean;
 };
 
 /** React-холст: Vue монтируется один раз, props обновляются отдельно. */
-export function VueIsland({ component, componentProps }: Props) {
+export function VueIsland({ component, componentProps, displayContents = false }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const appRef = useRef<MountedVueApp | null>(null);
   const propsRef = useRef(componentProps);
@@ -37,5 +39,5 @@ export function VueIsland({ component, componentProps }: Props) {
     appRef.current?.update(componentProps);
   }, [componentProps]);
 
-  return <div ref={hostRef} />;
+  return <div ref={hostRef} style={displayContents ? { display: 'contents' } : undefined} />;
 }

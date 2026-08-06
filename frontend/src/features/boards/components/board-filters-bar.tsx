@@ -1,7 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useMemo } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import { SavedFiltersControl } from '@/features/saved-filters/components/saved-filters-control';
 import { useSprintsQuery } from '@/features/sprints';
@@ -33,7 +32,6 @@ export function BoardFiltersBar({
   const { data: tags = [] } = useTagsQuery(workspaceId);
   const { data: sprints = [] } = useSprintsQuery(workspaceId);
   const { data: board } = useBoardQuery(workspaceId, boardId);
-  const [savedFiltersHost, setSavedFiltersHost] = useState<HTMLElement | null>(null);
 
   const activeSprint = sprints.find((sprint) => sprint.active) ?? null;
   const epics = useMemo(() => {
@@ -58,10 +56,6 @@ export function BoardFiltersBar({
     Boolean(filters.sprintId) ||
     Boolean(filters.epicId);
 
-  const onSavedHost = useCallback((el: HTMLElement | null) => {
-    setSavedFiltersHost(el);
-  }, []);
-
   const onReset = useCallback(() => {
     onChange(EMPTY_BOARD_FILTERS);
   }, [onChange]);
@@ -79,7 +73,6 @@ export function BoardFiltersBar({
       hasActiveFilters,
       onChange,
       onReset,
-      onSavedHost,
     }),
     [
       filters,
@@ -92,24 +85,18 @@ export function BoardFiltersBar({
       hasActiveFilters,
       onChange,
       onReset,
-      onSavedHost,
     ],
   );
 
   return (
-    <>
-      <VueIsland component={BoardFiltersBarView} componentProps={viewProps} />
-      {savedFiltersHost
-        ? createPortal(
-            <SavedFiltersControl
-              workspaceId={workspaceId}
-              view="BOARD"
-              filters={filters}
-              onApply={onChange}
-            />,
-            savedFiltersHost,
-          )
-        : null}
-    </>
+    <div className="board-filters">
+      <SavedFiltersControl
+        workspaceId={workspaceId}
+        view="BOARD"
+        filters={filters}
+        onApply={onChange}
+      />
+      <VueIsland component={BoardFiltersBarView} componentProps={viewProps} displayContents />
+    </div>
   );
 }

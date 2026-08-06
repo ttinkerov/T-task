@@ -20,9 +20,7 @@ import {
 } from '../hooks';
 import { EMPTY_BOARD_FILTERS, type BoardFilters } from '../types';
 import { BoardFiltersBar } from './board-filters-bar';
-import { BoardSprintPanel } from './board-sprint-panel';
 import { BoardSwitcher, readStoredBoardId, storeSelectedBoardId } from './board-switcher';
-import { BoardWorkloadPanel } from './board-workload-panel';
 import { AddColumnPanel } from './kanban/add-column-panel';
 import { useBoardBulkSelection } from './kanban/hooks/use-board-bulk-selection';
 import { useBoardTaskMoves } from './kanban/hooks/use-board-task-moves';
@@ -35,9 +33,20 @@ import {
 import { KanbanDragOverlay } from './kanban/kanban-drag-overlay';
 import { SortableKanbanColumn } from './kanban/sortable-kanban-column';
 import { TaskDisplayView, TaskViewToolbar } from './task-display-views';
+import { LazyMount } from '@/shared/ui/lazy-mount';
 
 const TaskDetailDrawer = dynamic(
   () => import('./task-detail-drawer').then((mod) => ({ default: mod.TaskDetailDrawer })),
+  { ssr: false },
+);
+
+const BoardWorkloadPanel = dynamic(
+  () => import('./board-workload-panel').then((mod) => ({ default: mod.BoardWorkloadPanel })),
+  { ssr: false },
+);
+
+const BoardSprintPanel = dynamic(
+  () => import('./board-sprint-panel').then((mod) => ({ default: mod.BoardSprintPanel })),
   { ssr: false },
 );
 
@@ -233,8 +242,12 @@ export function KanbanBoard({
           {moveError}
         </p>
       ) : null}
-      {viewMode === 'BOARD' ? <BoardWorkloadPanel board={board} /> : null}
-      {viewMode === 'BOARD' ? <BoardSprintPanel workspaceId={workspaceId} /> : null}
+      {viewMode === 'BOARD' ? (
+        <LazyMount eagerMs={150}>
+          <BoardWorkloadPanel board={board} />
+          <BoardSprintPanel workspaceId={workspaceId} />
+        </LazyMount>
+      ) : null}
       {viewMode === 'BOARD' ? (
         <BulkActionsToolbar
           workspaceId={workspaceId}
