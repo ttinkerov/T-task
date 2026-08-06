@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent } from 'react';
-import { TaskAiAssistant } from '@/features/ai';
+import { TaskAiAssistant } from '@/features/ai/components/task-ai-assistant';
 import { TaskDescriptionEditor } from '@/features/task-description';
 import { WikiLinkChips } from '@/features/wiki-links/components/wiki-link-chips';
 import { useMembersQuery } from '@/features/workspaces/hooks';

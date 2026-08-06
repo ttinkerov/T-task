@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { EpicAiBreakdown } from '@/features/ai';
+import { EpicAiBreakdown } from '@/features/ai/components/epic-ai-breakdown';
 import { useSprintsQuery } from '@/features/sprints';
 import { boardKeys, invalidateWorkspaceBoards } from '../../hooks';
 import type { BoardTask, BoardView, TaskRelationCandidate } from '../../types';
