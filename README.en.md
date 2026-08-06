@@ -4,7 +4,7 @@
 
 Kanban and CRM for small teams. Workspaces, boards, deals, forms, and notifications.
 
-**Stack:** Next.js · NestJS · Prisma · PostgreSQL · Redis
+**Stack:** Next.js, NestJS, Vue, Prisma, PostgreSQL, Redis
 
 ## Features
 

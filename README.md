@@ -4,7 +4,7 @@
 
 Канбан и CRM для небольших команд. Workspaces, доски, сделки, формы, уведомления.
 
-**Стек:** Next.js · NestJS · Prisma · PostgreSQL · Redis
+**Стек:** Next.js, NestJS, Vue, Prisma, PostgreSQL, Redis
 
 ## Возможности
 
