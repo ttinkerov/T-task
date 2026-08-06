@@ -1,6 +1,6 @@
 'use client';
 
-import { FunnelBoard } from '@/features/crm';
+import { FunnelBoard } from '@/features/crm/components/funnel-board';
 import { downloadExport } from '@/features/workspace-tools/api';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';

@@ -14,7 +14,7 @@ export function BoardEmptyState({
   actionDisabled = false,
   className = '',
 }: {
-  icon?: 'kanban' | 'layout-list' | 'plus' | '';
+  icon?: 'kanban' | 'layout-list' | 'plus' | 'clipboard-list' | '';
   title: string;
   description: string;
   actionLabel: string;

@@ -20,11 +20,17 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FormEvent, memo, useEffect, useMemo, useState, type HTMLAttributes } from 'react';
-import { ClipboardList } from 'lucide-react';
-import { EmptyState } from '@/components/ui/empty-state';
+import { memo, useCallback, useEffect, useMemo, useState, type HTMLAttributes } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import { BoardEmptyState } from '@/features/boards/components/board-empty-state';
 import { useDealTemplatesQuery } from '@/features/templates';
 import { VirtualizedColumnList } from '@/shared/ui/virtualized-column-list';
+import AddStagePanelView from '@/vue/crm/AddStagePanel.vue';
+import CrmDragOverlayView from '@/vue/crm/CrmDragOverlay.vue';
+import DealCardBodyView from '@/vue/crm/DealCardBody.vue';
+import FunnelAddDealFormView from '@/vue/crm/FunnelAddDealForm.vue';
+import FunnelStageHeaderView from '@/vue/crm/FunnelStageHeader.vue';
+import FunnelToolbarView from '@/vue/crm/FunnelToolbar.vue';
 import {
   useCreateDealMutation,
   useCreateFunnelMutation,
@@ -44,12 +50,44 @@ export function FunnelBoard({ workspaceId }: { workspaceId: string }) {
   const { data: funnels = [], isLoading: funnelsLoading } = useFunnelsQuery(workspaceId);
   const [funnelId, setFunnelId] = useState<string | null>(null);
   const { data: funnel, isLoading: funnelLoading } = useFunnelQuery(workspaceId, funnelId);
+  const createFunnelMutation = useCreateFunnelMutation(workspaceId);
 
   useEffect(() => {
     if (!funnelId && funnels.length > 0) {
       setFunnelId(funnels[0].id);
     }
   }, [funnelId, funnels]);
+
+  const onCreateFunnel = useCallback(
+    async (name: string) => {
+      const created = await createFunnelMutation.mutateAsync(name);
+      if (created?.id) setFunnelId(created.id);
+    },
+    [createFunnelMutation],
+  );
+
+  const onCreateEmptyFunnel = useCallback(() => {
+    void createFunnelMutation.mutateAsync('Основная воронка').then((created) => {
+      if (created?.id) setFunnelId(created.id);
+    });
+  }, [createFunnelMutation]);
+
+  const funnelOptions = useMemo(
+    () => funnels.map((item) => ({ id: item.id, name: item.name })),
+    [funnels],
+  );
+
+  const toolbarProps = useMemo(
+    () => ({
+      funnels: funnelOptions,
+      funnelId: funnelId ?? '',
+      showActions: funnels.length > 0,
+      createPending: createFunnelMutation.isPending,
+      onFunnelChange: setFunnelId,
+      onCreate: onCreateFunnel,
+    }),
+    [funnelOptions, funnelId, funnels.length, createFunnelMutation.isPending, onCreateFunnel],
+  );
 
   if (funnelsLoading) {
     return <p className="text-sm text-muted-foreground">Загрузка воронок...</p>;
@@ -58,127 +96,32 @@ export function FunnelBoard({ workspaceId }: { workspaceId: string }) {
   if (funnels.length === 0) {
     return (
       <div className="crm-page">
-        <div className="crm-toolbar">
-          <div>
-            <h1 className="crm-toolbar__title">CRM — воронки</h1>
-            <p className="crm-toolbar__hint">
-              Сделки двигаются по этапам, как на канбан-доске. Разные воронки — для разных
-              направлений.
-            </p>
-          </div>
-        </div>
-        <CrmEmptyFunnel workspaceId={workspaceId} onCreated={setFunnelId} />
+        <VueIsland
+          component={FunnelToolbarView}
+          componentProps={{ funnels: [], funnelId: '', showActions: false }}
+        />
+        <BoardEmptyState
+          className="empty-state--board"
+          icon="clipboard-list"
+          title="Создайте первую воронку"
+          description="Воронка — это этапы продаж. Добавьте сделки и двигайте их к закрытию."
+          actionLabel="Создать воронку"
+          actionPending={createFunnelMutation.isPending}
+          onAction={onCreateEmptyFunnel}
+        />
       </div>
     );
   }
 
   return (
     <div className="crm-page">
-      <FunnelToolbar
-        workspaceId={workspaceId}
-        funnels={funnels}
-        funnelId={funnelId}
-        onFunnelChange={setFunnelId}
-      />
+      <VueIsland component={FunnelToolbarView} componentProps={toolbarProps} />
 
       {funnelLoading || !funnel || !funnelId ? (
         <p className="text-sm text-muted-foreground">Загрузка воронки...</p>
       ) : (
         <FunnelBoardView workspaceId={workspaceId} funnel={funnel} />
       )}
-    </div>
-  );
-}
-
-function CrmEmptyFunnel({
-  workspaceId,
-  onCreated,
-}: {
-  workspaceId: string;
-  onCreated: (id: string) => void;
-}) {
-  const createFunnelMutation = useCreateFunnelMutation(workspaceId);
-
-  return (
-    <EmptyState
-      className="empty-state--board"
-      icon={ClipboardList}
-      title="Создайте первую воронку"
-      description="Воронка — это этапы продаж. Добавьте сделки и двигайте их к закрытию."
-      actionLabel="Создать воронку"
-      actionPending={createFunnelMutation.isPending}
-      onAction={() => {
-        void createFunnelMutation.mutateAsync('Основная воронка').then((created) => {
-          if (created?.id) onCreated(created.id);
-        });
-      }}
-    />
-  );
-}
-
-function FunnelToolbar({
-  workspaceId,
-  funnels,
-  funnelId,
-  onFunnelChange,
-}: {
-  workspaceId: string;
-  funnels: { id: string; name: string }[];
-  funnelId: string | null;
-  onFunnelChange: (id: string) => void;
-}) {
-  const createFunnelMutation = useCreateFunnelMutation(workspaceId);
-  const [name, setName] = useState('');
-
-  const handleCreate = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!name.trim()) return;
-    const created = await createFunnelMutation.mutateAsync(name.trim());
-    if (created?.id) {
-      onFunnelChange(created.id);
-    }
-    setName('');
-  };
-
-  return (
-    <div className="crm-toolbar">
-      <div>
-        <h1 className="crm-toolbar__title">CRM — воронки</h1>
-        <p className="crm-toolbar__hint">
-          Сделки двигаются по этапам, как на канбан-доске. Разные воронки — для разных направлений.
-        </p>
-      </div>
-
-      <div className="crm-toolbar__actions">
-        <select
-          value={funnelId ?? ''}
-          onChange={(event) => onFunnelChange(event.target.value)}
-          className="glass-input crm-toolbar__select"
-        >
-          {funnels.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-
-        <form onSubmit={handleCreate} className="crm-toolbar__create">
-          <input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Новая воронка"
-            maxLength={80}
-            className="glass-input"
-          />
-          <button
-            type="submit"
-            disabled={!name.trim() || createFunnelMutation.isPending}
-            className="btn-ghost"
-          >
-            +
-          </button>
-        </form>
-      </div>
     </div>
   );
 }
@@ -256,6 +199,15 @@ function FunnelBoardView({ workspaceId, funnel }: { workspaceId: string; funnel:
     ? (funnel.stages.find((stage) => stage.id === selectedDeal.stageId)?.name ?? '')
     : '';
 
+  const overlayProps = useMemo(
+    () => ({
+      stageName: activeStage?.name ?? '',
+      stageCount: activeStage?.deals.length ?? 0,
+      dealTitle: activeDeal?.title ?? '',
+    }),
+    [activeStage?.name, activeStage?.deals.length, activeDeal?.title],
+  );
+
   return (
     <>
       {funnel.stages.some((stage) => stage.truncated) ? (
@@ -286,18 +238,8 @@ function FunnelBoardView({ workspaceId, funnel }: { workspaceId: string; funnel:
         </div>
 
         <DragOverlay>
-          {activeStage ? (
-            <div className="kanban-column kanban-column--dragging">
-              <div className="kanban-column__header">
-                <h3 className="kanban-column__title">{activeStage.name}</h3>
-                <span className="kanban-column__count">{activeStage.deals.length}</span>
-              </div>
-            </div>
-          ) : null}
-          {activeDeal ? (
-            <div className="kanban-task-card kanban-task-card--dragging crm-deal-card">
-              <p className="kanban-task-card__title">{activeDeal.title}</p>
-            </div>
+          {activeStage || activeDeal ? (
+            <VueIsland component={CrmDragOverlayView} componentProps={overlayProps} />
           ) : null}
         </DragOverlay>
       </DndContext>
@@ -374,46 +316,70 @@ function FunnelStageColumn({
   const { data: dealTemplates = [] } = useDealTemplatesQuery(workspaceId);
   const updateStageMutation = useUpdateStageMutation(workspaceId, funnelId);
   const deleteStageMutation = useDeleteStageMutation(workspaceId, funnelId);
-  const [title, setTitle] = useState('');
-  const [templateId, setTemplateId] = useState('');
-  const [editingName, setEditingName] = useState(false);
-  const [stageName, setStageName] = useState(stage.name);
   const dealIds = useMemo(() => stage.deals.map((deal) => deal.id), [stage.deals]);
   const remainingServer = Math.max(0, (stage.dealTotal ?? stage.deals.length) - stage.deals.length);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const selected = dealTemplates.find((template) => template.id === templateId);
-    const nextTitle = title.trim() || selected?.title?.trim() || '';
-    if (!nextTitle) return;
-    await createMutation.mutateAsync({
-      title: nextTitle,
-      stageId: stage.id,
-      ...(templateId ? { templateId } : {}),
-    });
-    setTitle('');
-    setTemplateId('');
-  };
+  const countLabel =
+    stage.truncated && stage.dealTotal
+      ? `${stage.deals.length}/${stage.dealTotal}`
+      : String(stage.dealTotal ?? stage.deals.length);
 
-  const handleRename = async () => {
-    const next = stageName.trim();
-    if (!next || next === stage.name) {
-      setStageName(stage.name);
-      setEditingName(false);
-      return;
-    }
-    await updateStageMutation.mutateAsync({ stageId: stage.id, name: next });
-    setEditingName(false);
-  };
+  const onRename = useCallback(
+    async (raw: string) => {
+      const next = raw.trim();
+      if (!next || next === stage.name) return;
+      await updateStageMutation.mutateAsync({ stageId: stage.id, name: next });
+    },
+    [stage.id, stage.name, updateStageMutation],
+  );
 
-  const handleDelete = async () => {
+  const onDelete = useCallback(async () => {
     const message =
       stage.deals.length > 0
         ? `Удалить этап «${stage.name}» вместе с ${stage.deals.length} сделками?`
         : `Удалить этап «${stage.name}»?`;
     if (!window.confirm(message)) return;
     await deleteStageMutation.mutateAsync(stage.id);
-  };
+  }, [deleteStageMutation, stage.deals.length, stage.id, stage.name]);
+
+  const templates = useMemo(
+    () =>
+      dealTemplates.map((template) => ({
+        id: template.id,
+        name: template.name,
+        title: template.title,
+      })),
+    [dealTemplates],
+  );
+
+  const onCreateDeal = useCallback(
+    async (payload: { title: string; templateId?: string }) => {
+      await createMutation.mutateAsync({
+        title: payload.title,
+        stageId: stage.id,
+        ...(payload.templateId ? { templateId: payload.templateId } : {}),
+      });
+    },
+    [createMutation, stage.id],
+  );
+
+  const headerProps = useMemo(
+    () => ({
+      name: stage.name,
+      countLabel,
+      onRename,
+    }),
+    [stage.name, countLabel, onRename],
+  );
+
+  const addDealProps = useMemo(
+    () => ({
+      templates,
+      pending: createMutation.isPending,
+      onCreate: onCreateDeal,
+    }),
+    [templates, createMutation.isPending, onCreateDeal],
+  );
 
   return (
     <div ref={setNodeRef} className={`kanban-column ${isOver ? 'kanban-column--over' : ''}`}>
@@ -427,50 +393,13 @@ function FunnelStageColumn({
           ⠿
         </button>
 
-        {editingName ? (
-          <input
-            value={stageName}
-            onChange={(event) => setStageName(event.target.value)}
-            onBlur={handleRename}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                void handleRename();
-              }
-              if (event.key === 'Escape') {
-                setStageName(stage.name);
-                setEditingName(false);
-              }
-            }}
-            className="kanban-column__title-input"
-            autoFocus
-            maxLength={80}
-          />
-        ) : (
-          <button
-            type="button"
-            className="kanban-column__title"
-            onClick={() => {
-              setStageName(stage.name);
-              setEditingName(true);
-            }}
-            title="Переименовать"
-          >
-            {stage.name}
-          </button>
-        )}
-
-        <span className="kanban-column__count">
-          {stage.truncated && stage.dealTotal
-            ? `${stage.deals.length}/${stage.dealTotal}`
-            : (stage.dealTotal ?? stage.deals.length)}
-        </span>
+        <VueIsland component={FunnelStageHeaderView} componentProps={headerProps} displayContents />
 
         {canDelete ? (
           <button
             type="button"
             className="kanban-column__delete"
-            onClick={handleDelete}
+            onClick={() => void onDelete()}
             disabled={deleteStageMutation.isPending}
             aria-label="Удалить этап"
           >
@@ -506,48 +435,7 @@ function FunnelStageColumn({
         </VirtualizedColumnList>
       </SortableContext>
 
-      <form onSubmit={handleSubmit} className="kanban-column__add">
-        {dealTemplates.length > 0 ? (
-          <select
-            className="kanban-column__add-template"
-            value={templateId}
-            onChange={(event) => {
-              const nextId = event.target.value;
-              setTemplateId(nextId);
-              const selected = dealTemplates.find((template) => template.id === nextId);
-              if (selected?.title && !title.trim()) {
-                setTitle(selected.title);
-              }
-            }}
-            aria-label="Шаблон сделки"
-          >
-            <option value="">Без шаблона</option>
-            {dealTemplates.map((template) => (
-              <option key={template.id} value={template.id}>
-                {template.name}
-              </option>
-            ))}
-          </select>
-        ) : null}
-        <input
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder="Сделка..."
-          maxLength={200}
-          className="kanban-column__add-input"
-        />
-        <button
-          type="submit"
-          disabled={
-            createMutation.isPending ||
-            !(title.trim() || dealTemplates.find((template) => template.id === templateId)?.title)
-          }
-          className="kanban-column__add-btn"
-          aria-label="Добавить сделку"
-        >
-          +
-        </button>
-      </form>
+      <VueIsland component={FunnelAddDealFormView} componentProps={addDealProps} />
     </div>
   );
 }
@@ -570,7 +458,16 @@ const DealCard = memo(function DealCard({
     opacity: isDragging ? 0.4 : 1,
   };
 
-  const amountLabel = formatDealAmount(deal.amount);
+  const viewProps = useMemo(
+    () => ({
+      title: deal.title,
+      amountLabel: formatDealAmount(deal.amount) ?? '',
+      contactName: deal.contactName ?? '',
+      companyName: deal.companyName ?? '',
+      assigneeName: deal.assignee?.name.split(' ')[0] ?? '',
+    }),
+    [deal.title, deal.amount, deal.contactName, deal.companyName, deal.assignee?.name],
+  );
 
   return (
     <div
@@ -591,6 +488,7 @@ const DealCard = memo(function DealCard({
         <button
           type="button"
           className="kanban-task-card__drag"
+          style={{ order: 2 }}
           {...attributes}
           {...listeners}
           onClick={(event) => event.stopPropagation()}
@@ -598,25 +496,7 @@ const DealCard = memo(function DealCard({
         >
           ⠿
         </button>
-        <div className="min-w-0 flex-1">
-          <p className="kanban-task-card__title">{deal.title}</p>
-          {(amountLabel || deal.contactName || deal.companyName || deal.assignee) && (
-            <div className="kanban-task-meta">
-              {amountLabel ? (
-                <span className="kanban-task-chip crm-deal-chip--amount">{amountLabel}</span>
-              ) : null}
-              {deal.contactName ? (
-                <span className="kanban-task-chip">{deal.contactName}</span>
-              ) : null}
-              {deal.companyName ? (
-                <span className="kanban-task-chip">{deal.companyName}</span>
-              ) : null}
-              {deal.assignee ? (
-                <span className="kanban-task-chip">{deal.assignee.name.split(' ')[0]}</span>
-              ) : null}
-            </div>
-          )}
-        </div>
+        <VueIsland component={DealCardBodyView} componentProps={viewProps} displayContents />
       </div>
     </div>
   );
@@ -624,34 +504,23 @@ const DealCard = memo(function DealCard({
 
 function AddStagePanel({ workspaceId, funnelId }: { workspaceId: string; funnelId: string }) {
   const createStageMutation = useCreateStageMutation(workspaceId, funnelId);
-  const [name, setName] = useState('');
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!name.trim()) return;
-    await createStageMutation.mutateAsync(name.trim());
-    setName('');
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="kanban-add-column">
-      <span className="kanban-add-column__label">Новый этап</span>
-      <input
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-        placeholder="Название этапа"
-        maxLength={80}
-        className="kanban-add-column__input"
-      />
-      <button
-        type="submit"
-        disabled={!name.trim() || createStageMutation.isPending}
-        className="kanban-add-column__btn"
-      >
-        {createStageMutation.isPending ? 'Добавление...' : '+ Добавить этап'}
-      </button>
-    </form>
+  const onCreate = useCallback(
+    async (name: string) => {
+      await createStageMutation.mutateAsync(name);
+    },
+    [createStageMutation],
   );
+
+  const viewProps = useMemo(
+    () => ({
+      pending: createStageMutation.isPending,
+      onCreate,
+    }),
+    [createStageMutation.isPending, onCreate],
+  );
+
+  return <VueIsland component={AddStagePanelView} componentProps={viewProps} />;
 }
 
 function findDeal(funnel: FunnelView, dealId: string) {
