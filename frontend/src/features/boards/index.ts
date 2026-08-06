@@ -1,7 +1,6 @@
 export { KanbanBoard } from './components/kanban-board';
-// BoardFiltersBar: import directly from './components/board-filters-bar' —
+// BoardFiltersBar / BoardWorkloadPanel: import directly —
 // do not re-export here (pulls Vue islands into every barrel consumer).
-export { BoardWorkloadPanel } from './components/board-workload-panel';
 // TaskDetailDrawer: import via dynamic() from './components/task-detail-drawer' —
 // do not re-export here (pulls Vue islands into every barrel consumer).
 export { TaskDisplayView, TaskViewToolbar } from './components/task-display-views';

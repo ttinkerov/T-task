@@ -1,9 +1,12 @@
 'use client';
 
-import { PRIORITY_OPTIONS, type BoardColumn, type BulkUpdateTasksPayload } from '../types';
-import { useBulkUpdateTasksMutation } from '../hooks';
-import { useMembersQuery } from '@/features/workspaces/hooks';
+import { useCallback, useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { useSprintsQuery } from '@/features/sprints';
+import { useMembersQuery } from '@/features/workspaces/hooks';
+import BulkActionsToolbarView from '@/vue/boards/BulkActionsToolbar.vue';
+import { useBulkUpdateTasksMutation } from '../hooks';
+import { PRIORITY_OPTIONS, type BoardColumn, type BulkUpdateTasksPayload } from '../types';
 
 export function BulkActionsToolbar({
   workspaceId,
@@ -23,119 +26,64 @@ export function BulkActionsToolbar({
   const bulkMutation = useBulkUpdateTasksMutation(workspaceId, boardId);
   const count = selectedIds.size;
 
+  const memberOptions = useMemo(
+    () => members.map((member) => ({ userId: member.userId, name: member.user.name })),
+    [members],
+  );
+
+  const priorityOptions = useMemo(() => PRIORITY_OPTIONS.filter((option) => option.value), []);
+
+  const columnOptions = useMemo(
+    () => columns.map((column) => ({ id: column.id, name: column.name })),
+    [columns],
+  );
+
+  const sprintOptions = useMemo(
+    () => sprints.map((sprint) => ({ id: sprint.id, name: sprint.name })),
+    [sprints],
+  );
+
+  const onApply = useCallback(
+    async (patch: Omit<BulkUpdateTasksPayload, 'taskIds'>) => {
+      try {
+        await bulkMutation.mutateAsync({
+          taskIds: [...selectedIds],
+          ...patch,
+        });
+        onClear();
+      } catch {
+        /* ignore */
+      }
+    },
+    [bulkMutation, onClear, selectedIds],
+  );
+
+  const viewProps = useMemo(
+    () => ({
+      count,
+      members: memberOptions,
+      sprints: sprintOptions,
+      columns: columnOptions,
+      priorityOptions,
+      pending: bulkMutation.isPending,
+      error: bulkMutation.isError ? 'Не удалось применить изменения' : '',
+      onApply,
+      onClear,
+    }),
+    [
+      count,
+      memberOptions,
+      sprintOptions,
+      columnOptions,
+      priorityOptions,
+      bulkMutation.isPending,
+      bulkMutation.isError,
+      onApply,
+      onClear,
+    ],
+  );
+
   if (count === 0) return null;
 
-  const apply = async (patch: Omit<BulkUpdateTasksPayload, 'taskIds'>) => {
-    try {
-      await bulkMutation.mutateAsync({
-        taskIds: [...selectedIds],
-        ...patch,
-      });
-      onClear();
-    } catch {
-      /* ignore */
-    }
-  };
-
-  return (
-    <div className="bulk-actions-toolbar" role="toolbar" aria-label="Массовые действия">
-      <strong aria-live="polite">{count} выбрано</strong>
-
-      <select
-        aria-label="Исполнитель"
-        disabled={bulkMutation.isPending}
-        defaultValue=""
-        onChange={(event) => {
-          const value = event.target.value;
-          if (!value) return;
-          void apply({ assigneeId: value === '__none__' ? null : value });
-          event.target.value = '';
-        }}
-      >
-        <option value="">Исполнитель…</option>
-        <option value="__none__">Без исполнителя</option>
-        {members.map((member) => (
-          <option key={member.userId} value={member.userId}>
-            {member.user.name}
-          </option>
-        ))}
-      </select>
-
-      <select
-        aria-label="Приоритет"
-        disabled={bulkMutation.isPending}
-        defaultValue=""
-        onChange={(event) => {
-          const value = event.target.value;
-          if (!value) return;
-          void apply({
-            priority: value === '__none__' ? null : (value as BulkUpdateTasksPayload['priority']),
-          });
-          event.target.value = '';
-        }}
-      >
-        <option value="">Приоритет…</option>
-        <option value="__none__">Без приоритета</option>
-        {PRIORITY_OPTIONS.filter((option) => option.value).map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-
-      <select
-        aria-label="Спринт"
-        disabled={bulkMutation.isPending}
-        defaultValue=""
-        onChange={(event) => {
-          const value = event.target.value;
-          if (!value) return;
-          void apply({ sprintId: value === '__none__' ? null : value });
-          event.target.value = '';
-        }}
-      >
-        <option value="">Спринт…</option>
-        <option value="__none__">Без спринта</option>
-        {sprints.map((sprint) => (
-          <option key={sprint.id} value={sprint.id}>
-            {sprint.name}
-          </option>
-        ))}
-      </select>
-
-      <select
-        aria-label="Переместить в колонку"
-        disabled={bulkMutation.isPending}
-        defaultValue=""
-        onChange={(event) => {
-          const value = event.target.value;
-          if (!value) return;
-          void apply({ columnId: value });
-          event.target.value = '';
-        }}
-      >
-        <option value="">В колонку…</option>
-        {columns.map((column) => (
-          <option key={column.id} value={column.id}>
-            {column.name}
-          </option>
-        ))}
-      </select>
-
-      <button
-        type="button"
-        className="btn-ghost"
-        onClick={onClear}
-        disabled={bulkMutation.isPending}
-      >
-        Сбросить
-      </button>
-
-      {bulkMutation.isError ? (
-        <span className="bulk-actions-toolbar__error" role="alert">
-          Не удалось применить изменения
-        </span>
-      ) : null}
-    </div>
-  );
+  return <VueIsland component={BulkActionsToolbarView} componentProps={viewProps} />;
 }
