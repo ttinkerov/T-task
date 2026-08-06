@@ -1,6 +1,6 @@
 'use client';
 
-import { KanbanBoard } from '@/features/boards';
+import { KanbanBoard } from '@/features/boards/components/kanban-board';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { useRouter, useSearchParams } from 'next/navigation';

@@ -20,13 +20,17 @@ export function VueIsland({ component, componentProps }: Props) {
     const host = hostRef.current;
     if (!host) return;
 
-    const mounted = mountVueApp(host, component, propsRef.current);
-    appRef.current = mounted;
-
-    return () => {
-      mounted.unmount();
-      appRef.current = null;
-    };
+    try {
+      const mounted = mountVueApp(host, component, propsRef.current);
+      appRef.current = mounted;
+      return () => {
+        mounted.unmount();
+        appRef.current = null;
+      };
+    } catch (error) {
+      console.error('[VueIsland] mount failed', error);
+      return undefined;
+    }
   }, [component]);
 
   useEffect(() => {

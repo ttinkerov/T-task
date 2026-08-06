@@ -1,10 +1,10 @@
 'use client';
 
-import { TaskAttachmentsSection } from '@/features/attachments';
-import { TaskChecklistSection } from '@/features/dod';
 import { ApplyTaskTemplateControl } from '@/features/templates';
 import { LazyMount } from '@/shared/ui/lazy-mount';
 import type { BoardTask, TaskRelationCandidate, TaskTag } from '../../types';
+import { TaskAttachmentsSection } from '@/features/attachments/components/task-attachments-section';
+import { TaskChecklistSection } from '@/features/dod/components/task-checklist-section';
 import { TaskBacklinksSection } from '../task-backlinks-section';
 import { TaskCustomFieldsSection } from '../task-custom-fields-section';
 import { TaskDealsSection } from '../task-deals-section';
@@ -14,6 +14,7 @@ import { TaskSubtasksSection } from '../task-subtasks-section';
 import { TaskTagsSection } from '../task-tags-section';
 
 const EMPTY_TAGS: TaskTag[] = [];
+const EMPTY_CUSTOM_FIELDS: BoardTask['customFields'] = [];
 
 export function TaskDrawerSections({
   workspaceId,
@@ -34,21 +35,21 @@ export function TaskDrawerSections({
     <>
       <ApplyTaskTemplateControl workspaceId={workspaceId} taskId={task.id} />
 
-      <TaskTagsSection
-        workspaceId={workspaceId}
-        taskId={task.id}
-        boardId={boardId}
-        selected={detailTask.tags ?? task.tags ?? EMPTY_TAGS}
-      />
-
+      {/* All Vue islands stay behind LazyMount so drawer chrome (close) stays React-only. */}
       <LazyMount eagerMs={150}>
+        <TaskTagsSection
+          workspaceId={workspaceId}
+          taskId={task.id}
+          boardId={boardId}
+          selected={detailTask.tags ?? task.tags ?? EMPTY_TAGS}
+        />
         <TaskSubtasksSection workspaceId={workspaceId} taskId={task.id} boardId={boardId} />
         <TaskChecklistSection workspaceId={workspaceId} taskId={task.id} boardId={boardId} />
         <TaskAttachmentsSection workspaceId={workspaceId} taskId={task.id} />
         <TaskCustomFieldsSection
           workspaceId={workspaceId}
           taskId={task.id}
-          values={task.customFields}
+          values={task.customFields ?? EMPTY_CUSTOM_FIELDS}
         />
         <TaskRollupSection workspaceId={workspaceId} taskId={task.id} />
         <TaskRelationsSection

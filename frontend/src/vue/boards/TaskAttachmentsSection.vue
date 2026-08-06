@@ -10,7 +10,7 @@
 
     <p v-if="isLoading" role="status">Загрузка вложений...</p>
 
-    <p v-if="attachments.length === 0 && !isLoading" class="task-tags__empty">Пока нет файлов</p>
+    <p v-else-if="attachments.length === 0" class="task-tags__empty">Пока нет файлов</p>
 
     <ul v-else class="task-attachments__list" role="list">
       <li v-for="attachment in attachments" :key="attachment.id">

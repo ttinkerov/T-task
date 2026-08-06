@@ -20,7 +20,7 @@
       @change="onSave?.($event.target.value || null)"
     >
       <option value="">Не выбрано</option>
-      <option v-for="option in definition.options" :key="option" :value="option">
+      <option v-for="option in options" :key="option" :value="option">
         {{ option }}
       </option>
     </select>
@@ -32,7 +32,7 @@
   >
     <legend>{{ definition.name }}</legend>
     <label
-      v-for="option in definition.options"
+      v-for="option in options"
       :key="option"
       class="task-custom-fields__multiselect-option"
     >
@@ -115,6 +115,9 @@ const props = defineProps({
 })
 
 const fieldId = computed(() => 'custom-field-' + props.definition.id)
+const options = computed(() =>
+  Array.isArray(props.definition.options) ? props.definition.options : [],
+)
 const selectedMulti = computed(() => (Array.isArray(props.value) ? props.value : []))
 const draft = ref(toInputString(props.value))
 

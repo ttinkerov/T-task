@@ -58,7 +58,7 @@ export async function closeTaskDrawerIfOpen(page: Page) {
   if (!(await drawer.isVisible().catch(() => false))) {
     return;
   }
-  await drawer.getByRole('button', { name: 'Закрыть' }).click();
+  await drawer.getByRole('button', { name: 'Закрыть', exact: true }).click();
   await expect(drawer).toBeHidden();
 }
 
