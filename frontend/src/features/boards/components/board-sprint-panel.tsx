@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useMemo, useState } from 'react';
-import { AiSummaryPanel } from '@/features/ai';
+import { AiSummaryPanel } from '@/features/ai/components/ai-summary-panel';
 import {
   useCloseSprintMutation,
   useCreateSprintMutation,

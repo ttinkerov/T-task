@@ -1,6 +1,7 @@
 'use client';
 
-import { AiChatPanel, AiSummaryPanel } from '@/features/ai';
+import { AiChatPanel } from '@/features/ai/components/ai-chat-panel';
+import { AiSummaryPanel } from '@/features/ai/components/ai-summary-panel';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { useRouter } from 'next/navigation';

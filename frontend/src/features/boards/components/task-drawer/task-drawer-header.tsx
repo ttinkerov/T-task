@@ -1,5 +1,9 @@
 'use client';
 
+import { useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import TaskDrawerHeaderView from '@/vue/boards/TaskDrawerHeader.vue';
+
 export function TaskDrawerHeader({
   columnName,
   onClose,
@@ -7,20 +11,13 @@ export function TaskDrawerHeader({
   columnName: string;
   onClose: () => void;
 }) {
-  return (
-    <div className="task-drawer__header">
-      <div>
-        <p className="task-drawer__eyebrow">{columnName}</p>
-        <h2 className="task-drawer__heading">Задача</h2>
-      </div>
-      <button
-        type="button"
-        className="dashboard-header__icon-btn"
-        onClick={onClose}
-        aria-label="Закрыть"
-      >
-        ×
-      </button>
-    </div>
+  const viewProps = useMemo(
+    () => ({
+      columnName,
+      onClose,
+    }),
+    [columnName, onClose],
   );
+
+  return <VueIsland component={TaskDrawerHeaderView} componentProps={viewProps} />;
 }

@@ -7,7 +7,7 @@ import { InvitationsList } from '@/features/workspaces/components/invitations-li
 import { InviteMemberForm } from '@/features/workspaces/components/invite-member-form';
 import { MembersTable } from '@/features/workspaces/components/members-table';
 import { WorkspaceOverdueSettings } from '@/features/workspaces/components/workspace-overdue-settings';
-import { AiSettingsCard } from '@/features/ai';
+import { AiSettingsCard } from '@/features/ai/components/ai-settings-card';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
 
 export default function WorkspaceSettingsPage() {

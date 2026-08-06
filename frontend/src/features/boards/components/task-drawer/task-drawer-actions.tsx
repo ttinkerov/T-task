@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import TaskDrawerActionsView from '@/vue/boards/TaskDrawerActions.vue';
 import { useDeleteTaskMutation, useDuplicateTaskMutation } from '../../hooks';
 import { copyTaskLink } from '../../lib/task-link';
 
@@ -27,52 +29,48 @@ export function TaskDrawerActions({
   const duplicateMutation = useDuplicateTaskMutation(workspaceId);
   const [linkCopied, setLinkCopied] = useState(false);
 
-  const handleDelete = async () => {
+  const onDelete = useCallback(async () => {
     await deleteMutation.mutateAsync(taskId);
     onClose();
-  };
+  }, [deleteMutation, taskId, onClose]);
 
-  const handleDuplicate = async () => {
+  const onDuplicate = useCallback(async () => {
     const copy = await duplicateMutation.mutateAsync(taskId);
     if (copy?.id) {
       onOpenTask(copy.id);
     }
-  };
+  }, [duplicateMutation, taskId, onOpenTask]);
 
-  const handleCopyLink = async () => {
+  const onCopyLink = useCallback(async () => {
     await copyTaskLink(taskId, linkSource);
     setLinkCopied(true);
     window.setTimeout(() => setLinkCopied(false), 2000);
-  };
+  }, [taskId, linkSource]);
 
-  return (
-    <>
-      {saveError ? <p className="text-sm text-red-400">{saveError}</p> : null}
-
-      <div className="task-drawer__actions">
-        <button type="button" onClick={handleCopyLink} className="btn-ghost">
-          {linkCopied ? 'Скопировано' : 'Ссылка'}
-        </button>
-        <button
-          type="button"
-          onClick={handleDuplicate}
-          disabled={duplicateMutation.isPending}
-          className="btn-ghost"
-        >
-          {duplicateMutation.isPending ? '…' : 'Дублировать'}
-        </button>
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={deleteMutation.isPending}
-          className="btn-ghost task-drawer__danger"
-        >
-          Удалить
-        </button>
-        <button type="submit" disabled={isSaving || !title.trim()} className="btn-primary">
-          {isSaving ? '…' : 'Сохранить'}
-        </button>
-      </div>
-    </>
+  const viewProps = useMemo(
+    () => ({
+      isSaving,
+      canSave: Boolean(title.trim()),
+      saveError: saveError ?? '',
+      linkCopied,
+      duplicatePending: duplicateMutation.isPending,
+      deletePending: deleteMutation.isPending,
+      onCopyLink,
+      onDuplicate,
+      onDelete,
+    }),
+    [
+      isSaving,
+      title,
+      saveError,
+      linkCopied,
+      duplicateMutation.isPending,
+      deleteMutation.isPending,
+      onCopyLink,
+      onDuplicate,
+      onDelete,
+    ],
   );
+
+  return <VueIsland component={TaskDrawerActionsView} componentProps={viewProps} />;
 }
