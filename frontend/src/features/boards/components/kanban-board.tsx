@@ -32,7 +32,8 @@ import {
 } from './kanban/hooks/use-focus-create-task-input';
 import { KanbanDragOverlay } from './kanban/kanban-drag-overlay';
 import { SortableKanbanColumn } from './kanban/sortable-kanban-column';
-import { TaskDisplayView, TaskViewToolbar } from './task-display-views';
+import { TaskDisplayView } from './task-display-views';
+import { TaskViewToolbar } from './task-view-toolbar';
 import { LazyMount } from '@/shared/ui/lazy-mount';
 
 const TaskDetailDrawer = dynamic(

@@ -4,7 +4,6 @@ import {
   PRIORITY_LABELS,
   PRIORITY_OPTIONS,
   TaskDisplayView,
-  TaskViewToolbar,
   type BoardColumn,
   type BoardFilters,
   type BoardViewMode,
@@ -13,6 +12,7 @@ import {
   normalizeCalendarRange,
   calendarRangeFromStoredView,
 } from '@/features/boards';
+import { TaskViewToolbar } from '@/features/boards/components/task-view-toolbar';
 import { SavedFiltersControl } from '@/features/saved-filters/components/saved-filters-control';
 import { downloadExport } from '@/features/workspace-tools/api';
 import { useMembersQuery } from '@/features/workspaces/hooks';

@@ -1,7 +1,5 @@
 'use client';
 
-import { SegmentedControl } from '@/components/ui/segmented-control';
-import { useMemo } from 'react';
 import { PRIORITY_LABELS, type BoardColumn, type BoardTask } from '../types';
 import {
   addDays,
@@ -13,116 +11,6 @@ import {
   type BoardViewMode,
   type CalendarRange,
 } from '../lib/task-view-utils';
-
-const VIEW_OPTIONS: { value: BoardViewMode; label: string }[] = [
-  { value: 'BOARD', label: 'Доска' },
-  { value: 'TABLE', label: 'Таблица' },
-  { value: 'CALENDAR', label: 'Календарь' },
-  { value: 'TIMELINE', label: 'Таймлайн' },
-];
-
-const CALENDAR_RANGE_OPTIONS: { value: CalendarRange; label: string }[] = [
-  { value: 'WEEK', label: 'Неделя' },
-  { value: 'MONTH', label: 'Месяц' },
-];
-
-interface ViewToolbarProps {
-  mode: BoardViewMode;
-  anchor: Date;
-  calendarRange?: CalendarRange;
-  modes?: BoardViewMode[];
-  onModeChange: (mode: BoardViewMode) => void;
-  onAnchorChange: (date: Date) => void;
-  onCalendarRangeChange?: (range: CalendarRange) => void;
-}
-
-export function TaskViewToolbar({
-  mode,
-  anchor,
-  calendarRange = 'WEEK',
-  modes,
-  onModeChange,
-  onAnchorChange,
-  onCalendarRangeChange,
-}: ViewToolbarProps) {
-  const hasDateNavigation = mode === 'CALENDAR' || mode === 'TIMELINE';
-  const step = mode === 'CALENDAR' && calendarRange === 'MONTH' ? 1 : mode === 'CALENDAR' ? 7 : 14;
-  const label =
-    mode === 'CALENDAR' && calendarRange === 'MONTH'
-      ? anchor.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
-      : mode === 'CALENDAR'
-        ? formatRange(buildWeekDays(anchor))
-        : mode === 'TIMELINE'
-          ? formatRange(
-              Array.from({ length: 14 }, (_, index) => addDays(startOfWeek(anchor), index)),
-            )
-          : null;
-
-  const viewOptions = useMemo(
-    () => VIEW_OPTIONS.filter((option) => !modes || modes.includes(option.value)),
-    [modes],
-  );
-
-  return (
-    <div className="task-view-toolbar">
-      <div className="task-view-toolbar__lead">
-        <SegmentedControl
-          aria-label="Вид задач"
-          options={viewOptions}
-          value={mode}
-          onChange={onModeChange}
-        />
-      </div>
-
-      <div className="task-view-toolbar__controls">
-        {mode === 'CALENDAR' && onCalendarRangeChange ? (
-          <SegmentedControl
-            size="sm"
-            aria-label="Период календаря"
-            options={CALENDAR_RANGE_OPTIONS}
-            value={calendarRange}
-            onChange={onCalendarRangeChange}
-          />
-        ) : null}
-
-        {hasDateNavigation ? (
-          <div className="task-view-toolbar__dates">
-            <button
-              type="button"
-              onClick={() =>
-                onAnchorChange(
-                  mode === 'CALENDAR' && calendarRange === 'MONTH'
-                    ? new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1)
-                    : addDays(anchor, -step),
-                )
-              }
-              aria-label="Предыдущий период"
-            >
-              ‹
-            </button>
-            <button type="button" onClick={() => onAnchorChange(new Date())}>
-              Сегодня
-            </button>
-            <strong>{label}</strong>
-            <button
-              type="button"
-              onClick={() =>
-                onAnchorChange(
-                  mode === 'CALENDAR' && calendarRange === 'MONTH'
-                    ? new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1)
-                    : addDays(anchor, step),
-                )
-              }
-              aria-label="Следующий период"
-            >
-              ›
-            </button>
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
 
 export function TaskDisplayView({
   mode,
@@ -426,17 +314,4 @@ function formatDueDate(value: string | null) {
         year: 'numeric',
       })
     : 'Без срока';
-}
-
-function formatRange(days: Date[]) {
-  const first = days[0];
-  const last = days[days.length - 1];
-  return `${first.toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'short',
-  })} — ${last.toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })}`;
 }
