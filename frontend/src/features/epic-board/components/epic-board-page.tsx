@@ -11,7 +11,8 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import {
   EMPTY_ALL_TASKS_FILTERS,
   useAllTasksMetaQuery,
@@ -19,6 +20,9 @@ import {
   type AllTask,
 } from '@/features/all-tasks';
 import { useMoveTaskMutation } from '@/features/boards/hooks';
+import EpicBoardStatusView from '@/vue/epic-board/EpicBoardStatus.vue';
+import EpicBoardToolbarView from '@/vue/epic-board/EpicBoardToolbar.vue';
+import EpicStickyOverlayView from '@/vue/epic-board/EpicStickyOverlay.vue';
 import { EpicStickyColumn } from './epic-sticky-column';
 import { buildEpicStickyLanes, stickyColorForTask } from '../lib/epic-sticky-lanes';
 
@@ -151,93 +155,90 @@ export function EpicBoardPage({
     }
   };
 
+  const onEpicChange = useCallback((nextId: string | null) => {
+    setEpicId(nextId);
+  }, []);
+
+  const epicOptions = useMemo(
+    () => epics.map((epic) => ({ id: epic.id, title: epic.title })),
+    [epics],
+  );
+
+  const toolbarProps = useMemo(
+    () => ({
+      epicId: epicId ?? '',
+      epics: epicOptions,
+      pickerDisabled: epicsQuery.isLoading || epics.length === 0,
+      onEpicChange,
+    }),
+    [epicId, epicOptions, epicsQuery.isLoading, epics.length, onEpicChange],
+  );
+
+  const boardStatus = epicsQuery.isLoading
+    ? 'loading-epics'
+    : epics.length === 0
+      ? 'no-epics'
+      : childrenQuery.isLoading
+        ? 'loading-children'
+        : 'ready';
+
+  const statusProps = useMemo(
+    () => ({
+      status: boardStatus,
+      boardName: selectedEpic?.board.name ?? '',
+      foreignCount,
+      moveError,
+    }),
+    [boardStatus, selectedEpic?.board.name, foreignCount, moveError],
+  );
+
+  const overlayProps = useMemo(
+    () =>
+      activeTask
+        ? {
+            title: activeTask.title,
+            background: stickyColorForTask(activeTask.id),
+          }
+        : null,
+    [activeTask],
+  );
+
   return (
     <div className="epic-board">
-      <header className="epic-board__toolbar">
-        <div>
-          <p className="epic-board__eyebrow">Эпик-борд</p>
-          <h1 className="epic-board__title">Стикеры по статусам</h1>
-        </div>
-        <label className="epic-board__epic-picker">
-          <span>Эпик</span>
-          <select
-            className="glass-input"
-            value={epicId ?? ''}
-            onChange={(event) => setEpicId(event.target.value || null)}
-            disabled={epicsQuery.isLoading || epics.length === 0}
-          >
-            {epics.length === 0 ? <option value="">Нет эпиков</option> : null}
-            {epics.map((epic) => (
-              <option key={epic.id} value={epic.id}>
-                {epic.title}
-              </option>
+      <VueIsland component={EpicBoardToolbarView} componentProps={toolbarProps} />
+      <VueIsland component={EpicBoardStatusView} componentProps={statusProps} />
+
+      {boardStatus === 'ready' ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="epic-board__lanes">
+            {lanes.map((lane) => (
+              <EpicStickyColumn
+                key={lane.column.id}
+                columnId={lane.column.id}
+                name={lane.column.name}
+                tasks={lane.tasks}
+                onOpenTask={setSelectedTaskId}
+              />
             ))}
-          </select>
-        </label>
-      </header>
+          </div>
+          <DragOverlay>
+            {overlayProps ? (
+              <VueIsland component={EpicStickyOverlayView} componentProps={overlayProps} />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      ) : null}
 
-      {epicsQuery.isLoading ? (
-        <p className="text-sm text-muted-foreground">Загружаем эпики…</p>
-      ) : epics.length === 0 ? (
+      {boardStatus === 'ready' && lanes.every((lane) => lane.tasks.length === 0) ? (
         <p className="epic-board__empty">
-          Отметьте задачу как эпик в карточке — здесь появятся её стикеры.
+          У эпика пока нет задач на этой доске. Привяжите задачи через поле «Эпик».
         </p>
-      ) : childrenQuery.isLoading ? (
-        <p className="text-sm text-muted-foreground">Загружаем задачи эпика…</p>
-      ) : (
-        <>
-          {selectedEpic ? (
-            <p className="epic-board__subtitle">
-              Доска «{selectedEpic.board.name}» · перетащите стикер между колонками
-            </p>
-          ) : null}
-          {foreignCount > 0 ? (
-            <p className="epic-board__note" role="status">
-              Ещё {foreignCount} задач(и) эпика на других досках — здесь только текущая доска.
-            </p>
-          ) : null}
-          {moveError ? (
-            <p className="epic-board__error" role="alert">
-              {moveError}
-            </p>
-          ) : null}
-
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="epic-board__lanes">
-              {lanes.map((lane) => (
-                <EpicStickyColumn
-                  key={lane.column.id}
-                  columnId={lane.column.id}
-                  name={lane.column.name}
-                  tasks={lane.tasks}
-                  onOpenTask={setSelectedTaskId}
-                />
-              ))}
-            </div>
-            <DragOverlay>
-              {activeTask ? (
-                <div
-                  className="epic-sticky epic-sticky--overlay"
-                  style={{ background: stickyColorForTask(activeTask.id) }}
-                >
-                  <span className="epic-sticky__title">{activeTask.title}</span>
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-
-          {lanes.every((lane) => lane.tasks.length === 0) ? (
-            <p className="epic-board__empty">
-              У эпика пока нет задач на этой доске. Привяжите задачи через поле «Эпик».
-            </p>
-          ) : null}
-        </>
-      )}
+      ) : null}
 
       {selectedTask ? (
         <TaskDetailDrawer

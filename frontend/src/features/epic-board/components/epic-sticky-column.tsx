@@ -2,7 +2,11 @@
 
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+import { useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import type { AllTask } from '@/features/all-tasks';
+import EpicStickyColumnHeaderView from '@/vue/epic-board/EpicStickyColumnHeader.vue';
+import EpicStickyNoteBodyView from '@/vue/epic-board/EpicStickyNoteBody.vue';
 import { stickyColorForTask, stickyTiltForTask } from '../lib/epic-sticky-lanes';
 
 export function EpicStickyNote({
@@ -29,6 +33,14 @@ export function EpicStickyNote({
     zIndex: isDragging ? 20 : 1,
   };
 
+  const viewProps = useMemo(
+    () => ({
+      title: task.title,
+      assigneeName: task.assignee?.name.split(' ')[0] ?? '',
+    }),
+    [task.title, task.assignee?.name],
+  );
+
   return (
     <button
       ref={setNodeRef}
@@ -39,10 +51,7 @@ export function EpicStickyNote({
       {...listeners}
       {...attributes}
     >
-      <span className="epic-sticky__title">{task.title}</span>
-      {task.assignee ? (
-        <span className="epic-sticky__meta">{task.assignee.name.split(' ')[0]}</span>
-      ) : null}
+      <VueIsland component={EpicStickyNoteBodyView} componentProps={viewProps} displayContents />
     </button>
   );
 }
@@ -60,16 +69,21 @@ export function EpicStickyColumn({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: columnId, data: { type: 'column' } });
 
+  const headerProps = useMemo(
+    () => ({
+      name,
+      count: tasks.length,
+    }),
+    [name, tasks.length],
+  );
+
   return (
     <section
       ref={setNodeRef}
       className={`epic-sticky-column${isOver ? ' epic-sticky-column--over' : ''}`}
       data-testid={`epic-column-${columnId}`}
     >
-      <header className="epic-sticky-column__header">
-        <h3>{name}</h3>
-        <span>{tasks.length}</span>
-      </header>
+      <VueIsland component={EpicStickyColumnHeaderView} componentProps={headerProps} />
       <div className="epic-sticky-column__notes">
         {tasks.map((task) => (
           <EpicStickyNote key={task.id} task={task} onOpen={onOpenTask} />
