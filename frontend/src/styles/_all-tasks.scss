@@ -77,6 +77,10 @@
     }
   }
 
+  &__saved-filters-host {
+    min-width: 0;
+  }
+
   &__content {
     transition: opacity 160ms ease;
 

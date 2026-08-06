@@ -19,6 +19,8 @@ import { useMembersQuery } from '@/features/workspaces/hooks';
 import { VueIsland } from '@/components/vue/VueIsland';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import AllTasksFiltersView from '@/vue/all-tasks/AllTasksFilters.vue';
 import AllTasksList from '@/vue/all-tasks/AllTasksList.vue';
 import { useAllTasksMetaQuery, useAllTasksQuery } from '../hooks';
 import {
@@ -69,6 +71,7 @@ export function AllTasksPage({
   const [calendarRange, setCalendarRange] = useState<CalendarRange>('WEEK');
   const [viewAnchor, setViewAnchor] = useState(() => new Date());
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [savedFiltersHost, setSavedFiltersHost] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -143,11 +146,6 @@ export function AllTasksPage({
     [data?.items],
   );
 
-  const changeFilters = (next: AllTasksFilters) => {
-    setFilters(next);
-    setPage(1);
-  };
-
   const savedFilterView = lockedAssigneeId ? 'MY_TASKS' : 'ALL_TASKS';
   const boardFiltersForSave = useMemo(
     () => allTasksFiltersToBoardFilters(filters, Boolean(lockedAssigneeId)),
@@ -190,6 +188,79 @@ export function AllTasksPage({
     setPage(nextPage);
   }, []);
 
+  const onSavedHostReady = useCallback((el: HTMLElement | null) => {
+    setSavedFiltersHost(el);
+  }, []);
+
+  const onSearchChange = useCallback((value: string) => {
+    setSearchInput(value);
+  }, []);
+
+  const onFiltersChange = useCallback((next: AllTasksFilters) => {
+    setFilters(next);
+    setPage(1);
+  }, []);
+
+  const onSortChange = useCallback((value: string) => {
+    const [nextSort, nextOrder] = value.split(':') as [AllTasksSort, SortOrder];
+    setSortBy(nextSort);
+    setSortOrder(nextOrder);
+    setPage(1);
+  }, []);
+
+  const onResetFilters = useCallback(() => {
+    setSearchInput('');
+    setFilters({
+      ...EMPTY_ALL_TASKS_FILTERS,
+      ...(lockedAssigneeId ? { assigneeId: lockedAssigneeId } : {}),
+    });
+    setPage(1);
+  }, [lockedAssigneeId]);
+
+  const onExport = useCallback(() => {
+    void downloadExport(workspaceId, 'tasks');
+  }, [workspaceId]);
+
+  const priorityOptions = useMemo(() => PRIORITY_OPTIONS.filter((option) => option.value), []);
+
+  const filterProps = useMemo(
+    () => ({
+      searchInput,
+      filters,
+      sortValue: `${sortBy}:${sortOrder}`,
+      boards: filterBoards,
+      columns: availableColumns,
+      members,
+      tags: filterTags,
+      priorityOptions,
+      assigneeLocked: Boolean(lockedAssigneeId),
+      onSearchChange,
+      onFiltersChange,
+      onSortChange,
+      onReset: onResetFilters,
+      onExport,
+      onSavedHostReady,
+    }),
+    [
+      searchInput,
+      filters,
+      sortBy,
+      sortOrder,
+      filterBoards,
+      availableColumns,
+      members,
+      filterTags,
+      priorityOptions,
+      lockedAssigneeId,
+      onSearchChange,
+      onFiltersChange,
+      onSortChange,
+      onResetFilters,
+      onExport,
+      onSavedHostReady,
+    ],
+  );
+
   const listProps = useMemo(
     () => ({
       rows: listRows,
@@ -225,152 +296,18 @@ export function AllTasksPage({
         onCalendarRangeChange={changeCalendarRange}
       />
 
-      <fieldset className="all-tasks__filters">
-        <legend className="sr-only">Фильтры и сортировка задач</legend>
-        <SavedFiltersControl
-          workspaceId={workspaceId}
-          view={savedFilterView}
-          filters={boardFiltersForSave}
-          onApply={applySavedBoardFiltersSafe}
-        />
-        <button
-          type="button"
-          className="board-filters__chip"
-          onClick={() => void downloadExport(workspaceId, 'tasks')}
-        >
-          CSV
-        </button>
-        <input
-          value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
-          placeholder="Поиск по названию..."
-          aria-label="Поиск задач"
-        />
-        <select
-          value={filters.boardId}
-          onChange={(event) =>
-            changeFilters({ ...filters, boardId: event.target.value, columnId: '' })
-          }
-          aria-label="Фильтр по доске"
-        >
-          <option value="">Все доски</option>
-          {filterBoards.map((board) => (
-            <option key={board.id} value={board.id}>
-              {board.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filters.columnId}
-          onChange={(event) => changeFilters({ ...filters, columnId: event.target.value })}
-          disabled={!filters.boardId}
-          aria-label="Фильтр по колонке"
-        >
-          <option value="">Все колонки</option>
-          {availableColumns.map((column) => (
-            <option key={column.id} value={column.id}>
-              {column.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filters.assigneeId}
-          onChange={(event) => changeFilters({ ...filters, assigneeId: event.target.value })}
-          aria-label="Фильтр по исполнителю"
-          disabled={Boolean(lockedAssigneeId)}
-        >
-          <option value="">{lockedAssigneeId ? 'Только я' : 'Все исполнители'}</option>
-          {members.map((member) => (
-            <option key={member.userId} value={member.userId}>
-              {member.user.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filters.tagId}
-          onChange={(event) => changeFilters({ ...filters, tagId: event.target.value })}
-          aria-label="Фильтр по тегу"
-        >
-          <option value="">Все теги</option>
-          {filterTags.map((tag) => (
-            <option key={tag.id} value={tag.id}>
-              {tag.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filters.priority}
-          onChange={(event) =>
-            changeFilters({
-              ...filters,
-              priority: event.target.value as AllTasksFilters['priority'],
-            })
-          }
-          aria-label="Фильтр по приоритету"
-        >
-          <option value="">Все приоритеты</option>
-          {PRIORITY_OPTIONS.filter((option) => option.value).map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filters.status}
-          onChange={(event) =>
-            changeFilters({ ...filters, status: event.target.value as AllTasksFilters['status'] })
-          }
-          aria-label="Фильтр по статусу"
-        >
-          <option value="">Все статусы</option>
-          <option value="OPEN">Открытые</option>
-          <option value="COMPLETED">Завершённые</option>
-        </select>
-        <select
-          value={filters.due}
-          onChange={(event) =>
-            changeFilters({ ...filters, due: event.target.value as AllTasksFilters['due'] })
-          }
-          aria-label="Фильтр по сроку"
-        >
-          <option value="">Любой срок</option>
-          <option value="OVERDUE">Просроченные</option>
-          <option value="DUE_SOON">Скоро (7 дней)</option>
-          <option value="UPCOMING">Предстоящие</option>
-          <option value="NO_DUE">Без срока</option>
-        </select>
-        <select
-          value={`${sortBy}:${sortOrder}`}
-          onChange={(event) => {
-            const [nextSort, nextOrder] = event.target.value.split(':') as [
-              AllTasksSort,
-              SortOrder,
-            ];
-            setSortBy(nextSort);
-            setSortOrder(nextOrder);
-            setPage(1);
-          }}
-          aria-label="Сортировка задач"
-        >
-          <option value="CREATED_AT:DESC">Сначала новые</option>
-          <option value="UPDATED_AT:DESC">Недавно изменённые</option>
-          <option value="DUE_DATE:ASC">Ближайший срок</option>
-          <option value="PRIORITY:DESC">По приоритету</option>
-          <option value="TITLE:ASC">По названию</option>
-        </select>
-        <button
-          type="button"
-          onClick={() => {
-            setSearchInput('');
-            changeFilters({
-              ...EMPTY_ALL_TASKS_FILTERS,
-              ...(lockedAssigneeId ? { assigneeId: lockedAssigneeId } : {}),
-            });
-          }}
-        >
-          Сбросить
-        </button>
-      </fieldset>
+      <VueIsland component={AllTasksFiltersView} componentProps={filterProps} />
+      {savedFiltersHost
+        ? createPortal(
+            <SavedFiltersControl
+              workspaceId={workspaceId}
+              view={savedFilterView}
+              filters={boardFiltersForSave}
+              onApply={applySavedBoardFiltersSafe}
+            />,
+            savedFiltersHost,
+          )
+        : null}
 
       {viewMode === 'TABLE' ? (
         <VueIsland component={AllTasksList} componentProps={listProps} />
