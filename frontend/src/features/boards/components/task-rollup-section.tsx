@@ -1,12 +1,13 @@
 'use client';
 
 import { useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { useTaskDealsQuery } from '@/features/crm/hooks';
 import type { TaskDealLink } from '@/features/crm/deal-task-types';
+import TaskRollupSectionView from '@/vue/boards/TaskRollupSection.vue';
 import { useTaskRelationsQuery } from '../hooks';
 import type { TaskRelation } from '../types';
 import { computeTaskLinkRollup, formatRollupAmount, formatRollupDue } from '../lib/task-rollup';
-import { FieldHint } from './field-hint';
 
 const EMPTY_RELATIONS: TaskRelation[] = [];
 const EMPTY_DEALS: TaskDealLink[] = [];
@@ -36,54 +37,31 @@ export function TaskRollupSection({
   const isLoading = relationsQuery.isLoading || dealsQuery.isLoading;
   const isEmpty = rollup.relatedTaskCount === 0 && rollup.dealCount === 0;
 
-  if (isLoading) {
-    return (
-      <section className="task-rollup" aria-labelledby="task-rollup-title">
-        <h3 id="task-rollup-title" className="task-drawer__section-title">
-          Сводка
-          <FieldHint text="Rollup по связанным задачам и сделкам: прогресс, сумма и ближайший срок." />
-        </h3>
-        <p className="task-rollup__empty" role="status">
-          Считаем…
-        </p>
-      </section>
-    );
-  }
+  const viewProps = useMemo(
+    () => ({
+      isLoading,
+      isEmpty,
+      hint: isLoading
+        ? 'Rollup по связанным задачам и сделкам: прогресс, сумма и ближайший срок.'
+        : 'Rollup по связанным задачам и сделкам: % done, сумма amount, ближайший due.',
+      doneLabel:
+        rollup.donePercent === null
+          ? '—'
+          : `${rollup.donePercent}% · ${rollup.completedTaskCount}/${rollup.relatedTaskCount}`,
+      amountLabel:
+        rollup.dealCount === 0
+          ? '—'
+          : `${formatRollupAmount(rollup.amountSum)}${
+              rollup.dealCount > 1 ? ` · ${rollup.dealCount}` : ''
+            }`,
+      dueLabel: formatRollupDue(rollup.nearestDue),
+    }),
+    [isLoading, isEmpty, rollup],
+  );
 
-  if (isEmpty) {
+  if (!isLoading && isEmpty) {
     return null;
   }
 
-  return (
-    <section className="task-rollup" aria-labelledby="task-rollup-title">
-      <h3 id="task-rollup-title" className="task-drawer__section-title">
-        Сводка
-        <FieldHint text="Rollup по связанным задачам и сделкам: % done, сумма amount, ближайший due." />
-      </h3>
-      <dl className="task-rollup__grid">
-        <div>
-          <dt>% done</dt>
-          <dd>
-            {rollup.donePercent === null
-              ? '—'
-              : `${rollup.donePercent}% · ${rollup.completedTaskCount}/${rollup.relatedTaskCount}`}
-          </dd>
-        </div>
-        <div>
-          <dt>Сумма сделок</dt>
-          <dd>
-            {rollup.dealCount === 0
-              ? '—'
-              : `${formatRollupAmount(rollup.amountSum)}${
-                  rollup.dealCount > 1 ? ` · ${rollup.dealCount}` : ''
-                }`}
-          </dd>
-        </div>
-        <div>
-          <dt>Ближайший due</dt>
-          <dd>{formatRollupDue(rollup.nearestDue)}</dd>
-        </div>
-      </dl>
-    </section>
-  );
+  return <VueIsland component={TaskRollupSectionView} componentProps={viewProps} />;
 }

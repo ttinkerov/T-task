@@ -1,8 +1,10 @@
 'use client';
 
+import { useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { useTaskBacklinksQuery } from '../hooks';
 import type { TaskBacklink } from '../types';
-import { FieldHint } from './field-hint';
+import TaskBacklinksSectionView from '@/vue/boards/TaskBacklinksSection.vue';
 
 const EMPTY_BACKLINKS: TaskBacklink[] = [];
 
@@ -18,54 +20,19 @@ export function TaskBacklinksSection({
   const backlinksQuery = useTaskBacklinksQuery(workspaceId, taskId);
   const backlinks = backlinksQuery.data ?? EMPTY_BACKLINKS;
 
+  const viewProps = useMemo(
+    () => ({
+      backlinks,
+      isLoading: backlinksQuery.isLoading,
+      loadError: Boolean(backlinksQuery.error),
+      onOpenTask,
+    }),
+    [backlinks, backlinksQuery.isLoading, backlinksQuery.error, onOpenTask],
+  );
+
   if (!backlinksQuery.isLoading && !backlinksQuery.error && backlinks.length === 0) {
     return null;
   }
 
-  return (
-    <section className="task-relations" aria-labelledby="task-backlinks-title">
-      <div className="task-relations__heading">
-        <div>
-          <h3 id="task-backlinks-title" className="task-drawer__section-title">
-            Упоминания
-            <FieldHint text="Задачи, в описании которых есть [[ссылка]] на эту карточку." />
-          </h3>
-          <p>Обратные ссылки из описаний других задач.</p>
-        </div>
-        <span>{backlinks.length}</span>
-      </div>
-
-      {backlinksQuery.isLoading ? (
-        <p className="task-relations__empty" role="status">
-          Загружаем упоминания…
-        </p>
-      ) : backlinksQuery.error ? (
-        <p className="task-relations__error" role="alert">
-          Не удалось загрузить упоминания.
-        </p>
-      ) : (
-        <ul className="task-relations__list">
-          {backlinks.map((link) => (
-            <li key={link.id}>
-              <span
-                className="task-relations__icon task-relations__icon--relates_to"
-                aria-hidden="true"
-              >
-                ←
-              </span>
-              <button
-                type="button"
-                className="task-relations__task"
-                onClick={() => onOpenTask(link.id)}
-              >
-                <span>Упоминает</span>
-                <strong>{link.title}</strong>
-                <small>{link.columnName}</small>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
+  return <VueIsland component={TaskBacklinksSectionView} componentProps={viewProps} />;
 }
