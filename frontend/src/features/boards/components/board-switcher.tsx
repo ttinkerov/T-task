@@ -1,7 +1,9 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { fetchBoardTemplates, type BoardTemplate } from '@/features/workspace-tools/api';
+import BoardSwitcherView from '@/vue/boards/BoardSwitcher.vue';
 import {
   useBoardsQuery,
   useCreateBoardMutation,
@@ -47,19 +49,7 @@ export function BoardSwitcher({
   const createMutation = useCreateBoardMutation(workspaceId);
   const updateMutation = useUpdateBoardMutation(workspaceId);
   const deleteMutation = useDeleteBoardMutation(workspaceId);
-  const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [templateId, setTemplateId] = useState('kanban');
   const [templates, setTemplates] = useState<BoardTemplate[]>([]);
-  const [renaming, setRenaming] = useState(false);
-  const [renameValue, setRenameValue] = useState('');
-
-  useEffect(() => {
-    if (!creating) return;
-    void fetchBoardTemplates(workspaceId)
-      .then((response) => setTemplates(response.data ?? []))
-      .catch(() => setTemplates([]));
-  }, [creating, workspaceId]);
 
   useEffect(() => {
     if (!boards.length) return;
@@ -75,152 +65,74 @@ export function BoardSwitcher({
     }
   }, [boardId, boards, onBoardChange, preferredBoardId, workspaceId]);
 
-  const selected = boards.find((board) => board.id === boardId) ?? null;
+  const onRequestTemplates = useCallback(() => {
+    void fetchBoardTemplates(workspaceId)
+      .then((response) => setTemplates(response.data ?? []))
+      .catch(() => setTemplates([]));
+  }, [workspaceId]);
 
-  const handleCreate = async (event: FormEvent) => {
-    event.preventDefault();
-    const name = newName.trim() || 'Новая доска';
-    const created = await createMutation.mutateAsync({ name, templateId });
-    setCreating(false);
-    setNewName('');
-    setTemplateId('kanban');
-    if (created?.id) onBoardChange(created.id);
-  };
+  const onCreate = useCallback(
+    async (name: string, templateId: string) => {
+      const created = await createMutation.mutateAsync({ name, templateId });
+      if (created?.id) onBoardChange(created.id);
+    },
+    [createMutation, onBoardChange],
+  );
 
-  const handleRename = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!boardId || !renameValue.trim()) return;
-    await updateMutation.mutateAsync({ boardId, name: renameValue.trim() });
-    setRenaming(false);
-  };
+  const onRename = useCallback(
+    async (name: string) => {
+      if (!boardId) return;
+      await updateMutation.mutateAsync({ boardId, name });
+    },
+    [boardId, updateMutation],
+  );
 
-  const handleDelete = async () => {
+  const onDelete = useCallback(async () => {
     if (!boardId || boards.length <= 1) return;
     if (!window.confirm('Удалить эту доску? Задачи на ней будут удалены.')) return;
     const remaining = boards.filter((board) => board.id !== boardId);
     await deleteMutation.mutateAsync(boardId);
     if (remaining[0]) onBoardChange(remaining[0].id);
-  };
+  }, [boardId, boards, deleteMutation, onBoardChange]);
 
-  return (
-    <div className="board-switcher">
-      <select
-        value={boardId ?? ''}
-        onChange={(event) => onBoardChange(event.target.value)}
-        className="board-filters__select"
-        aria-label="Доска"
-        disabled={isLoading || !boards.length}
-      >
-        {boards.map((board) => (
-          <option key={board.id} value={board.id}>
-            {board.name}
-          </option>
-        ))}
-      </select>
+  const error =
+    createMutation.error?.message ??
+    updateMutation.error?.message ??
+    deleteMutation.error?.message ??
+    '';
 
-      <button
-        type="button"
-        className="board-filters__chip"
-        onClick={() => {
-          setCreating(true);
-          setRenaming(false);
-        }}
-      >
-        Новая доска
-      </button>
-
-      {selected ? (
-        <button
-          type="button"
-          className="board-filters__chip"
-          onClick={() => {
-            setRenaming(true);
-            setCreating(false);
-            setRenameValue(selected.name);
-          }}
-        >
-          Переименовать
-        </button>
-      ) : null}
-
-      {boards.length > 1 && boardId ? (
-        <button
-          type="button"
-          className="board-filters__reset"
-          disabled={deleteMutation.isPending}
-          onClick={() => void handleDelete()}
-        >
-          Удалить
-        </button>
-      ) : null}
-
-      {creating ? (
-        <form className="board-switcher__form" onSubmit={(event) => void handleCreate(event)}>
-          <input
-            value={newName}
-            onChange={(event) => setNewName(event.target.value)}
-            placeholder="Название доски"
-            maxLength={80}
-            className="glass-input"
-            autoFocus
-          />
-          <select
-            value={templateId}
-            onChange={(event) => setTemplateId(event.target.value)}
-            className="board-filters__select"
-            aria-label="Шаблон доски"
-          >
-            {(templates.length ? templates : [{ id: 'kanban', name: 'Канбан' }]).map((template) => (
-              <option key={template.id} value={template.id}>
-                {template.name}
-              </option>
-            ))}
-          </select>
-          <button type="submit" className="btn-primary" disabled={createMutation.isPending}>
-            Создать
-          </button>
-          <button
-            type="button"
-            className="btn-ghost"
-            onClick={() => {
-              setCreating(false);
-              setNewName('');
-            }}
-          >
-            Отмена
-          </button>
-        </form>
-      ) : null}
-
-      {renaming ? (
-        <form className="board-switcher__form" onSubmit={(event) => void handleRename(event)}>
-          <input
-            value={renameValue}
-            onChange={(event) => setRenameValue(event.target.value)}
-            placeholder="Название доски"
-            maxLength={80}
-            className="board-filters__search"
-            aria-label="Новое название доски"
-            autoFocus
-          />
-          <button
-            type="submit"
-            className="board-filters__chip board-filters__chip--active"
-            disabled={!renameValue.trim() || updateMutation.isPending}
-          >
-            Сохранить
-          </button>
-          <button type="button" className="board-filters__reset" onClick={() => setRenaming(false)}>
-            Отмена
-          </button>
-        </form>
-      ) : null}
-
-      {createMutation.error || updateMutation.error || deleteMutation.error ? (
-        <p className="board-switcher__error" role="alert">
-          {(createMutation.error ?? updateMutation.error ?? deleteMutation.error)?.message}
-        </p>
-      ) : null}
-    </div>
+  const viewProps = useMemo(
+    () => ({
+      boards,
+      boardId: boardId ?? '',
+      isLoading,
+      templates,
+      createPending: createMutation.isPending,
+      updatePending: updateMutation.isPending,
+      deletePending: deleteMutation.isPending,
+      error,
+      onBoardChange,
+      onCreate,
+      onRename,
+      onDelete,
+      onRequestTemplates,
+    }),
+    [
+      boards,
+      boardId,
+      isLoading,
+      templates,
+      createMutation.isPending,
+      updateMutation.isPending,
+      deleteMutation.isPending,
+      error,
+      onBoardChange,
+      onCreate,
+      onRename,
+      onDelete,
+      onRequestTemplates,
+    ],
   );
+
+  return <VueIsland component={BoardSwitcherView} componentProps={viewProps} />;
 }

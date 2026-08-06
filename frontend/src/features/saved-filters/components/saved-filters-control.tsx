@@ -1,7 +1,9 @@
 'use client';
 
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { EMPTY_BOARD_FILTERS, type BoardFilters } from '@/features/boards/types';
+import SavedFiltersControlView from '@/vue/boards/SavedFiltersControl.vue';
 import {
   useCreateSavedFilterMutation,
   useDeleteSavedFilterMutation,
@@ -15,7 +17,6 @@ interface SavedFiltersControlProps {
   view: SavedFilterView;
   filters: BoardFilters;
   onApply: (filters: BoardFilters) => void;
-
   skipDefaultApply?: boolean;
 }
 
@@ -32,10 +33,6 @@ export function SavedFiltersControl({
   const deleteMutation = useDeleteSavedFilterMutation(workspaceId, view);
 
   const [selectedId, setSelectedId] = useState('');
-  const [saveOpen, setSaveOpen] = useState(false);
-  const [saveName, setSaveName] = useState('');
-  const [saveAsDefault, setSaveAsDefault] = useState(false);
-  const [saveAsShared, setSaveAsShared] = useState(false);
   const appliedDefaultRef = useRef(false);
 
   useEffect(() => {
@@ -52,169 +49,103 @@ export function SavedFiltersControl({
     onApply(normalizeFilters(defaultFilter.filters));
   }, [isLoading, onApply, saved, skipDefaultApply]);
 
-  const handleSelect = (filterId: string) => {
-    setSelectedId(filterId);
-    if (!filterId) return;
-    const found = saved.find((item) => item.id === filterId);
-    if (found) onApply(normalizeFilters(found.filters));
-  };
-
-  const handleSave = async (event: FormEvent) => {
-    event.preventDefault();
-    const name = saveName.trim();
-    if (!name) return;
-
-    const created = await createMutation.mutateAsync({
-      view,
-      name,
-      filters,
-      isDefault: saveAsDefault,
-      isShared: saveAsShared,
-    });
-    setSaveOpen(false);
-    setSaveName('');
-    setSaveAsDefault(false);
-    setSaveAsShared(false);
-    if (created?.id) setSelectedId(created.id);
-  };
-
-  const selected = saved.find((item) => item.id === selectedId) ?? null;
-
-  return (
-    <div className="saved-filters">
-      <select
-        value={selectedId}
-        onChange={(event) => handleSelect(event.target.value)}
-        className="board-filters__select"
-        aria-label="Сохранённые фильтры"
-        disabled={isLoading}
-      >
-        <option value="">Сохранённые фильтры</option>
-        {saved.map((item) => (
-          <option key={item.id} value={item.id}>
-            {item.isPinned ? '📌 ' : ''}
-            {item.isDefault ? '★ ' : ''}
-            {item.name}
-            {item.isShared ? ' · общий' : ''}
-          </option>
-        ))}
-      </select>
-
-      <button
-        type="button"
-        className="board-filters__chip"
-        onClick={() => setSaveOpen((open) => !open)}
-      >
-        Сохранить фильтр
-      </button>
-
-      {selected ? (
-        <>
-          {!selected.isDefault ? (
-            <button
-              type="button"
-              className="board-filters__chip"
-              disabled={updateMutation.isPending}
-              onClick={() =>
-                updateMutation.mutate({ filterId: selected.id, data: { isDefault: true } })
-              }
-            >
-              По умолчанию
-            </button>
-          ) : null}
-          <button
-            type="button"
-            className="board-filters__chip"
-            disabled={updateMutation.isPending}
-            onClick={() =>
-              updateMutation.mutate({
-                filterId: selected.id,
-                data: { isPinned: !selected.isPinned },
-              })
-            }
-          >
-            {selected.isPinned ? 'Открепить' : 'Закрепить'}
-          </button>
-          <button
-            type="button"
-            className="board-filters__chip"
-            disabled={updateMutation.isPending}
-            onClick={() =>
-              updateMutation.mutate({
-                filterId: selected.id,
-                data: { isShared: !selected.isShared },
-              })
-            }
-          >
-            {selected.isShared ? 'Скрыть' : 'Поделиться'}
-          </button>
-          <button
-            type="button"
-            className="board-filters__reset"
-            disabled={deleteMutation.isPending}
-            onClick={() => {
-              deleteMutation.mutate(selected.id, {
-                onSuccess: () => {
-                  setSelectedId('');
-                  onApply(EMPTY_BOARD_FILTERS);
-                },
-              });
-            }}
-            aria-label={`Удалить фильтр ${selected.name}`}
-          >
-            Удалить
-          </button>
-        </>
-      ) : null}
-
-      {saveOpen ? (
-        <form className="saved-filters__form" onSubmit={(event) => void handleSave(event)}>
-          <input
-            value={saveName}
-            onChange={(event) => setSaveName(event.target.value)}
-            placeholder="Название фильтра"
-            maxLength={80}
-            className="board-filters__search"
-            aria-label="Название сохранённого фильтра"
-            autoFocus
-          />
-          <label className="saved-filters__default">
-            <input
-              type="checkbox"
-              checked={saveAsDefault}
-              onChange={(event) => setSaveAsDefault(event.target.checked)}
-            />
-            По умолчанию
-          </label>
-          <label className="saved-filters__default">
-            <input
-              type="checkbox"
-              checked={saveAsShared}
-              onChange={(event) => setSaveAsShared(event.target.checked)}
-            />
-            Общий для команды
-          </label>
-          <button
-            type="submit"
-            className="board-filters__chip board-filters__chip--active"
-            disabled={!saveName.trim() || createMutation.isPending}
-          >
-            {createMutation.isPending ? 'Сохранение…' : 'Сохранить'}
-          </button>
-          <button type="button" className="board-filters__reset" onClick={() => setSaveOpen(false)}>
-            Отмена
-          </button>
-        </form>
-      ) : null}
-
-      {createMutation.error || updateMutation.error || deleteMutation.error ? (
-        <p className="saved-filters__error" role="alert">
-          {(createMutation.error ?? updateMutation.error ?? deleteMutation.error)?.message ??
-            'Не удалось обновить фильтр'}
-        </p>
-      ) : null}
-    </div>
+  const onSelect = useCallback(
+    (filterId: string) => {
+      setSelectedId(filterId);
+      if (!filterId) return;
+      const found = saved.find((item) => item.id === filterId);
+      if (found) onApply(normalizeFilters(found.filters));
+    },
+    [onApply, saved],
   );
+
+  const onSave = useCallback(
+    async (payload: { name: string; isDefault: boolean; isShared: boolean }) => {
+      const created = await createMutation.mutateAsync({
+        view,
+        name: payload.name,
+        filters,
+        isDefault: payload.isDefault,
+        isShared: payload.isShared,
+      });
+      if (created?.id) setSelectedId(created.id);
+    },
+    [createMutation, filters, view],
+  );
+
+  const onSetDefault = useCallback(
+    (filterId: string) => {
+      updateMutation.mutate({ filterId, data: { isDefault: true } });
+    },
+    [updateMutation],
+  );
+
+  const onTogglePinned = useCallback(
+    (filterId: string, isPinned: boolean) => {
+      updateMutation.mutate({ filterId, data: { isPinned } });
+    },
+    [updateMutation],
+  );
+
+  const onToggleShared = useCallback(
+    (filterId: string, isShared: boolean) => {
+      updateMutation.mutate({ filterId, data: { isShared } });
+    },
+    [updateMutation],
+  );
+
+  const onDelete = useCallback(
+    (filterId: string) => {
+      deleteMutation.mutate(filterId, {
+        onSuccess: () => {
+          setSelectedId('');
+          onApply(EMPTY_BOARD_FILTERS);
+        },
+      });
+    },
+    [deleteMutation, onApply],
+  );
+
+  const error =
+    createMutation.error?.message ??
+    updateMutation.error?.message ??
+    deleteMutation.error?.message ??
+    '';
+
+  const viewProps = useMemo(
+    () => ({
+      saved,
+      selectedId,
+      isLoading,
+      createPending: createMutation.isPending,
+      updatePending: updateMutation.isPending,
+      deletePending: deleteMutation.isPending,
+      error,
+      onSelect,
+      onSave,
+      onSetDefault,
+      onTogglePinned,
+      onToggleShared,
+      onDelete,
+    }),
+    [
+      saved,
+      selectedId,
+      isLoading,
+      createMutation.isPending,
+      updateMutation.isPending,
+      deleteMutation.isPending,
+      error,
+      onSelect,
+      onSave,
+      onSetDefault,
+      onTogglePinned,
+      onToggleShared,
+      onDelete,
+    ],
+  );
+
+  return <VueIsland component={SavedFiltersControlView} componentProps={viewProps} />;
 }
 
 function normalizeFilters(raw: SavedFilter['filters'] | Record<string, unknown>): BoardFilters {

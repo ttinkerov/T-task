@@ -13,7 +13,7 @@ import {
   normalizeCalendarRange,
   calendarRangeFromStoredView,
 } from '@/features/boards';
-import { SavedFiltersControl } from '@/features/saved-filters';
+import { SavedFiltersControl } from '@/features/saved-filters/components/saved-filters-control';
 import { downloadExport } from '@/features/workspace-tools/api';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import { VueIsland } from '@/components/vue/VueIsland';
