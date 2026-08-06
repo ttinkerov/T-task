@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarIntegrationPage } from '@/features/calendar';
+import { CalendarIntegrationPage } from '@/features/calendar/components/calendar-integration-page';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 
 export default function CalendarIntegrationRoutePage() {
