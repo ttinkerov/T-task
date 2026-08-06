@@ -1,9 +1,11 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useDealTasksQuery } from '../hooks';
-import type { DealTaskLink } from '../deal-task-types';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { computeDealLinkRollup, formatRollupDue } from '@/features/boards/lib/task-rollup';
+import DealRollupSectionView from '@/vue/crm/DealRollupSection.vue';
+import type { DealTaskLink } from '../deal-task-types';
+import { useDealTasksQuery } from '../hooks';
 
 const EMPTY_DEAL_TASKS: DealTaskLink[] = [];
 
@@ -19,38 +21,25 @@ export function DealRollupSection({
 
   const rollup = useMemo(() => computeDealLinkRollup(tasks.map((link) => link.task)), [tasks]);
 
-  if (tasksQuery.isLoading) {
-    return (
-      <section className="task-rollup" aria-labelledby="deal-rollup-title">
-        <h3 id="deal-rollup-title">Сводка по задачам</h3>
-        <p className="task-rollup__empty" role="status">
-          Считаем…
-        </p>
-      </section>
-    );
-  }
+  const isLoading = tasksQuery.isLoading;
+  const isEmpty = tasks.length === 0;
 
-  if (tasks.length === 0) {
+  const viewProps = useMemo(
+    () => ({
+      isLoading,
+      isEmpty,
+      doneLabel:
+        rollup.donePercent === null
+          ? '—'
+          : `${rollup.donePercent}% · ${rollup.completedTaskCount}/${rollup.linkedTaskCount}`,
+      dueLabel: formatRollupDue(rollup.nearestDue),
+    }),
+    [isLoading, isEmpty, rollup],
+  );
+
+  if (!isLoading && isEmpty) {
     return null;
   }
 
-  return (
-    <section className="task-rollup" aria-labelledby="deal-rollup-title">
-      <h3 id="deal-rollup-title">Сводка по задачам</h3>
-      <dl className="task-rollup__grid">
-        <div>
-          <dt>% done</dt>
-          <dd>
-            {rollup.donePercent === null
-              ? '—'
-              : `${rollup.donePercent}% · ${rollup.completedTaskCount}/${rollup.linkedTaskCount}`}
-          </dd>
-        </div>
-        <div>
-          <dt>Ближайший due</dt>
-          <dd>{formatRollupDue(rollup.nearestDue)}</dd>
-        </div>
-      </dl>
-    </section>
-  );
+  return <VueIsland component={DealRollupSectionView} componentProps={viewProps} />;
 }

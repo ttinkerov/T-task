@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import type { FunnelDeal } from '@/features/crm/types';
+import ApplyDealTemplateControlView from '@/vue/templates/ApplyDealTemplateControl.vue';
 import { useApplyDealTemplateMutation, useDealTemplatesQuery } from '../hooks';
 
 export function ApplyDealTemplateControl({
@@ -17,42 +19,25 @@ export function ApplyDealTemplateControl({
 }) {
   const { data: templates = [] } = useDealTemplatesQuery(workspaceId);
   const applyMutation = useApplyDealTemplateMutation(workspaceId, funnelId, dealId);
-  const [templateId, setTemplateId] = useState('');
+
+  const onApply = useCallback(
+    async (templateId: string) => {
+      const deal = await applyMutation.mutateAsync(templateId);
+      if (deal) onApplied?.(deal as FunnelDeal);
+    },
+    [applyMutation, onApplied],
+  );
+
+  const viewProps = useMemo(
+    () => ({
+      templates,
+      isPending: applyMutation.isPending,
+      onApply,
+    }),
+    [templates, applyMutation.isPending, onApply],
+  );
 
   if (templates.length === 0) return null;
 
-  return (
-    <div className="task-drawer__field">
-      <span>Шаблон</span>
-      <div className="task-checklist__apply" role="group" aria-label="Применить шаблон сделки">
-        <select
-          value={templateId}
-          onChange={(event) => setTemplateId(event.target.value)}
-          aria-label="Шаблон сделки"
-        >
-          <option value="">Применить шаблон…</option>
-          {templates.map((template) => (
-            <option key={template.id} value={template.id}>
-              {template.name}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          disabled={!templateId || applyMutation.isPending}
-          onClick={() => {
-            if (!templateId) return;
-            applyMutation.mutate(templateId, {
-              onSuccess: (deal) => {
-                setTemplateId('');
-                if (deal) onApplied?.(deal as FunnelDeal);
-              },
-            });
-          }}
-        >
-          {applyMutation.isPending ? '…' : 'Применить'}
-        </button>
-      </div>
-    </div>
-  );
+  return <VueIsland component={ApplyDealTemplateControlView} componentProps={viewProps} />;
 }

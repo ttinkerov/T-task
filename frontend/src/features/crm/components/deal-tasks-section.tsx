@@ -1,7 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { useAllTasksQuery } from '@/features/all-tasks/hooks';
+import DealTasksSectionView from '@/vue/crm/DealTasksSection.vue';
 import { useDealTasksQuery, useLinkDealTaskMutation, useUnlinkDealTaskMutation } from '../hooks';
 
 export function DealTasksSection({ workspaceId, dealId }: { workspaceId: string; dealId: string }) {
@@ -23,9 +25,9 @@ export function DealTasksSection({ workspaceId, dealId }: { workspaceId: string;
   });
   const linkMutation = useLinkDealTaskMutation(workspaceId, dealId);
   const unlinkMutation = useUnlinkDealTaskMutation(workspaceId, dealId);
-  const [taskId, setTaskId] = useState('');
 
   const linkedIds = useMemo(() => new Set(links.map((link) => link.taskId)), [links]);
+
   const taskOptions = useMemo(
     () =>
       (allTasks?.items ?? [])
@@ -37,68 +39,49 @@ export function DealTasksSection({ workspaceId, dealId }: { workspaceId: string;
     [allTasks?.items, linkedIds],
   );
 
-  return (
-    <section className="task-subtasks" aria-labelledby="deal-tasks-title">
-      <div className="task-subtasks__header">
-        <h3 id="deal-tasks-title">Задачи</h3>
-        <span>{links.length}</span>
-      </div>
-
-      {isLoading ? <p role="status">Загрузка связей...</p> : null}
-
-      {links.length === 0 && !isLoading ? (
-        <p className="task-tags__empty">Нет связанных задач</p>
-      ) : (
-        <ul className="task-subtasks__list" role="list">
-          {links.map((link) => (
-            <li key={link.taskId}>
-              <span className={link.task.completed ? 'is-done' : undefined}>
-                {link.task.title}
-                <small className="task-deals__meta"> · {link.task.columnName}</small>
-              </span>
-              <button
-                type="button"
-                aria-label={`Отвязать задачу ${link.task.title}`}
-                disabled={unlinkMutation.isPending}
-                onClick={() => unlinkMutation.mutate(link.taskId)}
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <form
-        className="task-subtasks__create"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!taskId) return;
-          linkMutation.mutate(taskId, { onSuccess: () => setTaskId('') });
-        }}
-      >
-        <select
-          value={taskId}
-          onChange={(event) => setTaskId(event.target.value)}
-          aria-label="Задача"
-        >
-          <option value="">Выберите задачу</option>
-          {taskOptions.map((task) => (
-            <option key={task.id} value={task.id}>
-              {task.label}
-            </option>
-          ))}
-        </select>
-        <button type="submit" disabled={!taskId || linkMutation.isPending}>
-          Связать
-        </button>
-      </form>
-
-      {linkMutation.error || unlinkMutation.error ? (
-        <p className="text-sm text-red-400" role="alert">
-          {(linkMutation.error ?? unlinkMutation.error)?.message}
-        </p>
-      ) : null}
-    </section>
+  const linkRows = useMemo(
+    () =>
+      links.map((link) => ({
+        taskId: link.taskId,
+        title: link.task.title,
+        meta: link.task.columnName,
+        completed: link.task.completed,
+      })),
+    [links],
   );
+
+  const onLink = useCallback((taskId: string) => linkMutation.mutateAsync(taskId), [linkMutation]);
+
+  const onUnlink = useCallback(
+    (taskId: string) => {
+      unlinkMutation.mutate(taskId);
+    },
+    [unlinkMutation],
+  );
+
+  const viewProps = useMemo(
+    () => ({
+      links: linkRows,
+      taskOptions,
+      isLoading,
+      linkPending: linkMutation.isPending,
+      unlinkPending: unlinkMutation.isPending,
+      error: (linkMutation.error ?? unlinkMutation.error)?.message ?? '',
+      onLink,
+      onUnlink,
+    }),
+    [
+      linkRows,
+      taskOptions,
+      isLoading,
+      linkMutation.isPending,
+      linkMutation.error,
+      unlinkMutation.isPending,
+      unlinkMutation.error,
+      onLink,
+      onUnlink,
+    ],
+  );
+
+  return <VueIsland component={DealTasksSectionView} componentProps={viewProps} />;
 }

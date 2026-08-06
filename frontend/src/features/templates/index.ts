@@ -1,4 +1,4 @@
 export { ApplyTaskTemplateControl } from './components/apply-task-template-control';
-export { ApplyDealTemplateControl } from './components/apply-deal-template-control';
+/** Prefer direct import of ApplyDealTemplateControl to avoid Vue island pollution. */
 export * from './hooks';
 export * from './types';

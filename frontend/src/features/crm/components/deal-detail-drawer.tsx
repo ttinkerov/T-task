@@ -2,11 +2,13 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useMembersQuery } from '@/features/workspaces/hooks';
-import { ApplyDealTemplateControl } from '@/features/templates';
-import { useDeleteDealMutation, useUpdateDealMutation } from '../hooks';
+import { ApplyDealTemplateControl } from '@/features/templates/components/apply-deal-template-control';
+import { useUpdateDealMutation } from '../hooks';
 import type { FunnelDeal } from '../types';
-import { DealTasksSection } from './deal-tasks-section';
+import { DealDrawerActions } from './deal-drawer-actions';
+import { DealDrawerHeader } from './deal-drawer-header';
 import { DealRollupSection } from './deal-rollup-section';
+import { DealTasksSection } from './deal-tasks-section';
 
 interface DealDetailDrawerProps {
   workspaceId: string;
@@ -25,7 +27,6 @@ export function DealDetailDrawer({
 }: DealDetailDrawerProps) {
   const { data: members = [] } = useMembersQuery(workspaceId);
   const updateMutation = useUpdateDealMutation(workspaceId, funnelId);
-  const deleteMutation = useDeleteDealMutation(workspaceId, funnelId);
 
   const [title, setTitle] = useState(deal.title);
   const [description, setDescription] = useState(deal.description ?? '');
@@ -71,11 +72,6 @@ export function DealDetailDrawer({
     onClose();
   };
 
-  const handleDelete = async () => {
-    await deleteMutation.mutateAsync(deal.id);
-    onClose();
-  };
-
   return (
     <div className="task-drawer-overlay" onClick={onClose} role="presentation">
       <aside
@@ -85,20 +81,7 @@ export function DealDetailDrawer({
         aria-modal="true"
         aria-label="Редактирование сделки"
       >
-        <div className="task-drawer__header">
-          <div>
-            <p className="task-drawer__eyebrow">{stageName}</p>
-            <h2 className="task-drawer__heading">Сделка</h2>
-          </div>
-          <button
-            type="button"
-            className="dashboard-header__icon-btn"
-            onClick={onClose}
-            aria-label="Закрыть"
-          >
-            ×
-          </button>
-        </div>
+        <DealDrawerHeader stageName={stageName} onClose={onClose} />
 
         <form onSubmit={handleSubmit} className="task-drawer__form">
           <label className="task-drawer__field">
@@ -179,10 +162,6 @@ export function DealDetailDrawer({
             </label>
           </div>
 
-          {updateMutation.error ? (
-            <p className="text-sm text-red-400">{updateMutation.error.message}</p>
-          ) : null}
-
           <ApplyDealTemplateControl
             workspaceId={workspaceId}
             funnelId={funnelId}
@@ -197,23 +176,15 @@ export function DealDetailDrawer({
             }}
           />
 
-          <div className="task-drawer__actions">
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              className="btn-ghost task-drawer__danger"
-            >
-              Удалить
-            </button>
-            <button
-              type="submit"
-              disabled={updateMutation.isPending || !title.trim()}
-              className="btn-primary"
-            >
-              {updateMutation.isPending ? 'Сохранение...' : 'Сохранить'}
-            </button>
-          </div>
+          <DealDrawerActions
+            workspaceId={workspaceId}
+            funnelId={funnelId}
+            dealId={deal.id}
+            title={title}
+            isSaving={updateMutation.isPending}
+            saveError={updateMutation.error?.message}
+            onClose={onClose}
+          />
         </form>
 
         <DealRollupSection workspaceId={workspaceId} dealId={deal.id} />
