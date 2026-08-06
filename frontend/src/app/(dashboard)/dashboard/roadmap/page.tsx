@@ -1,6 +1,6 @@
 'use client';
 
-import { RoadmapPage } from '@/features/roadmap';
+import { RoadmapPage } from '@/features/roadmap/components/roadmap-page';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';

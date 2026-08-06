@@ -1,10 +1,11 @@
 'use client';
 
-import { SegmentedControl } from '@/components/ui/segmented-control';
 import { useAllTasksQuery, EMPTY_ALL_TASKS_FILTERS, type AllTask } from '@/features/all-tasks';
 import { useSprintsQuery } from '@/features/sprints';
+import { VueIsland } from '@/components/vue/VueIsland';
 import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import RoadmapPageView from '@/vue/roadmap/RoadmapPageView.vue';
 import {
   addMonths,
   buildMonthColumns,
@@ -25,11 +26,6 @@ const TaskDetailDrawer = dynamic(
   { ssr: false },
 );
 
-const MONTH_OPTIONS = [
-  { value: '3', label: '3 мес.' },
-  { value: '6', label: '6 мес.' },
-] as const;
-
 const ROADMAP_TASKS_QUERY = {
   ...EMPTY_ALL_TASKS_FILTERS,
   page: 1,
@@ -37,6 +33,22 @@ const ROADMAP_TASKS_QUERY = {
   sortBy: 'DUE_DATE',
   sortOrder: 'ASC',
 } as const;
+
+type RoadmapLaneView = {
+  id: string;
+  title: string;
+  progressLabel: string;
+  progressPct: number;
+  assigneeName: string | null;
+  priority: string | null;
+  placement: { leftPct: number; widthPct: number } | null;
+};
+
+type RoadmapUndatedView = {
+  id: string;
+  title: string;
+  progressLabel: string;
+};
 
 export function RoadmapPage({
   workspaceId,
@@ -132,121 +144,109 @@ export function RoadmapPage({
 
   const rangeLabel = months.length ? `${months[0].label} — ${months[months.length - 1].label}` : '';
 
+  const lanes = useMemo<RoadmapLaneView[]>(
+    () =>
+      datedEpics.map((entry) => {
+        const progressLabel =
+          entry.progress.total > 0 ? `${entry.progress.done}/${entry.progress.total}` : '0/0';
+        const progressPct =
+          entry.progress.total > 0
+            ? Math.round((entry.progress.done / entry.progress.total) * 100)
+            : 0;
+
+        return {
+          id: entry.epic.id,
+          title: entry.epic.title,
+          progressLabel,
+          progressPct,
+          assigneeName: entry.epic.assignee?.name ?? null,
+          priority: entry.epic.priority ?? null,
+          placement: entry.placement
+            ? { leftPct: entry.placement.leftPct, widthPct: entry.placement.widthPct }
+            : null,
+        };
+      }),
+    [datedEpics],
+  );
+
+  const undated = useMemo<RoadmapUndatedView[]>(
+    () =>
+      undatedEpics.map((entry) => ({
+        id: entry.epic.id,
+        title: entry.epic.title,
+        progressLabel:
+          entry.progress.total > 0
+            ? `${entry.progress.done}/${entry.progress.total}`
+            : 'Нет дочерних',
+      })),
+    [undatedEpics],
+  );
+
+  const truncationNote = isTruncated
+    ? `Показаны первые ${data!.limit} задач из ${data!.total} — часть эпиков может не попасть в ленту.`
+    : '';
+
+  const onOpenTask = useCallback((taskId: string) => {
+    setSelectedTaskId(taskId);
+  }, []);
+
+  const onMonthCountChange = useCallback((value: number) => {
+    if (value === 3 || value === 6) setMonthCount(value);
+  }, []);
+
+  const onPrevPeriod = useCallback(() => {
+    setRangeStart((current) => addMonths(current, -monthCount));
+  }, [monthCount]);
+
+  const onNextPeriod = useCallback(() => {
+    setRangeStart((current) => addMonths(current, monthCount));
+  }, [monthCount]);
+
+  const onGoToday = useCallback(() => {
+    setRangeStart(startOfMonth(new Date()));
+  }, []);
+
+  const viewProps = useMemo(
+    () => ({
+      monthCount,
+      rangeLabel,
+      months: months.map((month) => ({ key: month.key, label: month.label })),
+      todayPct,
+      lanes,
+      undated,
+      epicCount: datedEpics.length + undatedEpics.length,
+      isLoading,
+      isError,
+      truncationNote,
+      onMonthCountChange,
+      onPrevPeriod,
+      onNextPeriod,
+      onGoToday,
+      onOpenTask,
+    }),
+    [
+      monthCount,
+      rangeLabel,
+      months,
+      todayPct,
+      lanes,
+      undated,
+      datedEpics.length,
+      undatedEpics.length,
+      isLoading,
+      isError,
+      truncationNote,
+      onMonthCountChange,
+      onPrevPeriod,
+      onNextPeriod,
+      onGoToday,
+      onOpenTask,
+    ],
+  );
+
   return (
     <section className="roadmap">
-      <header className="roadmap__header">
-        <div>
-          <p className="roadmap__eyebrow">Рядом с видами задач</p>
-          <h1>Роадмап</h1>
-          <p>Эпики и сроки по месяцам — та же база задач, другой масштаб.</p>
-        </div>
-        <strong>{datedEpics.length + undatedEpics.length} эпиков</strong>
-      </header>
-
-      <div className="task-view-toolbar">
-        <SegmentedControl
-          size="sm"
-          aria-label="Горизонт"
-          options={MONTH_OPTIONS}
-          value={String(monthCount) as '3' | '6'}
-          onChange={(value) => setMonthCount(Number(value) as 3 | 6)}
-        />
-        <div className="task-view-toolbar__dates">
-          <button
-            type="button"
-            aria-label="Предыдущий период"
-            onClick={() => setRangeStart((current) => addMonths(current, -monthCount))}
-          >
-            ←
-          </button>
-          <strong>{rangeLabel}</strong>
-          <button type="button" onClick={() => setRangeStart(startOfMonth(new Date()))}>
-            Сегодня
-          </button>
-          <button
-            type="button"
-            aria-label="Следующий период"
-            onClick={() => setRangeStart((current) => addMonths(current, monthCount))}
-          >
-            →
-          </button>
-        </div>
-      </div>
-
-      {isLoading ? <p className="roadmap__status">Загрузка роадмапа...</p> : null}
-      {isError ? (
-        <p className="roadmap__status roadmap__status--error">Не удалось загрузить задачи.</p>
-      ) : null}
-      {isTruncated ? (
-        <p className="roadmap__status">
-          Показаны первые {data.limit} задач из {data.total} — часть эпиков может не попасть в
-          ленту.
-        </p>
-      ) : null}
-
-      {!isLoading && !isError && datedEpics.length === 0 && undatedEpics.length === 0 ? (
-        <div className="roadmap__empty">
-          <h2>Пока нет эпиков</h2>
-          <p>Отметьте задачу как эпик в карточке — она появится здесь как дорожка.</p>
-        </div>
-      ) : null}
-
-      {datedEpics.length > 0 ? (
-        <div className="roadmap__scroll">
-          <div
-            className="roadmap__grid"
-            style={{ ['--roadmap-months' as string]: String(monthCount) }}
-          >
-            <div className="roadmap__axis-spacer" aria-hidden />
-            <div
-              className="roadmap__axis"
-              role="row"
-              style={{ gridTemplateColumns: `repeat(${monthCount}, minmax(0, 1fr))` }}
-            >
-              {months.map((month) => (
-                <div key={month.key} className="roadmap__month" role="columnheader">
-                  {month.label}
-                </div>
-              ))}
-              {todayPct != null ? (
-                <span className="roadmap__today" style={{ left: `${todayPct}%` }} aria-hidden />
-              ) : null}
-            </div>
-
-            {datedEpics.map((entry) => (
-              <RoadmapLane
-                key={entry.epic.id}
-                entry={entry}
-                todayPct={todayPct}
-                onOpen={() => setSelectedTaskId(entry.epic.id)}
-              />
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {undatedEpics.length > 0 ? (
-        <section className="roadmap__undated">
-          <h2>Без дат</h2>
-          <div>
-            {undatedEpics.map((entry) => (
-              <button
-                key={entry.epic.id}
-                type="button"
-                className="roadmap__undated-item"
-                onClick={() => setSelectedTaskId(entry.epic.id)}
-              >
-                <strong>{entry.epic.title}</strong>
-                <span>
-                  {entry.progress.total > 0
-                    ? `${entry.progress.done}/${entry.progress.total}`
-                    : 'Нет дочерних'}
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      <VueIsland component={RoadmapPageView} componentProps={viewProps} />
 
       {selectedTask ? (
         <TaskDetailDrawer
@@ -255,60 +255,10 @@ export function RoadmapPage({
           columnName={`${selectedTask.board.name} · ${selectedTask.column.name}`}
           relationCandidates={relationCandidates}
           linkSource="all-tasks"
-          onOpenTask={(taskId) => setSelectedTaskId(taskId)}
+          onOpenTask={setSelectedTaskId}
           onClose={() => setSelectedTaskId(null)}
         />
       ) : null}
     </section>
-  );
-}
-
-function RoadmapLane({
-  entry,
-  todayPct,
-  onOpen,
-}: {
-  entry: RoadmapEpic;
-  todayPct: number | null;
-  onOpen: () => void;
-}) {
-  const priority = entry.epic.priority;
-  const progressLabel =
-    entry.progress.total > 0 ? `${entry.progress.done}/${entry.progress.total}` : '0/0';
-  const progressPct =
-    entry.progress.total > 0 ? Math.round((entry.progress.done / entry.progress.total) * 100) : 0;
-
-  return (
-    <>
-      <button type="button" className="roadmap__lane-meta" onClick={onOpen}>
-        <strong>{entry.epic.title}</strong>
-        <span>
-          {progressLabel}
-          {entry.epic.assignee ? ` · ${entry.epic.assignee.name}` : ''}
-        </span>
-      </button>
-      <div className="roadmap__track">
-        {todayPct != null ? (
-          <span className="roadmap__today" style={{ left: `${todayPct}%` }} aria-hidden />
-        ) : null}
-        {entry.placement ? (
-          <button
-            type="button"
-            className={`roadmap__bar${priority ? ` roadmap__bar--priority-${priority}` : ''}`}
-            style={{
-              left: `${entry.placement.leftPct}%`,
-              width: `${entry.placement.widthPct}%`,
-            }}
-            onClick={onOpen}
-            title={entry.epic.title}
-          >
-            <span className="roadmap__bar-fill" style={{ width: `${progressPct}%` }} aria-hidden />
-            <span className="roadmap__bar-label">{entry.epic.title}</span>
-          </button>
-        ) : (
-          <span className="roadmap__out-of-range">Вне периода</span>
-        )}
-      </div>
-    </>
   );
 }
