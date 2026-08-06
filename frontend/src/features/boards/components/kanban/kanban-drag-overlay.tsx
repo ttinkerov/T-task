@@ -1,5 +1,8 @@
 'use client';
 
+import { useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import KanbanDragOverlayView from '@/vue/boards/KanbanDragOverlay.vue';
 import type { BoardColumn, BoardTask } from '../../types';
 
 export function KanbanDragOverlay({
@@ -9,20 +12,15 @@ export function KanbanDragOverlay({
   activeColumn: BoardColumn | null;
   activeTask: BoardTask | null;
 }) {
-  return (
-    <>
-      {activeColumn ? (
-        <div className="kanban-column kanban-column--overlay">
-          <header className="kanban-column__header">
-            <h3>{activeColumn.name}</h3>
-          </header>
-        </div>
-      ) : null}
-      {activeTask ? (
-        <div className="kanban-task-card kanban-task-card--dragging kanban-task">
-          <p className="kanban-task-card__title">{activeTask.title}</p>
-        </div>
-      ) : null}
-    </>
+  const viewProps = useMemo(
+    () => ({
+      columnName: activeColumn?.name ?? '',
+      taskTitle: activeTask?.title ?? '',
+    }),
+    [activeColumn?.name, activeTask?.title],
   );
+
+  if (!activeColumn && !activeTask) return null;
+
+  return <VueIsland component={KanbanDragOverlayView} componentProps={viewProps} />;
 }

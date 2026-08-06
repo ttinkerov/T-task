@@ -2,13 +2,12 @@
 
 import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
-import { Kanban, LayoutList, Plus } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { EmptyState } from '@/components/ui/empty-state';
 import { BoardSkeleton } from '@/components/ui/skeleton';
 import { useMeQuery } from '@/features/auth/hooks';
 import { ViewModeTransition } from '@/features/shell/components/view-mode-transition';
+import { LazyMount } from '@/shared/ui/lazy-mount';
 import { BulkActionsToolbar } from './bulk-actions-toolbar';
 import { findTask } from '../lib/board-lookup';
 import {
@@ -19,6 +18,7 @@ import {
   useCreateTaskMutation,
 } from '../hooks';
 import { EMPTY_BOARD_FILTERS, type BoardFilters } from '../types';
+import { BoardEmptyState } from './board-empty-state';
 import { BoardFiltersBar } from './board-filters-bar';
 import { BoardSwitcher, readStoredBoardId, storeSelectedBoardId } from './board-switcher';
 import { AddColumnPanel } from './kanban/add-column-panel';
@@ -34,7 +34,6 @@ import { KanbanDragOverlay } from './kanban/kanban-drag-overlay';
 import { SortableKanbanColumn } from './kanban/sortable-kanban-column';
 import { TaskDisplayView } from './task-display-views';
 import { TaskViewToolbar } from './task-view-toolbar';
-import { LazyMount } from '@/shared/ui/lazy-mount';
 
 const TaskDetailDrawer = dynamic(
   () => import('./task-detail-drawer').then((mod) => ({ default: mod.TaskDetailDrawer })),
@@ -162,9 +161,9 @@ export function KanbanBoard({
           preferredBoardId={initialBoardId}
           onBoardChange={handleBoardChange}
         />
-        <EmptyState
+        <BoardEmptyState
           className="empty-state--board"
-          icon={Kanban}
+          icon="kanban"
           title="Создайте первую доску"
           description="На доске появятся колонки и задачи — начните с одного пространства для команды."
           actionLabel="Создать доску"
@@ -262,9 +261,9 @@ export function KanbanBoard({
       {viewMode === 'BOARD' ? (
         <ViewModeTransition modeKey="BOARD" className="kanban-board-transition">
           {showNoColumnsEmpty ? (
-            <EmptyState
+            <BoardEmptyState
               className="empty-state--board"
-              icon={LayoutList}
+              icon="layout-list"
               title="Добавьте первую колонку"
               description="Колонки задают этапы работы — например «К выполнению», «В работе», «Готово»."
               actionLabel="Добавить колонку"
@@ -276,9 +275,9 @@ export function KanbanBoard({
           ) : (
             <div className="kanban-board-stack">
               {showNoTasksEmpty ? (
-                <EmptyState
+                <BoardEmptyState
                   className="empty-state--board empty-state--overlay"
-                  icon={Plus}
+                  icon="plus"
                   title="На доске пока нет задач"
                   description="Одна задача — и доска оживёт. Можно перетаскивать карточки между колонками."
                   actionLabel="Добавить первую задачу"

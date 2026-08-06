@@ -1,36 +1,27 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { useCallback, useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import AddColumnPanelView from '@/vue/boards/AddColumnPanel.vue';
 import { useCreateColumnMutation } from '../../hooks';
 
 export function AddColumnPanel({ workspaceId, boardId }: { workspaceId: string; boardId: string }) {
   const createColumnMutation = useCreateColumnMutation(workspaceId, boardId);
-  const [name, setName] = useState('');
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!name.trim()) return;
-    await createColumnMutation.mutateAsync(name.trim());
-    setName('');
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="kanban-add-column">
-      <span className="kanban-add-column__label">Новая колонка</span>
-      <input
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-        placeholder="Название колонки"
-        maxLength={80}
-        className="kanban-add-column__input"
-      />
-      <button
-        type="submit"
-        disabled={!name.trim() || createColumnMutation.isPending}
-        className="kanban-add-column__btn"
-      >
-        {createColumnMutation.isPending ? 'Добавление...' : '+ Добавить колонку'}
-      </button>
-    </form>
+  const onCreate = useCallback(
+    async (name: string) => {
+      await createColumnMutation.mutateAsync(name);
+    },
+    [createColumnMutation],
   );
+
+  const viewProps = useMemo(
+    () => ({
+      pending: createColumnMutation.isPending,
+      onCreate,
+    }),
+    [createColumnMutation.isPending, onCreate],
+  );
+
+  return <VueIsland component={AddColumnPanelView} componentProps={viewProps} />;
 }
