@@ -1,6 +1,6 @@
 'use client';
 
-import { AllTasksPage } from '@/features/all-tasks';
+import { AllTasksPage } from '@/features/all-tasks/components/all-tasks-page';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';

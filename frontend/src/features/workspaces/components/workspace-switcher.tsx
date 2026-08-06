@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect } from 'react';
 import { useWorkspacesQuery } from '../hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';
@@ -26,8 +25,6 @@ export function WorkspaceSwitcher() {
     return null;
   }
 
-  const current = workspaces.find((workspace) => workspace.id === currentWorkspaceId);
-
   return (
     <div className="workspace-switcher">
       <select
@@ -42,17 +39,6 @@ export function WorkspaceSwitcher() {
           </option>
         ))}
       </select>
-
-      {current ? (
-        <Link
-          href={`/dashboard/workspaces/${current.id}/settings`}
-          className="dashboard-header__icon-btn"
-          title="Настройки команды"
-          aria-label="Настройки команды"
-        >
-          ⚙
-        </Link>
-      ) : null}
     </div>
   );
 }

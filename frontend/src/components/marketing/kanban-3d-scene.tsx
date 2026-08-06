@@ -188,10 +188,6 @@ export function Kanban3DScene() {
           </div>
         </div>
 
-        <p className="tt-board__hint">
-          Перетаскивайте колонки и задачи, добавляйте новые и переименовывайте колонки по клику.
-        </p>
-
         <DndContext
           id={boardId}
           sensors={sensors}
@@ -474,7 +470,7 @@ function DemoTaskCard({
             setTitle(task.title);
             setEditing(true);
           }}
-          title="Двойной клик — переименовать"
+          title="Двойной клик - переименовать"
         >
           {task.title}
         </button>

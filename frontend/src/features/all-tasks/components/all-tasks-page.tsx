@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  PRIORITY_LABELS,
   PRIORITY_OPTIONS,
   TaskDisplayView,
   TaskViewToolbar,
@@ -15,8 +16,10 @@ import {
 import { SavedFiltersControl } from '@/features/saved-filters';
 import { downloadExport } from '@/features/workspace-tools/api';
 import { useMembersQuery } from '@/features/workspaces/hooks';
+import { VueIsland } from '@/components/vue/VueIsland';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import AllTasksList from '@/vue/all-tasks/AllTasksList.vue';
 import { useAllTasksMetaQuery, useAllTasksQuery } from '../hooks';
 import {
   EMPTY_ALL_TASKS_FILTERS,
@@ -127,6 +130,19 @@ export function AllTasksPage({
   const availableColumns =
     filterBoards.find((board) => board.id === filters.boardId)?.columns ?? [];
 
+  const listRows = useMemo(
+    () =>
+      (data?.items ?? []).map((task) => ({
+        id: task.id,
+        title: task.title,
+        columnName: `${task.board.name} · ${task.column.name}`,
+        assigneeName: task.assignee?.name ?? 'Не назначен',
+        priorityLabel: task.priority ? PRIORITY_LABELS[task.priority] : '—',
+        dueDate: task.dueDate,
+      })),
+    [data?.items],
+  );
+
   const changeFilters = (next: AllTasksFilters) => {
     setFilters(next);
     setPage(1);
@@ -165,6 +181,28 @@ export function AllTasksPage({
       console.warn('Не удалось сохранить период календаря', error);
     }
   };
+
+  const onOpenTask = useCallback((taskId: string) => {
+    setSelectedTaskId(taskId);
+  }, []);
+
+  const onPageChange = useCallback((nextPage: number) => {
+    setPage(nextPage);
+  }, []);
+
+  const listProps = useMemo(
+    () => ({
+      rows: listRows,
+      isLoading,
+      isError,
+      isFetching,
+      page,
+      totalPages: data?.totalPages ?? 1,
+      onOpenTask,
+      onPageChange,
+    }),
+    [listRows, isLoading, isError, isFetching, page, data?.totalPages, onOpenTask, onPageChange],
+  );
 
   return (
     <section className="all-tasks" aria-labelledby="all-tasks-title">
@@ -334,43 +372,48 @@ export function AllTasksPage({
         </button>
       </fieldset>
 
-      {isLoading ? <p role="status">Загрузка задач...</p> : null}
-      {isError ? <p className="all-tasks__error">Не удалось загрузить задачи.</p> : null}
-      {data && !isError ? (
-        <div
-          aria-busy={isFetching}
-          className={
-            isFetching ? 'all-tasks__content all-tasks__content--loading' : 'all-tasks__content'
-          }
-        >
-          {isFetching ? <span className="sr-only">Обновление списка задач</span> : null}
-          <TaskDisplayView
-            mode={viewMode as Exclude<BoardViewMode, 'BOARD'>}
-            columns={columns}
-            anchor={viewAnchor}
-            calendarRange={calendarRange}
-            onOpenTask={setSelectedTaskId}
-          />
-        </div>
-      ) : null}
-
-      {data && data.totalPages > 1 ? (
-        <nav className="all-tasks__pagination" aria-label="Страницы задач">
-          <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-            Назад
-          </button>
-          <span>
-            Страница {page} из {data.totalPages}
-          </span>
-          <button
-            type="button"
-            disabled={page >= data.totalPages}
-            onClick={() => setPage(page + 1)}
-          >
-            Вперёд
-          </button>
-        </nav>
-      ) : null}
+      {viewMode === 'TABLE' ? (
+        <VueIsland component={AllTasksList} componentProps={listProps} />
+      ) : (
+        <>
+          {isLoading ? <p role="status">Загрузка задач...</p> : null}
+          {isError ? <p className="all-tasks__error">Не удалось загрузить задачи.</p> : null}
+          {data && !isError ? (
+            <div
+              aria-busy={isFetching}
+              className={
+                isFetching ? 'all-tasks__content all-tasks__content--loading' : 'all-tasks__content'
+              }
+            >
+              {isFetching ? <span className="sr-only">Обновление списка задач</span> : null}
+              <TaskDisplayView
+                mode={viewMode as Exclude<BoardViewMode, 'BOARD'>}
+                columns={columns}
+                anchor={viewAnchor}
+                calendarRange={calendarRange}
+                onOpenTask={setSelectedTaskId}
+              />
+            </div>
+          ) : null}
+          {data && data.totalPages > 1 ? (
+            <nav className="all-tasks__pagination" aria-label="Страницы задач">
+              <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                Назад
+              </button>
+              <span>
+                Страница {page} из {data.totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={page >= data.totalPages}
+                onClick={() => setPage(page + 1)}
+              >
+                Вперёд
+              </button>
+            </nav>
+          ) : null}
+        </>
+      )}
 
       {selectedTask ? (
         <TaskDetailDrawer

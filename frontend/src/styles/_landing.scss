@@ -14,7 +14,7 @@ $l-brand-muted: var(--tt-brand-muted);
   color: $l-text;
   overflow-x: hidden;
   font-family: var(--font-inter), 'Inter', 'Ttask', system-ui, sans-serif;
-  background: var(--tt-bg-mesh);
+  background: var(--tt-bg);
   background-attachment: fixed;
 
   &__content {
@@ -47,20 +47,7 @@ $l-brand-muted: var(--tt-brand-muted);
 }
 
 .tt-landing-glow {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background:
-    radial-gradient(900px 480px at 12% -8%, rgba(190, 24, 93, 0.14), transparent 55%),
-    radial-gradient(700px 420px at 88% 8%, rgba(17, 19, 24, 0.06), transparent 50%);
-  opacity: 1;
-}
-
-[data-theme='dark'] .tt-landing-glow {
-  background:
-    radial-gradient(900px 480px at 12% -8%, rgba(225, 29, 116, 0.18), transparent 55%),
-    radial-gradient(700px 420px at 90% 0%, rgba(255, 255, 255, 0.04), transparent 48%);
+  display: none;
 }
 
 .tt-nav-wrap {
@@ -100,10 +87,10 @@ $l-brand-muted: var(--tt-brand-muted);
   }
 
   &__link {
-    padding: 0.45rem 0.75rem;
+    padding: 0.5rem 0.85rem;
     border-radius: $radius-sm;
-    font-size: 0.8125rem;
-    font-weight: 500;
+    font-size: 0.9375rem;
+    font-weight: 600;
     color: $l-text-muted;
     text-decoration: none;
     transition:
@@ -119,11 +106,11 @@ $l-brand-muted: var(--tt-brand-muted);
   &__actions {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
   }
 
   &__login {
-    display: none;
+    display: inline-flex;
     padding: 0.45rem 0.7rem;
     font-size: 0.8125rem;
     font-weight: 500;
@@ -132,18 +119,51 @@ $l-brand-muted: var(--tt-brand-muted);
     border-radius: $radius-sm;
     transition: color var(--tt-duration-fast);
 
-    @include md-up {
-      display: inline-flex;
-    }
-
     &:hover {
       color: $l-text;
     }
   }
 
   &__cta {
-    padding: 0.55rem 0.9rem !important;
-    font-size: 0.8125rem !important;
+    padding: 0.7rem 1.15rem !important;
+    font-size: 0.9375rem !important;
+  }
+}
+
+.tt-lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.15rem;
+  border: 1px solid var(--tt-border);
+  border-radius: $radius-sm;
+  background: var(--tt-surface);
+
+  &__btn {
+    min-width: 2rem;
+    height: 1.7rem;
+    padding: 0 0.45rem;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: $l-text-dim;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition:
+      background var(--tt-duration-fast),
+      color var(--tt-duration-fast);
+
+    &:hover {
+      color: $l-text;
+      background: var(--tt-hover);
+    }
+
+    &.is-active {
+      color: #fff;
+      background: $l-brand;
+    }
   }
 }
 
@@ -172,6 +192,13 @@ $l-brand-muted: var(--tt-brand-muted);
     font-weight: 700;
     letter-spacing: -0.03em;
     color: $l-text;
+  }
+
+  &--nav {
+    .tt-brand-logo__mark {
+      width: 2.85rem;
+      height: 2.85rem;
+    }
   }
 }
 
@@ -210,11 +237,16 @@ $l-brand-muted: var(--tt-brand-muted);
   &--primary {
     color: #fff;
     background: $l-brand;
-    box-shadow: 0 10px 28px var(--tt-brand-glow);
 
     &:hover {
       background: $l-brand-hover;
       transform: translateY(-1px);
+      box-shadow:
+        0 -6px 14px color-mix(in srgb, var(--tt-brand) 22%, transparent),
+        0 6px 14px color-mix(in srgb, var(--tt-brand) 22%, transparent),
+        -6px 0 14px color-mix(in srgb, var(--tt-brand) 18%, transparent),
+        6px 0 14px color-mix(in srgb, var(--tt-brand) 18%, transparent),
+        0 0 16px color-mix(in srgb, var(--tt-brand) 14%, transparent);
     }
   }
 
@@ -349,6 +381,11 @@ $l-brand-muted: var(--tt-brand-muted);
       font-size: 0.75rem;
       color: $l-text-dim;
     }
+  }
+
+  &__demo-host {
+    min-height: inherit;
+    height: 100%;
   }
 
   &__stage-body {
@@ -862,13 +899,8 @@ $l-brand-muted: var(--tt-brand-muted);
     gap: 2rem;
     padding: 1.75rem 1.35rem;
     border-radius: $radius-xl;
-    border: 1px solid color-mix(in srgb, var(--tt-brand) 28%, var(--tt-border));
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--tt-brand) 10%, var(--tt-surface)) 0%,
-      var(--tt-surface) 48%,
-      color-mix(in srgb, var(--tt-text) 3%, var(--tt-surface)) 100%
-    );
+    border: 1px solid var(--tt-border);
+    background: var(--tt-surface);
     box-shadow: var(--tt-shadow);
 
     @include md-up {
@@ -887,7 +919,7 @@ $l-brand-muted: var(--tt-brand-muted);
   }
 
   &__title {
-    margin: 0.55rem 0 0;
+    margin: 0;
     font-family: 'Ttask', var(--font-inter), sans-serif;
     font-size: clamp(1.85rem, 4vw, 2.55rem);
     font-weight: 700;
@@ -1076,10 +1108,8 @@ $l-brand-muted: var(--tt-brand-muted);
     justify-content: space-between;
     padding: 1.75rem;
     border-radius: $radius-xl;
-    border: 1px solid color-mix(in srgb, var(--tt-brand) 22%, var(--tt-border));
-    background:
-      radial-gradient(600px 220px at 0% 0%, var(--tt-brand-muted), transparent 60%),
-      var(--tt-surface);
+    border: 1px solid var(--tt-border);
+    background: var(--tt-surface);
     box-shadow: var(--tt-shadow);
 
     @include md-up {

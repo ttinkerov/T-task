@@ -4,6 +4,8 @@ import { cn } from '@/shared/lib/cn';
 interface BrandLogoProps {
   href?: string;
   className?: string;
+  /** Только иконка, без текста «T-task». */
+  markOnly?: boolean;
 }
 
 function LogoMark() {
@@ -17,22 +19,28 @@ function LogoMark() {
   );
 }
 
-export function BrandLogo({ href = '/', className }: BrandLogoProps) {
+export function BrandLogo({ href = '/', className, markOnly = false }: BrandLogoProps) {
   const content = (
     <>
       <span className="tt-brand-logo__mark">
         <LogoMark />
       </span>
-      <span className="tt-brand-logo__text">T-task</span>
+      {markOnly ? null : <span className="tt-brand-logo__text">T-task</span>}
     </>
   );
 
+  const classes = cn('tt-brand-logo', markOnly && 'tt-brand-logo--mark-only', className);
+
   if (!href) {
-    return <span className={cn('tt-brand-logo', className)}>{content}</span>;
+    return (
+      <span className={classes} aria-label={markOnly ? 'T-task' : undefined}>
+        {content}
+      </span>
+    );
   }
 
   return (
-    <Link href={href} className={cn('tt-brand-logo', className)}>
+    <Link href={href} className={classes} aria-label={markOnly ? 'T-task' : undefined}>
       {content}
     </Link>
   );
