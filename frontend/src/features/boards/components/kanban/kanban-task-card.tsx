@@ -3,15 +3,16 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
-import { memo } from 'react';
-import { TaskCheckbox } from '@/components/ui/task-checkbox';
+import { memo, useCallback, useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import type { CustomFieldDefinition } from '@/features/custom-fields/types';
+import { formatMinutes } from '@/shared/lib/format-duration';
 import { formatRecurrenceLabel } from '@/shared/lib/format-recurrence';
+import KanbanTaskCardBodyView from '@/vue/boards/KanbanTaskCardBody.vue';
 import { formatCustomFieldValue, toPlainMentionText } from '../../lib/task-card-format';
 import { formatAgingLabel, getAgingLevel, isDoneColumn, isTaskOverdue } from '../../lib/overdue';
-import type { BoardColumn, BoardTask } from '../../types';
+import { PRIORITY_LABELS, type BoardColumn, type BoardTask } from '../../types';
 import type { TaskSelectEvent } from './types';
-import { KanbanTaskCardMeta } from './kanban-task-card-meta';
 
 export const KanbanTaskCard = memo(function KanbanTaskCard({
   task,
@@ -49,9 +50,9 @@ export const KanbanTaskCard = memo(function KanbanTaskCard({
 
   const dueLabel = task.dueDate
     ? new Date(task.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
-    : null;
-  const recurrenceLabel = formatRecurrenceLabel(task.recurrenceRule, task.recurrenceWeekdays);
-  const overdueLabel = formatAgingLabel(task, column, allColumns);
+    : '';
+  const recurrenceLabel = formatRecurrenceLabel(task.recurrenceRule, task.recurrenceWeekdays) ?? '';
+  const overdueLabel = formatAgingLabel(task, column, allColumns) ?? '';
   const agingLevel = getAgingLevel(task, column, allColumns);
   const isOverdue = isTaskOverdue(task, column, allColumns);
   const isComplete = Boolean(task.completedAt) || isDoneColumn(column, allColumns);
@@ -62,7 +63,81 @@ export const KanbanTaskCard = memo(function KanbanTaskCard({
       return label ? { id: field.id, label } : null;
     })
     .filter((chip): chip is { id: string; label: string } => chip !== null);
-  const description = task.description ? toPlainMentionText(task.description, memberNames) : null;
+  const description = task.description ? toPlainMentionText(task.description, memberNames) : '';
+
+  const tags = (task.tags ?? []).slice(0, 3).map((tag) => ({
+    id: tag.id,
+    name: tag.name,
+    color: tag.color,
+  }));
+  const subtasks = task.subtasks ?? [];
+  const subtaskTotal = task.subtaskStats?.total ?? subtasks.length;
+  const subtaskCompleted =
+    task.subtaskStats?.completed ?? subtasks.filter((item) => item.completed).length;
+
+  const onBodyToggleSelect = useCallback(
+    (event: TaskSelectEvent) => {
+      onToggleSelect(task.id, event);
+    },
+    [onToggleSelect, task.id],
+  );
+
+  const onComplete = useCallback(() => {
+    onCompleteTask(task);
+  }, [onCompleteTask, task]);
+
+  const meta = useMemo(
+    () => ({
+      tags,
+      subtaskTotal,
+      subtaskCompleted,
+      overdueLabel,
+      agingLevel,
+      recurrenceLabel,
+      assigneeName: task.assignee?.name.split(' ')[0] ?? '',
+      priority: task.priority ?? '',
+      priorityLabel: task.priority ? PRIORITY_LABELS[task.priority] : '',
+      complexity: task.complexity ?? '',
+      estimateLabel: task.timeEstimateMinutes ? formatMinutes(task.timeEstimateMinutes) : '',
+      actualLabel: task.actualMinutes ? formatMinutes(task.actualMinutes) : '',
+      timerRunning: Boolean(task.timerStartedAt),
+      completed: Boolean(task.completedAt),
+      dueLabel,
+      isOverdue,
+      customFieldChips,
+    }),
+    [
+      tags,
+      subtaskTotal,
+      subtaskCompleted,
+      overdueLabel,
+      agingLevel,
+      recurrenceLabel,
+      task.assignee?.name,
+      task.priority,
+      task.complexity,
+      task.timeEstimateMinutes,
+      task.actualMinutes,
+      task.timerStartedAt,
+      task.completedAt,
+      dueLabel,
+      isOverdue,
+      customFieldChips,
+    ],
+  );
+
+  const viewProps = useMemo(
+    () => ({
+      title: task.title,
+      description,
+      selected,
+      isComplete,
+      meta,
+      onToggleSelect: onBodyToggleSelect,
+      onComplete,
+    }),
+    [task.title, description, selected, isComplete, meta, onBodyToggleSelect, onComplete],
+  );
 
   return (
     <div
@@ -91,31 +166,10 @@ export const KanbanTaskCard = memo(function KanbanTaskCard({
       aria-selected={selected}
     >
       <div className="kanban-task-card__body">
-        <input
-          type="checkbox"
-          className="kanban-task-card__select"
-          checked={selected}
-          aria-label={`Выбрать задачу ${task.title}`}
-          onClick={(event) => event.stopPropagation()}
-          onChange={(event) =>
-            onToggleSelect(task.id, {
-              shiftKey: (event.nativeEvent as MouseEvent).shiftKey,
-              metaKey: (event.nativeEvent as MouseEvent).metaKey,
-              ctrlKey: (event.nativeEvent as MouseEvent).ctrlKey,
-            })
-          }
-        />
-        <TaskCheckbox
-          animated={false}
-          checked={isComplete}
-          ariaLabel={isComplete ? 'Задача выполнена' : 'Отметить выполненной'}
-          onChange={(checked) => {
-            if (checked && !isComplete) onCompleteTask(task);
-          }}
-        />
         <button
           type="button"
           className="kanban-task-card__drag"
+          style={{ order: 2 }}
           {...attributes}
           {...listeners}
           onClick={(event) => event.stopPropagation()}
@@ -123,19 +177,7 @@ export const KanbanTaskCard = memo(function KanbanTaskCard({
         >
           <GripVertical size={14} strokeWidth={1.75} aria-hidden="true" />
         </button>
-        <div className="min-w-0 flex-1">
-          <p className="kanban-task-card__title">{task.title}</p>
-          {description ? <p className="kanban-task-card__desc">{description}</p> : null}
-          <KanbanTaskCardMeta
-            task={task}
-            dueLabel={dueLabel}
-            recurrenceLabel={recurrenceLabel}
-            overdueLabel={overdueLabel}
-            agingLevel={agingLevel}
-            isOverdue={isOverdue}
-            customFieldChips={customFieldChips}
-          />
-        </div>
+        <VueIsland component={KanbanTaskCardBodyView} componentProps={viewProps} displayContents />
       </div>
     </div>
   );

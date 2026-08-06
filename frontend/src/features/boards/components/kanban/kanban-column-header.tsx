@@ -1,6 +1,8 @@
 'use client';
 
-import { RefObject, useState } from 'react';
+import { RefObject, useCallback, useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import KanbanColumnHeaderView from '@/vue/boards/KanbanColumnHeader.vue';
 import { useDeleteColumnMutation, useUpdateColumnMutation } from '../../hooks';
 import type { BoardColumn } from '../../types';
 
@@ -27,36 +29,62 @@ export function KanbanColumnHeader({
 }) {
   const updateColumnMutation = useUpdateColumnMutation(workspaceId, boardId);
   const deleteColumnMutation = useDeleteColumnMutation(workspaceId, boardId);
-  const [editingName, setEditingName] = useState(false);
-  const [columnName, setColumnName] = useState(column.name);
 
-  const handleRename = async () => {
-    const next = columnName.trim();
-    if (!next || next === column.name) {
-      setColumnName(column.name);
-      setEditingName(false);
-      return;
-    }
-    await updateColumnMutation.mutateAsync({ columnId: column.id, name: next });
-    setEditingName(false);
-  };
+  const countLabel = column.wipLimit
+    ? `${column.tasks.length}/${column.wipLimit}`
+    : column.truncated && column.taskTotal
+      ? `${column.tasks.length}/${column.taskTotal}`
+      : String(column.tasks.length);
 
-  const handleWipBlur = async (value: string) => {
-    const trimmed = value.trim();
-    const next = trimmed === '' ? null : Number(trimmed);
-    if (next !== null && (!Number.isInteger(next) || next < 1)) return;
-    if (next === (column.wipLimit ?? null)) return;
-    await updateColumnMutation.mutateAsync({ columnId: column.id, wipLimit: next });
-  };
+  const onRename = useCallback(
+    async (raw: string) => {
+      const next = raw.trim();
+      if (!next || next === column.name) return;
+      await updateColumnMutation.mutateAsync({ columnId: column.id, name: next });
+    },
+    [column.id, column.name, updateColumnMutation],
+  );
 
-  const handleDelete = async () => {
+  const onWipChange = useCallback(
+    async (value: string) => {
+      const trimmed = value.trim();
+      const next = trimmed === '' ? null : Number(trimmed);
+      if (next !== null && (!Number.isInteger(next) || next < 1)) return;
+      if (next === (column.wipLimit ?? null)) return;
+      await updateColumnMutation.mutateAsync({ columnId: column.id, wipLimit: next });
+    },
+    [column.id, column.wipLimit, updateColumnMutation],
+  );
+
+  const onDelete = useCallback(async () => {
     const message =
       column.tasks.length > 0
         ? `Удалить колонку «${column.name}» вместе с ${column.tasks.length} задачами?`
         : `Удалить колонку «${column.name}»?`;
     if (!window.confirm(message)) return;
     await deleteColumnMutation.mutateAsync(column.id);
-  };
+  }, [column.id, column.name, column.tasks.length, deleteColumnMutation]);
+
+  const viewProps = useMemo(
+    () => ({
+      name: column.name,
+      countLabel,
+      overWip,
+      canManageAutomations,
+      wipLimitValue: column.wipLimit ?? '',
+      onRename,
+      onWipChange,
+    }),
+    [
+      column.name,
+      column.wipLimit,
+      countLabel,
+      overWip,
+      canManageAutomations,
+      onRename,
+      onWipChange,
+    ],
+  );
 
   return (
     <div className="kanban-column__header">
@@ -69,60 +97,7 @@ export function KanbanColumnHeader({
         ⠿
       </button>
 
-      {editingName ? (
-        <input
-          value={columnName}
-          onChange={(event) => setColumnName(event.target.value)}
-          onBlur={handleRename}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault();
-              void handleRename();
-            }
-            if (event.key === 'Escape') {
-              setColumnName(column.name);
-              setEditingName(false);
-            }
-          }}
-          className="kanban-column__title-input"
-          autoFocus
-          maxLength={80}
-        />
-      ) : (
-        <button
-          type="button"
-          className="kanban-column__title"
-          onClick={() => {
-            setColumnName(column.name);
-            setEditingName(true);
-          }}
-          title="Переименовать"
-        >
-          {column.name}
-        </button>
-      )}
-
-      <span className={`kanban-column__count ${overWip ? 'kanban-column__count--over' : ''}`}>
-        {column.wipLimit
-          ? `${column.tasks.length}/${column.wipLimit}`
-          : column.truncated && column.taskTotal
-            ? `${column.tasks.length}/${column.taskTotal}`
-            : column.tasks.length}
-      </span>
-      {canManageAutomations ? (
-        <input
-          type="number"
-          min={1}
-          max={999}
-          className="kanban-column__wip-input"
-          title="WIP-лимит"
-          aria-label="WIP-лимит колонки"
-          defaultValue={column.wipLimit ?? ''}
-          placeholder="WIP"
-          onBlur={(event) => void handleWipBlur(event.target.value)}
-          onClick={(event) => event.stopPropagation()}
-        />
-      ) : null}
+      <VueIsland component={KanbanColumnHeaderView} componentProps={viewProps} displayContents />
 
       {canManageAutomations ? (
         <button
@@ -146,7 +121,7 @@ export function KanbanColumnHeader({
         <button
           type="button"
           className="kanban-column__delete"
-          onClick={handleDelete}
+          onClick={() => void onDelete()}
           disabled={deleteColumnMutation.isPending}
           aria-label="Удалить колонку"
           title="Удалить колонку"
