@@ -1,6 +1,6 @@
 'use client';
 
-import { ApplyTaskTemplateControl } from '@/features/templates';
+import { ApplyTaskTemplateControl } from '@/features/templates/components/apply-task-template-control';
 import { LazyMount } from '@/shared/ui/lazy-mount';
 import type { BoardTask, TaskRelationCandidate, TaskTag } from '../../types';
 import { TaskAttachmentsSection } from '@/features/attachments/components/task-attachments-section';

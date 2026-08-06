@@ -1,4 +1,9 @@
+'use client';
+
+import { useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import type { WorkspaceMember } from '@/features/workspaces/types';
+import MentionTextView from '@/vue/mentions/MentionText.vue';
 import { tokenizeMentions } from '../mention-utils';
 
 interface MentionTextProps {
@@ -7,24 +12,26 @@ interface MentionTextProps {
 }
 
 export function MentionText({ text, members }: MentionTextProps) {
-  const namesById = new Map(members.map((member) => [member.userId, member.user.name]));
+  const tokens = useMemo(() => {
+    const namesById = new Map(members.map((member) => [member.userId, member.user.name]));
+    return tokenizeMentions(text).map((token, index) => {
+      if (token.type === 'text') {
+        return {
+          key: `t-${index}-${token.value.slice(0, 8)}`,
+          kind: 'text' as const,
+          value: token.value,
+        };
+      }
+      const currentName = namesById.get(token.userId);
+      return {
+        key: `m-${index}-${token.userId}`,
+        kind: currentName ? ('mention' as const) : ('text' as const),
+        value: currentName ? `@${currentName}` : token.value,
+      };
+    });
+  }, [text, members]);
 
-  return (
-    <>
-      {tokenizeMentions(text).map((token, index) => {
-        if (token.type === 'text') {
-          return <span key={`${index}-${token.value.slice(0, 8)}`}>{token.value}</span>;
-        }
+  const viewProps = useMemo(() => ({ tokens }), [tokens]);
 
-        const currentName = namesById.get(token.userId);
-        return currentName ? (
-          <span key={`${index}-${token.userId}`} className="mention-text">
-            @{currentName}
-          </span>
-        ) : (
-          <span key={`${index}-${token.userId}`}>{token.value}</span>
-        );
-      })}
-    </>
-  );
+  return <VueIsland component={MentionTextView} componentProps={viewProps} />;
 }

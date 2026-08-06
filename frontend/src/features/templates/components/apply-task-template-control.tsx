@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { FieldHint } from '@/features/boards/components/field-hint';
+import { useCallback, useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import ApplyTaskTemplateControlView from '@/vue/templates/ApplyTaskTemplateControl.vue';
 import { useApplyTaskTemplateMutation, useTaskTemplatesQuery } from '../hooks';
 
 export function ApplyTaskTemplateControl({
@@ -13,40 +14,22 @@ export function ApplyTaskTemplateControl({
 }) {
   const { data: templates = [] } = useTaskTemplatesQuery(workspaceId);
   const applyMutation = useApplyTaskTemplateMutation(workspaceId, taskId);
-  const [templateId, setTemplateId] = useState('');
+
+  const onApply = useCallback(
+    (templateId: string) => applyMutation.mutateAsync(templateId),
+    [applyMutation],
+  );
+
+  const viewProps = useMemo(
+    () => ({
+      templates,
+      isPending: applyMutation.isPending,
+      onApply,
+    }),
+    [templates, applyMutation.isPending, onApply],
+  );
 
   if (templates.length === 0) return null;
 
-  return (
-    <div className="task-drawer__field">
-      <span className="task-drawer__label">
-        Шаблон
-        <FieldHint text="Заполнит пустые поля и добавит теги, сабтаски и DoD из шаблона. Уже заполненные поля не перезаписываются." />
-      </span>
-      <div className="task-checklist__apply" role="group" aria-label="Применить шаблон задачи">
-        <select
-          value={templateId}
-          onChange={(event) => setTemplateId(event.target.value)}
-          aria-label="Шаблон задачи"
-        >
-          <option value="">Применить шаблон…</option>
-          {templates.map((template) => (
-            <option key={template.id} value={template.id}>
-              {template.name}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          disabled={!templateId || applyMutation.isPending}
-          onClick={() => {
-            if (!templateId) return;
-            applyMutation.mutate(templateId, { onSuccess: () => setTemplateId('') });
-          }}
-        >
-          {applyMutation.isPending ? '…' : 'Применить'}
-        </button>
-      </div>
-    </div>
-  );
+  return <VueIsland component={ApplyTaskTemplateControlView} componentProps={viewProps} />;
 }

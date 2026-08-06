@@ -3,7 +3,7 @@
 import { FormEvent } from 'react';
 import { TaskAiAssistant } from '@/features/ai';
 import { TaskDescriptionEditor } from '@/features/task-description';
-import { WikiLinkChips } from '@/features/wiki-links';
+import { WikiLinkChips } from '@/features/wiki-links/components/wiki-link-chips';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import type { BoardTask, TaskRelationCandidate } from '../../types';
 import type { useTaskFormState } from './hooks/use-task-form-state';

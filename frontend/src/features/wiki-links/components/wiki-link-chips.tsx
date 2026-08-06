@@ -1,5 +1,8 @@
 'use client';
 
+import { useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
+import WikiLinkChipsView from '@/vue/wiki-links/WikiLinkChips.vue';
 import { extractWikiLinks } from '../wiki-link-utils';
 
 export function WikiLinkChips({
@@ -11,21 +14,20 @@ export function WikiLinkChips({
   excludeTaskId?: string;
   onOpenTask: (taskId: string) => void;
 }) {
-  const links = extractWikiLinks(text).filter((link) => link.taskId !== excludeTaskId);
+  const links = useMemo(
+    () => extractWikiLinks(text).filter((link) => link.taskId !== excludeTaskId),
+    [text, excludeTaskId],
+  );
+
+  const viewProps = useMemo(
+    () => ({
+      links,
+      onOpenTask,
+    }),
+    [links, onOpenTask],
+  );
+
   if (links.length === 0) return null;
 
-  return (
-    <div className="wiki-link-chips" aria-label="Ссылки на задачи">
-      {links.map((link) => (
-        <button
-          key={link.taskId}
-          type="button"
-          className="wiki-link-chip"
-          onClick={() => onOpenTask(link.taskId)}
-        >
-          [[{link.title}]]
-        </button>
-      ))}
-    </div>
-  );
+  return <VueIsland component={WikiLinkChipsView} componentProps={viewProps} />;
 }
