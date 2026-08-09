@@ -109,6 +109,9 @@ function setupColumnSortable() {
     handle: '.tt-demo-column__drag',
     direction: 'horizontal',
     ghostClass: 'tt-demo-column--ghost',
+    filter:
+      '.tt-demo-board__add-column, input, textarea, select, button:not(.tt-demo-column__drag)',
+    preventOnFilter: true,
     onEnd(evt) {
       const { oldIndex, newIndex } = evt;
       if (oldIndex == null || newIndex == null || oldIndex === newIndex) return;
@@ -131,6 +134,8 @@ function setupTaskSortable(columnId, el) {
     handle: '.tt-demo-task__drag',
     draggable: '.tt-demo-task',
     ghostClass: 'tt-demo-task--ghost',
+    filter: 'input, textarea, button:not(.tt-demo-task__drag)',
+    preventOnFilter: true,
     onEnd(evt) {
       const { oldIndex, newIndex, from, to, item } = evt;
       if (oldIndex == null || newIndex == null) return;

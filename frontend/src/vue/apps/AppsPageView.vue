@@ -86,7 +86,12 @@
             <strong>{{ viewer.title }}</strong>
             <span>{{ viewer.providerLabel }}</span>
           </div>
-          <a v-if="viewer.sourceUrl" :href="viewer.sourceUrl" target="_blank" rel="noreferrer">
+          <a
+            v-if="viewer.sourceUrl"
+            :href="viewer.sourceUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Открыть в сервисе ↗
           </a>
         </div>
@@ -103,7 +108,7 @@
               class="btn-primary"
               :href="viewer.sourceUrl"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
             >
               Открыть в сервисе
             </a>
