@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import { useTaskWatchersQuery, useToggleWatchMutation } from '@/features/watchers/hooks';
@@ -17,13 +17,35 @@ export function TaskAssigneeWatchFields({
   assigneeId: string;
   onAssigneeChange: (id: string) => void;
 }) {
-  const { data: members = [] } = useMembersQuery(workspaceId);
-  const { data: watchState } = useTaskWatchersQuery(workspaceId, taskId);
+  const membersQuery = useMembersQuery(workspaceId);
+  const watchersQuery = useTaskWatchersQuery(workspaceId, taskId);
+  const members = membersQuery.data ?? [];
+  const watchState = watchersQuery.data;
   const toggleWatchMutation = useToggleWatchMutation(workspaceId, taskId);
+  const [actionError, setActionError] = useState('');
 
-  const onToggleWatch = useCallback(() => {
-    void toggleWatchMutation.mutateAsync(Boolean(watchState?.watching));
+  const onToggleWatch = useCallback(async () => {
+    setActionError('');
+    try {
+      await toggleWatchMutation.mutateAsync(Boolean(watchState?.watching));
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Не удалось изменить подписку');
+    }
   }, [toggleWatchMutation, watchState?.watching]);
+
+  const onRetry = useCallback(() => {
+    void membersQuery.refetch();
+    void watchersQuery.refetch();
+  }, [membersQuery, watchersQuery]);
+
+  const loadError =
+    membersQuery.isError || watchersQuery.isError
+      ? membersQuery.error instanceof Error
+        ? membersQuery.error.message
+        : watchersQuery.error instanceof Error
+          ? watchersQuery.error.message
+          : 'Не удалось загрузить участников'
+      : '';
 
   const viewProps = useMemo(
     () => ({
@@ -34,8 +56,11 @@ export function TaskAssigneeWatchFields({
         ? watchState.watchers.map((item) => item.name).join(', ')
         : '',
       togglePending: toggleWatchMutation.isPending,
+      loadError,
+      actionError,
       onAssigneeChange,
       onToggleWatch,
+      onRetry,
     }),
     [
       assigneeId,
@@ -43,8 +68,11 @@ export function TaskAssigneeWatchFields({
       watchState?.watching,
       watchState?.watchers,
       toggleWatchMutation.isPending,
+      loadError,
+      actionError,
       onAssigneeChange,
       onToggleWatch,
+      onRetry,
     ],
   );
 

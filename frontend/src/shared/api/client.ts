@@ -37,7 +37,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<Api
   const body = (await response.json()) as ApiResponse<T>;
 
   if (!response.ok || !body.success) {
-    throw new ApiError(body.error ?? 'Request failed', response.status);
+    throw new ApiError(body.error ?? 'Не удалось выполнить запрос', response.status);
   }
 
   return body;
@@ -65,7 +65,7 @@ export async function apiUpload<T>(
   const body = (await response.json()) as ApiResponse<T>;
 
   if (!response.ok || !body.success) {
-    throw new ApiError(body.error ?? 'Request failed', response.status);
+    throw new ApiError(body.error ?? 'Не удалось выполнить запрос', response.status);
   }
 
   return body;

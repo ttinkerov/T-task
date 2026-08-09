@@ -36,7 +36,8 @@ type WorkloadRowView = {
 };
 
 export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
-  const { data: members = [] } = useMembersQuery(workspaceId);
+  const membersQuery = useMembersQuery(workspaceId);
+  const members = membersQuery.data ?? [];
 
   const [period, setPeriod] = useState<WorkloadPeriod>('week');
   const [customFrom, setCustomFrom] = useState('');
@@ -124,6 +125,11 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
     ? workloadQuery.error instanceof Error
       ? workloadQuery.error.message
       : 'Не удалось загрузить нагрузку'
+    : '';
+  const membersError = membersQuery.isError
+    ? membersQuery.error instanceof Error
+      ? membersQuery.error.message
+      : 'Не удалось загрузить участников'
     : '';
 
   const rowViews = useMemo<WorkloadRowView[]>(
@@ -222,11 +228,16 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
     void workloadQuery.refetch();
   }, [workloadQuery]);
 
+  const onRetryMembers = useCallback(() => {
+    void membersQuery.refetch();
+  }, [membersQuery]);
+
   const viewProps = useMemo(
     () => ({
       summaryCards,
       summaryError,
       workloadError,
+      membersError,
       workloadTruncated: Boolean(workloadQuery.data?.truncated),
       workloadLoading: workloadQuery.isLoading,
       period,
@@ -248,11 +259,13 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
       onStuckHostReady,
       onRetrySummary,
       onRetryWorkload,
+      onRetryMembers,
     }),
     [
       summaryCards,
       summaryError,
       workloadError,
+      membersError,
       workloadQuery.data?.truncated,
       workloadQuery.isLoading,
       period,
@@ -274,6 +287,7 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
       onStuckHostReady,
       onRetrySummary,
       onRetryWorkload,
+      onRetryMembers,
     ],
   );
 

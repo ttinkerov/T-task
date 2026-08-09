@@ -5,17 +5,20 @@
         <p class="all-tasks__eyebrow">Личное</p>
         <h1 id="my-tasks-title">Мои задачи</h1>
         <p>
-          Как Notion «Assigned to me»: просроченные, ближайшие {{ dueSoonDays }} дней, назначенные
-          вам и те, за которыми вы следите.
+          Просроченные, ближайшие {{ dueSoonDays }} дней, назначенные вам и те, за которыми вы
+          следите.
         </p>
       </div>
       <strong>{{ totalVisible }} открытых</strong>
     </header>
 
-    <MyTasksTabs :tabs="tabItems" :active-id="activeSection" @change="setActiveSection" />
+    <MyTasksTabs :tabs="tabItems" :active-id="activeSection" :on-change="setActiveSection" />
 
     <p v-if="isLoading" role="status">Загрузка задач...</p>
-    <p v-if="isError" class="all-tasks__error">Не удалось загрузить задачи.</p>
+    <p v-if="isError" class="all-tasks__error" role="alert">
+      Не удалось загрузить задачи.
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
+    </p>
 
     <p v-if="!isLoading && !isError && totalVisible === 0" class="my-tasks__empty">
       Пока пусто — назначьте себе задачу или включите «Следить» в карточке.
@@ -53,6 +56,7 @@ const props = defineProps({
   priorityLabels: { type: Object, required: true },
   initialSection: { type: String, default: 'all' },
   onOpenTask: { type: Function, required: true },
+  onRetry: { type: Function, default: null },
 })
 
 const SECTION_IDS = ['all', 'overdue', 'dueSoon', 'assigned', 'watching']

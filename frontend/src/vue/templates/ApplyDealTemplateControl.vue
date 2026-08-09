@@ -1,7 +1,18 @@
 <template>
-  <div v-if="templates.length > 0" class="task-drawer__field">
+  <div class="task-drawer__field">
     <span>Шаблон</span>
-    <div class="task-checklist__apply" role="group" aria-label="Применить шаблон сделки">
+    <p v-if="actionError && templates.length === 0" class="text-sm text-red-400" role="alert">
+      {{ actionError }}
+      <button v-if="onRetry" type="button" class="board-filters__chip" @click="onRetry?.()">
+        Повторить
+      </button>
+    </p>
+    <div
+      v-else-if="templates.length > 0"
+      class="task-checklist__apply"
+      role="group"
+      aria-label="Применить шаблон сделки"
+    >
       <select v-model="localTemplateId" aria-label="Шаблон сделки">
         <option value="">Применить шаблон…</option>
         <option v-for="template in templates" :key="template.id" :value="template.id">
@@ -12,6 +23,9 @@
         {{ isPending ? '…' : 'Применить' }}
       </button>
     </div>
+    <p v-if="actionError && templates.length > 0" class="text-sm text-red-400" role="alert">
+      {{ actionError }}
+    </p>
   </div>
 </template>
 
@@ -21,7 +35,9 @@ import { ref, watch } from 'vue'
 const props = defineProps({
   templates: { type: Array, default: () => [] },
   isPending: { type: Boolean, default: false },
+  actionError: { type: String, default: '' },
   onApply: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
 
 const localTemplateId = ref('')

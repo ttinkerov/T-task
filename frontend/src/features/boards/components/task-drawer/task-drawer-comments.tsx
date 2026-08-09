@@ -22,7 +22,8 @@ export function TaskDrawerComments({
 }) {
   const listboxId = useId();
   const { data: session } = useMeQuery();
-  const { data: members = [] } = useMembersQuery(workspaceId);
+  const membersQuery = useMembersQuery(workspaceId);
+  const members = membersQuery.data ?? [];
   const {
     data: comments = [],
     isLoading: commentsLoading,
@@ -88,11 +89,21 @@ export function TaskDrawerComments({
     [canModerate, comments, namesById, session?.user.id],
   );
 
-  const loadError = commentsError
-    ? commentsLoadError instanceof Error
-      ? commentsLoadError.message
-      : 'Не удалось загрузить комментарии'
-    : '';
+  const loadError =
+    commentsError || membersQuery.isError
+      ? commentsError
+        ? commentsLoadError instanceof Error
+          ? commentsLoadError.message
+          : 'Не удалось загрузить комментарии'
+        : membersQuery.error instanceof Error
+          ? membersQuery.error.message
+          : 'Не удалось загрузить участников'
+      : '';
+
+  const onRetryLoad = useCallback(() => {
+    void refetch();
+    void membersQuery.refetch();
+  }, [membersQuery, refetch]);
 
   const onSubmit = useCallback(async () => {
     if (!commentBody.trim()) return;
@@ -135,9 +146,7 @@ export function TaskDrawerComments({
       onCommentBodyChange: setCommentBody,
       onSubmit,
       onDelete,
-      onRetryLoad: () => {
-        void refetch();
-      },
+      onRetryLoad,
     }),
     [
       commentsLoading,
@@ -150,7 +159,7 @@ export function TaskDrawerComments({
       listboxId,
       onSubmit,
       onDelete,
-      refetch,
+      onRetryLoad,
     ],
   );
 

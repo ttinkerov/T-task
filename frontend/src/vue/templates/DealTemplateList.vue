@@ -4,6 +4,11 @@
 
     <p v-if="isLoading" role="status">Загрузка…</p>
 
+    <p v-else-if="isError" class="dod-page__error" role="alert">
+      {{ loadError || 'Не удалось загрузить шаблоны сделок.' }}
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
+    </p>
+
     <p v-else-if="templates.length === 0" class="dod-page__empty">
       Пока нет шаблонов сделок.
     </p>
@@ -19,7 +24,7 @@
           type="button"
           class="btn-ghost"
           :disabled="pendingId === template.id || isDeleting"
-          @click="emit('delete', template.id)"
+          @click="onDelete?.(template.id)"
         >
           Удалить
         </button>
@@ -36,13 +41,15 @@
 defineProps({
   templates: { type: Array, required: true },
   isLoading: { type: Boolean, default: false },
+  isError: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
   canManage: { type: Boolean, default: false },
   pendingId: { type: String, default: null },
   isDeleting: { type: Boolean, default: false },
   deleteError: { type: String, default: '' },
+  onDelete: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
-
-const emit = defineEmits(['delete'])
 
 function summaryFor(template) {
   return (

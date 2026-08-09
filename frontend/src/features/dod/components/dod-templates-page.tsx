@@ -68,20 +68,42 @@ export function DodTemplatesPage({ workspaceId }: { workspaceId: string }) {
     () => ({
       templates,
       isLoading: templatesQuery.isLoading,
+      isError: Boolean(templatesQuery.error),
+      loadError:
+        templatesQuery.error instanceof Error
+          ? templatesQuery.error.message
+          : templatesQuery.error
+            ? 'Не удалось загрузить шаблоны'
+            : '',
       canManage,
       pendingId,
-      deleteError: deleteMutation.isError ? 'Не удалось удалить шаблон.' : '',
-      updateError: updateMutation.isError ? 'Не удалось обновить шаблон.' : '',
+      deleteError: deleteMutation.isError
+        ? deleteMutation.error instanceof Error
+          ? deleteMutation.error.message
+          : 'Не удалось удалить шаблон.'
+        : '',
+      updateError: updateMutation.isError
+        ? updateMutation.error instanceof Error
+          ? updateMutation.error.message
+          : 'Не удалось обновить шаблон.'
+        : '',
       onToggleGate,
       onDelete,
+      onRetry: () => {
+        void templatesQuery.refetch();
+      },
     }),
     [
       templates,
       templatesQuery.isLoading,
+      templatesQuery.error,
+      templatesQuery.refetch,
       canManage,
       pendingId,
       deleteMutation.isError,
+      deleteMutation.error,
       updateMutation.isError,
+      updateMutation.error,
       onToggleGate,
       onDelete,
     ],

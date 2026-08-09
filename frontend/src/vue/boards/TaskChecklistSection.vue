@@ -15,25 +15,26 @@
       </span>
     </div>
 
-    <p v-if="isLoading" role="status">Загрузка DoD...</p>
+    <p v-if="isLoading" role="status">Загрузка чеклиста...</p>
 
-    <div v-if="templates.length > 0" class="task-checklist__apply">
-      <select v-model="templateId" aria-label="Шаблон DoD">
+    <div v-else-if="loadError" role="alert">
+      <p class="text-sm text-red-400">{{ loadError }}</p>
+      <button type="button" class="btn-ghost" @click="onRetryLoad?.()">Повторить</button>
+    </div>
+
+    <div v-if="!loadError && templates.length > 0" class="task-checklist__apply">
+      <select v-model="templateId" aria-label="Шаблон критериев готовности">
         <option value="">Применить шаблон…</option>
         <option v-for="template in templates" :key="template.id" :value="template.id">
           {{ template.name }}
         </option>
       </select>
-      <button
-        type="button"
-        :disabled="!templateId || applyPending"
-        @click="applyTemplate"
-      >
+      <button type="button" :disabled="!templateId || applyPending" @click="applyTemplate">
         Применить
       </button>
     </div>
 
-    <ul class="task-checklist__list" role="list">
+    <ul v-if="!loadError" class="task-checklist__list" role="list">
       <li v-for="item in items" :key="item.id">
         <label>
           <input
@@ -58,15 +59,17 @@
       </li>
     </ul>
 
-    <form class="task-checklist__create" @submit.prevent="submit">
+    <form v-if="!loadError" class="task-checklist__create" @submit.prevent="submit">
       <input
         v-model="text"
-        placeholder="Новый пункт DoD"
+        placeholder="Новый пункт"
         maxlength="200"
-        aria-label="Текст пункта DoD"
+        aria-label="Текст пункта чеклиста"
       />
       <button type="submit" :disabled="createPending || !text.trim()">Добавить</button>
     </form>
+
+    <p v-if="actionError" class="text-sm text-red-400" role="alert">{{ actionError }}</p>
   </section>
 </template>
 
@@ -78,10 +81,13 @@ const props = defineProps({
   items: { type: Array, default: () => [] },
   templates: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
+  actionError: { type: String, default: '' },
   createPending: { type: Boolean, default: false },
   updatePending: { type: Boolean, default: false },
   deletePending: { type: Boolean, default: false },
   applyPending: { type: Boolean, default: false },
+  onRetryLoad: { type: Function, default: null },
   onToggle: { type: Function, default: null },
   onDelete: { type: Function, default: null },
   onCreate: { type: Function, default: null },
@@ -103,7 +109,7 @@ async function submit() {
     await props.onCreate?.(trimmed)
     text.value = ''
   } catch {
-    /* ignore */
+    /* surfaced via actionError */
   }
 }
 
@@ -113,7 +119,7 @@ async function applyTemplate() {
     await props.onApplyTemplate?.(templateId.value)
     templateId.value = ''
   } catch {
-    /* ignore */
+    /* surfaced via actionError */
   }
 }
 </script>

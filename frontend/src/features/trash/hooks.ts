@@ -23,7 +23,7 @@ export function useWorkspaceTrashQuery(workspaceId: string | null, page: number,
 }
 
 export function useCanManageTrash() {
-  const { data: workspaces = [], isLoading } = useWorkspacesQuery();
+  const { data: workspaces = [], isLoading, isError, refetch } = useWorkspacesQuery();
   const currentWorkspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   const workspace = workspaces.find((item) => item.id === currentWorkspaceId);
   const canManage = workspace?.role === 'OWNER' || workspace?.role === 'ADMIN';
@@ -33,6 +33,10 @@ export function useCanManageTrash() {
     canManage,
     canPurge,
     isLoading,
+    isError,
+    onRetry: () => {
+      void refetch();
+    },
     workspaceId: currentWorkspaceId,
     role: workspace?.role,
   };

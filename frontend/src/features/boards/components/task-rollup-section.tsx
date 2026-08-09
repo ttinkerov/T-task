@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import { useTaskDealsQuery } from '@/features/crm/hooks';
 import type { TaskDealLink } from '@/features/crm/deal-task-types';
@@ -35,15 +35,29 @@ export function TaskRollupSection({
   );
 
   const isLoading = relationsQuery.isLoading || dealsQuery.isLoading;
+  const loadError =
+    relationsQuery.isError || dealsQuery.isError
+      ? relationsQuery.error instanceof Error
+        ? relationsQuery.error.message
+        : dealsQuery.error instanceof Error
+          ? dealsQuery.error.message
+          : 'Не удалось загрузить сводку'
+      : '';
   const isEmpty = rollup.relatedTaskCount === 0 && rollup.dealCount === 0;
+
+  const onRetryRollup = useCallback(() => {
+    void relationsQuery.refetch();
+    void dealsQuery.refetch();
+  }, [relationsQuery, dealsQuery]);
 
   const viewProps = useMemo(
     () => ({
       isLoading,
       isEmpty,
+      loadError,
       hint: isLoading
-        ? 'Rollup по связанным задачам и сделкам: прогресс, сумма и ближайший срок.'
-        : 'Rollup по связанным задачам и сделкам: % done, сумма amount, ближайший due.',
+        ? 'Сводка по связанным задачам и сделкам: прогресс, сумма и ближайший срок.'
+        : 'Сводка по связанным задачам и сделкам: процент готовности, сумма и ближайший срок.',
       doneLabel:
         rollup.donePercent === null
           ? '—'
@@ -55,11 +69,12 @@ export function TaskRollupSection({
               rollup.dealCount > 1 ? ` · ${rollup.dealCount}` : ''
             }`,
       dueLabel: formatRollupDue(rollup.nearestDue),
+      onRetry: onRetryRollup,
     }),
-    [isLoading, isEmpty, rollup],
+    [isLoading, isEmpty, loadError, rollup, onRetryRollup],
   );
 
-  if (!isLoading && isEmpty) {
+  if (!isLoading && !loadError && isEmpty) {
     return null;
   }
 

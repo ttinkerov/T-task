@@ -90,12 +90,16 @@ export function MyTasksPage({
       priorityLabels: PRIORITY_LABELS,
       initialSection: initialSection ?? 'all',
       onOpenTask,
+      onRetry: () => {
+        void myTasks.refetch();
+      },
     }),
     [
       dueSoonDays,
       totalVisible,
       myTasks.isLoading,
       myTasks.isError,
+      myTasks.refetch,
       buckets.overdue,
       buckets.dueSoon,
       buckets.assigned,

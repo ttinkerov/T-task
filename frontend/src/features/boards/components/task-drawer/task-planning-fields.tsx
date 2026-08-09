@@ -31,7 +31,8 @@ export function TaskPlanningFields({
   onIsEpicChange: (value: boolean) => void;
 }) {
   const queryClient = useQueryClient();
-  const { data: sprints = [] } = useSprintsQuery(workspaceId);
+  const sprintsQuery = useSprintsQuery(workspaceId);
+  const sprints = sprintsQuery.data ?? [];
   const cachedBoard = queryClient.getQueryData<BoardView>(boardKeys.detail(workspaceId, 'default'));
   const epicOptions = useMemo(() => {
     const fromCandidates = relationCandidates.filter(
@@ -50,6 +51,16 @@ export function TaskPlanningFields({
     [sprints, sprintId],
   );
 
+  const sprintsLoadError = sprintsQuery.isError
+    ? sprintsQuery.error instanceof Error
+      ? sprintsQuery.error.message
+      : 'Не удалось загрузить спринты'
+    : '';
+
+  const onRetrySprints = useCallback(() => {
+    void sprintsQuery.refetch();
+  }, [sprintsQuery]);
+
   const viewProps = useMemo(
     () => ({
       sprintId,
@@ -57,9 +68,11 @@ export function TaskPlanningFields({
       isEpic,
       sprints: sprintOptions,
       epicOptions,
+      sprintsLoadError,
       onSprintChange,
       onEpicChange,
       onIsEpicChange,
+      onRetrySprints,
     }),
     [
       sprintId,
@@ -67,9 +80,11 @@ export function TaskPlanningFields({
       isEpic,
       sprintOptions,
       epicOptions,
+      sprintsLoadError,
       onSprintChange,
       onEpicChange,
       onIsEpicChange,
+      onRetrySprints,
     ],
   );
 

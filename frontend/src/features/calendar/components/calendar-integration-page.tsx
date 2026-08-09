@@ -133,6 +133,9 @@ export function CalendarIntegrationPage({ workspaceId }: { workspaceId: string }
       onRequestRevoke,
       onConfirmPending,
       onCancelPending,
+      onRetryStatus: () => {
+        void statusQuery.refetch();
+      },
     }),
     [
       status?.enabled,
@@ -140,6 +143,7 @@ export function CalendarIntegrationPage({ workspaceId }: { workspaceId: string }
       status?.updatedAt,
       statusQuery.isLoading,
       statusQuery.error,
+      statusQuery.refetch,
       feedUrl,
       webcalUrl,
       notice,

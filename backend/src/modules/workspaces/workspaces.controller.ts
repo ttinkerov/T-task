@@ -10,6 +10,7 @@ import {
   INVITATION_CREATE_RATE_LIMIT,
   RateLimit,
   WORKSPACE_MUTATE_RATE_LIMIT,
+  WORKSPACE_READ_RATE_LIMIT,
 } from '../../common/security/rate-limit.decorator';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
@@ -25,6 +26,8 @@ export class WorkspacesController {
   constructor(private readonly workspacesService: WorkspacesService) {}
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(WORKSPACE_READ_RATE_LIMIT)
   async list(@CurrentUser() user: AuthenticatedUser) {
     const workspaces = await this.workspacesService.listForUser(user.id);
     return successResponse(workspaces);
@@ -39,6 +42,8 @@ export class WorkspacesController {
   }
 
   @Get(':workspaceId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(WORKSPACE_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async getOne(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     const workspace = await this.workspacesService.getWorkspaceForMember(workspaceId, user.id);
@@ -89,6 +94,8 @@ export class WorkspacesController {
   }
 
   @Get(':workspaceId/members')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(WORKSPACE_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async listMembers(
     @Param('workspaceId') workspaceId: string,
@@ -150,6 +157,8 @@ export class WorkspacesController {
   }
 
   @Get(':workspaceId/invitations')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(WORKSPACE_READ_RATE_LIMIT)
   @Roles(...ADMIN_PLUS_ROLES)
   async listInvitations(
     @Param('workspaceId') workspaceId: string,

@@ -8,6 +8,7 @@
 
     <p v-else-if="isError" class="custom-fields-page__error" role="alert">
       {{ loadError || 'Не удалось загрузить поля.' }}
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
     </p>
 
     <p v-else-if="fields.length === 0" class="text-sm text-muted-foreground">
@@ -32,7 +33,7 @@
               type="checkbox"
               :checked="field.showOnCard"
               :disabled="pendingId === field.id"
-              @change="onToggle(field.id, $event)"
+              @change="handleToggle(field.id, $event)"
             />
             <span>На карточке</span>
           </label>
@@ -41,7 +42,7 @@
             class="custom-fields-page__delete"
             :disabled="pendingId === field.id"
             :aria-label="'Удалить поле «' + field.name + '»'"
-            @click="emit('delete', field.id)"
+            @click="onDelete?.(field.id)"
           >
             {{ pendingId === field.id ? '…' : 'Удалить' }}
           </button>
@@ -54,7 +55,7 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   fields: { type: Array, required: true },
   isLoading: { type: Boolean, default: false },
   isError: { type: Boolean, default: false },
@@ -63,11 +64,12 @@ defineProps({
   canManage: { type: Boolean, default: false },
   pendingId: { type: String, default: null },
   typeLabels: { type: Object, required: true },
+  onToggleCard: { type: Function, default: null },
+  onDelete: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
 
-const emit = defineEmits(['toggle-card', 'delete'])
-
-function onToggle(fieldId, event) {
-  emit('toggle-card', { fieldId, showOnCard: event.target.checked })
+function handleToggle(fieldId, event) {
+  props.onToggleCard?.({ fieldId, showOnCard: event.target.checked })
 }
 </script>

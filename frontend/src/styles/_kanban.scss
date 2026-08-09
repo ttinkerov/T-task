@@ -345,9 +345,18 @@
       cursor: not-allowed;
     }
   }
-}
 
-.automation-dialog {
+  &__add-wrap {
+    flex-shrink: 0;
+  }
+
+  &__add-error {
+    margin: 0;
+    padding: 0 0.625rem 0.5rem;
+    color: var(--tt-danger);
+    font-size: 0.75rem;
+  }
+}
   width: min(30rem, calc(100vw - 2rem));
   border: 1px solid var(--tt-border);
   border-radius: $radius-lg;
@@ -556,6 +565,12 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
+  }
+
+  &__error {
+    margin: 0;
+    color: var(--tt-danger);
+    font-size: 0.75rem;
   }
 }
 

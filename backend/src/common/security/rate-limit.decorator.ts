@@ -20,6 +20,12 @@ export const DEFAULT_AUTH_RATE_LIMIT: RateLimitConfig = {
   maxAttempts: 5,
 };
 
+export const AUTH_ME_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'auth:me',
+  windowSeconds: 60,
+  maxAttempts: 120,
+};
+
 export const PUBLIC_FORM_GET_RATE_LIMIT: RateLimitConfig = {
   keyPrefix: 'public-form:get',
   windowSeconds: 60,
@@ -216,6 +222,20 @@ export const FORM_MUTATE_RATE_LIMIT: RateLimitConfig = {
   includeWorkspaceId: true,
 };
 
+export const FORM_READ_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'form:read',
+  windowSeconds: 60,
+  maxAttempts: 60,
+  includeWorkspaceId: true,
+};
+
+export const ATTACHMENT_READ_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'task-attachment:read',
+  windowSeconds: 60,
+  maxAttempts: 120,
+  includeWorkspaceId: true,
+};
+
 export const SPRINT_MUTATE_RATE_LIMIT: RateLimitConfig = {
   keyPrefix: 'sprint:mutate',
   windowSeconds: 60,
@@ -234,6 +254,41 @@ export const WORKSPACE_MUTATE_RATE_LIMIT: RateLimitConfig = {
   keyPrefix: 'workspace:mutate',
   windowSeconds: 60,
   maxAttempts: 30,
+  includeWorkspaceId: true,
+};
+
+export const WORKSPACE_READ_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'workspace:read',
+  windowSeconds: 60,
+  maxAttempts: 120,
+  includeWorkspaceId: true,
+};
+
+export const TASK_READ_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'task:read',
+  windowSeconds: 60,
+  maxAttempts: 120,
+  includeWorkspaceId: true,
+};
+
+export const RESOURCE_READ_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'resource:read',
+  windowSeconds: 60,
+  maxAttempts: 120,
+  includeWorkspaceId: true,
+};
+
+export const COMMENT_READ_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'comment:read',
+  windowSeconds: 60,
+  maxAttempts: 120,
+  includeWorkspaceId: true,
+};
+
+export const NOTIFICATION_READ_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'notification:read',
+  windowSeconds: 60,
+  maxAttempts: 120,
   includeWorkspaceId: true,
 };
 

@@ -99,11 +99,15 @@ export function CustomFieldsPage({ workspaceId }: CustomFieldsPageProps) {
       typeLabels: CUSTOM_FIELD_TYPE_LABELS,
       onToggleCard,
       onDelete,
+      onRetry: () => {
+        void fieldsQuery.refetch();
+      },
     }),
     [
       fields,
       fieldsQuery.isLoading,
       fieldsQuery.error,
+      fieldsQuery.refetch,
       actionError,
       canManage,
       pendingId,

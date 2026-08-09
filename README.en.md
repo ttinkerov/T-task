@@ -12,11 +12,12 @@ Kanban and CRM for small teams. Workspaces, boards, deals, forms, and notificati
 - **Boards** — columns, drag-and-drop, WIP limits, automations, filters
 - **Tasks** — subtasks, tags, comments, @mentions, watchers, epics, sprints
 - **My Tasks** — assigned / watching / overdue / due soon
+- **Roadmap / Epic board / Focus** — planning and deep work
 - **CRM** — pipelines, deals, link to tasks
 - **Forms** — public forms → tasks / deals
-- **DoD / Templates** — checklists and card templates
+- **Definition of Done / Templates** — checklists and card templates
 - **Analytics** — throughput, cycle time, workload
-- **Apps** — iCal calendar feed, import, AI assistant with RAG, trash
+- **Calendar / Import / AI / Trash** — iCal feed, CSV, RAG assistant, soft-delete
 - **Whiteboard** — drawing (tldraw), autosave per workspace
 
 ## Quick start

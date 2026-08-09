@@ -10,6 +10,11 @@
 
     <p v-if="isLoading" role="status">Загрузка вложений...</p>
 
+    <p v-else-if="isError" class="text-sm text-red-400" role="alert">
+      {{ loadError || 'Не удалось загрузить вложения' }}
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
+    </p>
+
     <p v-else-if="attachments.length === 0" class="task-tags__empty">Пока нет файлов</p>
 
     <ul v-else class="task-attachments__list" role="list">
@@ -74,12 +79,15 @@ const props = defineProps({
   thumbnails: { type: Object, default: () => ({}) },
   accept: { type: String, required: true },
   isLoading: { type: Boolean, default: false },
+  isError: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
   uploadPending: { type: Boolean, default: false },
   deletePending: { type: Boolean, default: false },
   error: { type: String, default: '' },
   onOpen: { type: Function, default: null },
   onDelete: { type: Function, default: null },
   onUpload: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
 
 const fileInput = ref(null)

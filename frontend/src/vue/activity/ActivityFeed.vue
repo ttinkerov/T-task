@@ -15,7 +15,8 @@
     </p>
 
     <p v-else-if="isError" class="activity-page__error" role="alert">
-      Не удалось загрузить журнал. Попробуйте обновить страницу.
+      Не удалось загрузить журнал.
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
     </p>
 
     <template v-else-if="items.length > 0">
@@ -48,7 +49,7 @@
           type="button"
           class="btn-ghost"
           :disabled="page <= 1 || isFetching"
-          @click="emit('page-change', page - 1)"
+          @click="goToPage(page - 1)"
         >
           ← Назад
         </button>
@@ -57,7 +58,7 @@
           type="button"
           class="btn-ghost"
           :disabled="page >= totalPages || isFetching"
-          @click="emit('page-change', page + 1)"
+          @click="goToPage(page + 1)"
         >
           Далее →
         </button>
@@ -73,7 +74,7 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   items: { type: Array, required: true },
   page: { type: Number, required: true },
   totalPages: { type: Number, required: true },
@@ -82,9 +83,13 @@ defineProps({
   isError: { type: Boolean, default: false },
   statusMessage: { type: String, default: '' },
   actionLabels: { type: Object, required: true },
+  onRetry: { type: Function, default: null },
+  onPageChange: { type: Function, default: null },
 })
 
-const emit = defineEmits(['page-change'])
+function goToPage(nextPage) {
+  props.onPageChange?.(nextPage)
+}
 
 function actorName(name) {
   const trimmed = (name || '').trim()

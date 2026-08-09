@@ -27,7 +27,13 @@ export function SavedFiltersControl({
   onApply,
   skipDefaultApply = false,
 }: SavedFiltersControlProps) {
-  const { data: saved = [], isLoading } = useSavedFiltersQuery(workspaceId, view);
+  const {
+    data: saved = [],
+    isLoading,
+    isError,
+    error: loadQueryError,
+    refetch,
+  } = useSavedFiltersQuery(workspaceId, view);
   const createMutation = useCreateSavedFilterMutation(workspaceId, view);
   const updateMutation = useUpdateSavedFilterMutation(workspaceId, view);
   const deleteMutation = useDeleteSavedFilterMutation(workspaceId, view);
@@ -107,9 +113,14 @@ export function SavedFiltersControl({
   );
 
   const error =
-    createMutation.error?.message ??
-    updateMutation.error?.message ??
-    deleteMutation.error?.message ??
+    (isError
+      ? loadQueryError instanceof Error
+        ? loadQueryError.message
+        : 'Не удалось загрузить сохранённые фильтры'
+      : '') ||
+    createMutation.error?.message ||
+    updateMutation.error?.message ||
+    deleteMutation.error?.message ||
     '';
 
   const viewProps = useMemo(
@@ -127,6 +138,11 @@ export function SavedFiltersControl({
       onTogglePinned,
       onToggleShared,
       onDelete,
+      onRetry: isError
+        ? () => {
+            void refetch();
+          }
+        : undefined,
     }),
     [
       saved,
@@ -136,6 +152,8 @@ export function SavedFiltersControl({
       updateMutation.isPending,
       deleteMutation.isPending,
       error,
+      isError,
+      refetch,
       onSelect,
       onSave,
       onSetDefault,

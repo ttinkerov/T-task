@@ -39,6 +39,9 @@ export function NotificationBell({ workspaceId }: { workspaceId: string | null }
 
   const onToggle = useCallback(() => setOpen((current) => !current), []);
   const onMarkAll = useCallback(() => markAllMutation.mutate(), [markAllMutation]);
+  const onRetry = useCallback(() => {
+    void notificationsQuery.refetch();
+  }, [notificationsQuery]);
 
   const onOpen = useCallback(
     async (notificationId: string) => {
@@ -90,6 +93,7 @@ export function NotificationBell({ workspaceId }: { workspaceId: string | null }
       isLoading: notificationsQuery.isLoading,
       error: Boolean(notificationsQuery.error),
       markAllPending: markAllMutation.isPending,
+      markAllError: markAllMutation.error?.message ?? '',
       items,
       ariaLabel: inbox?.unreadCount
         ? `Уведомления: ${inbox.unreadCount} непрочитанных`
@@ -97,6 +101,7 @@ export function NotificationBell({ workspaceId }: { workspaceId: string | null }
       onToggle,
       onMarkAll,
       onOpen,
+      onRetry,
     }),
     [
       workspaceId,
@@ -105,10 +110,12 @@ export function NotificationBell({ workspaceId }: { workspaceId: string | null }
       notificationsQuery.isLoading,
       notificationsQuery.error,
       markAllMutation.isPending,
+      markAllMutation.error,
       items,
       onToggle,
       onMarkAll,
       onOpen,
+      onRetry,
     ],
   );
 

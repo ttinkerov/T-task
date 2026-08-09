@@ -1,7 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useWorkspaceStore } from '@/stores/workspace.store';
+import { WorkspaceGateStatus } from '@/features/workspaces/components/workspace-gate-status';
+import { useWorkspaceRouteGate } from '@/features/workspaces/use-workspace-route-gate';
 
 const WorkspaceWhiteboard = dynamic(
   () =>
@@ -15,11 +16,11 @@ const WorkspaceWhiteboard = dynamic(
 );
 
 export default function WhiteboardRoute() {
-  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
+  const { workspaceId, isReady, isLoading, isError, onRetry } = useWorkspaceRouteGate();
 
-  return workspaceId ? (
+  return isReady && workspaceId ? (
     <WorkspaceWhiteboard key={workspaceId} workspaceId={workspaceId} />
   ) : (
-    <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
+    <WorkspaceGateStatus isLoading={isLoading} isError={isError} onRetry={onRetry} />
   );
 }

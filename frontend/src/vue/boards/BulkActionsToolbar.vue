@@ -2,6 +2,13 @@
   <div class="bulk-actions-toolbar" role="toolbar" aria-label="Массовые действия">
     <strong aria-live="polite">{{ count }} выбрано</strong>
 
+    <p v-if="loadError" class="bulk-actions-toolbar__error" role="alert">
+      {{ loadError }}
+      <button type="button" class="board-filters__chip" :disabled="pending" @click="onRetry?.()">
+        Повторить
+      </button>
+    </p>
+
     <select
       aria-label="Исполнитель"
       :disabled="pending"
@@ -67,8 +74,10 @@ const props = defineProps({
   priorityOptions: { type: Array, default: () => [] },
   pending: { type: Boolean, default: false },
   error: { type: String, default: '' },
+  loadError: { type: String, default: '' },
   onApply: { type: Function, default: null },
   onClear: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
 
 const assigneeValue = ref('')
@@ -77,8 +86,12 @@ const sprintValue = ref('')
 const columnValue = ref('')
 
 async function applyAndReset(patch, resetRef) {
-  await props.onApply?.(patch)
-  resetRef.value = ''
+  try {
+    await props.onApply?.(patch)
+    resetRef.value = ''
+  } catch {
+    /* keep select value; error shown via props.error */
+  }
 }
 
 function onAssigneeChange(event) {

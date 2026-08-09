@@ -12,6 +12,7 @@ import {
   MENTION_SOURCE_MUTATE_RATE_LIMIT,
   RateLimit,
   TASK_MUTATE_RATE_LIMIT,
+  TASK_READ_RATE_LIMIT,
 } from '../../common/security/rate-limit.decorator';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
@@ -25,6 +26,8 @@ export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Get(':taskId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(TASK_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async getById(
     @Param('workspaceId') workspaceId: string,

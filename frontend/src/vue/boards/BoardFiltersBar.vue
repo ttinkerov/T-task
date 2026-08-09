@@ -1,4 +1,9 @@
 <template>
+  <p v-if="loadError" class="text-sm text-red-400" role="alert">
+    {{ loadError }}
+    <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
+  </p>
+
   <input
     :value="filters.search"
     placeholder="Поиск задач..."
@@ -112,8 +117,10 @@ const props = defineProps({
   priorityOptions: { type: Array, default: () => [] },
   overdueOptions: { type: Array, default: () => [] },
   hasActiveFilters: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
   onChange: { type: Function, default: null },
   onReset: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
 
 function eventValue(event) {

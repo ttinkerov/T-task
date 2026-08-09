@@ -42,6 +42,7 @@
         <select
           class="glass-input"
           :value="assigneeId"
+          :disabled="Boolean(membersLoadError)"
           @change="onAssigneeChange?.($event.target.value)"
         >
           <option value="">Не назначен</option>
@@ -49,6 +50,12 @@
             {{ member.user.name }}
           </option>
         </select>
+        <p v-if="membersLoadError" class="text-sm text-red-400" role="alert">
+          {{ membersLoadError }}
+          <button type="button" class="board-filters__chip" @click="onRetryMembers?.()">
+            Повторить
+          </button>
+        </p>
       </label>
     </div>
 
@@ -87,11 +94,13 @@ defineProps({
   companyName: { type: String, default: '' },
   assigneeId: { type: String, default: '' },
   members: { type: Array, default: () => [] },
+  membersLoadError: { type: String, default: '' },
   onTitleChange: { type: Function, default: null },
   onDescriptionChange: { type: Function, default: null },
   onAmountChange: { type: Function, default: null },
   onContactNameChange: { type: Function, default: null },
   onCompanyNameChange: { type: Function, default: null },
   onAssigneeChange: { type: Function, default: null },
+  onRetryMembers: { type: Function, default: null },
 });
 </script>

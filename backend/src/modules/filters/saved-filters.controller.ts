@@ -16,7 +16,7 @@ import { ALL_WORKSPACE_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
-import { RateLimit } from '../../common/security/rate-limit.decorator';
+import { RateLimit, RESOURCE_READ_RATE_LIMIT } from '../../common/security/rate-limit.decorator';
 import { CreateSavedFilterDto } from './dto/create-saved-filter.dto';
 import { UpdateSavedFilterDto } from './dto/update-saved-filter.dto';
 import { SavedFiltersService } from './saved-filters.service';
@@ -32,6 +32,8 @@ export class SavedFiltersController {
   constructor(private readonly savedFiltersService: SavedFiltersService) {}
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(RESOURCE_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async list(
     @Param('workspaceId') workspaceId: string,

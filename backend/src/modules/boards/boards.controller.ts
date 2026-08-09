@@ -78,6 +78,8 @@ export class BoardsController {
   }
 
   @Get('columns/:columnId/automations')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(BOARD_GET_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async getColumnAutomations(
     @Param('workspaceId') workspaceId: string,
@@ -144,6 +146,8 @@ export class WorkspaceBoardsController {
   constructor(private readonly boardsService: BoardsService) {}
 
   @Get('templates')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(BOARD_GET_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async listTemplates() {
     const { BOARD_TEMPLATES } = await import('./templates/board-templates');
@@ -151,6 +155,8 @@ export class WorkspaceBoardsController {
   }
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(BOARD_GET_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async listBoards(
     @Param('workspaceId') workspaceId: string,

@@ -50,7 +50,10 @@
         </div>
 
         <p v-if="statusError" class="calendar-feed__error" role="alert">
-          Не удалось проверить интеграцию. Обновите страницу и попробуйте снова.
+          Не удалось проверить интеграцию.
+          <button type="button" class="board-filters__chip" @click="onRetryStatus?.()">
+            Повторить
+          </button>
         </p>
 
         <div v-if="feedUrl" class="calendar-feed__url">
@@ -208,6 +211,7 @@ const props = defineProps({
   onRequestRevoke: { type: Function, default: null },
   onConfirmPending: { type: Function, default: null },
   onCancelPending: { type: Function, default: null },
+  onRetryStatus: { type: Function, default: null },
 })
 
 const providers = [

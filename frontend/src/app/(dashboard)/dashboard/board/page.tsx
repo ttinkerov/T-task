@@ -1,6 +1,7 @@
 'use client';
 
 import { KanbanBoard } from '@/features/boards/components/kanban-board';
+import { WorkspaceGateStatus } from '@/features/workspaces/components/workspace-gate-status';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -19,10 +20,10 @@ function BoardPageContent() {
   const searchParams = useSearchParams();
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   const setCurrentWorkspaceId = useWorkspaceStore((state) => state.setCurrentWorkspaceId);
-  const { data: workspaces = [], isLoading } = useWorkspacesQuery();
+  const { data: workspaces = [], isLoading, isError, refetch } = useWorkspacesQuery();
 
   useEffect(() => {
-    if (!isLoading && workspaces.length === 0) {
+    if (!isLoading && !isError && workspaces.length === 0) {
       router.replace('/onboarding');
       return;
     }
@@ -31,7 +32,7 @@ function BoardPageContent() {
     if (workspaces.length > 0 && (!workspaceId || !exists)) {
       setCurrentWorkspaceId(workspaces[0].id);
     }
-  }, [isLoading, router, setCurrentWorkspaceId, workspaceId, workspaces]);
+  }, [isLoading, isError, router, setCurrentWorkspaceId, workspaceId, workspaces]);
 
   return workspaceId ? (
     <KanbanBoard
@@ -40,7 +41,7 @@ function BoardPageContent() {
       initialBoardId={searchParams.get('board')}
     />
   ) : (
-    <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
+    <WorkspaceGateStatus isLoading={isLoading} isError={isError} onRetry={() => void refetch()} />
   );
 }
 

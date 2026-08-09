@@ -17,7 +17,7 @@
       <input
         v-model="name"
         class="glass-input"
-        placeholder="Название шаблона (Bug)"
+        placeholder="Название шаблона (Баг)"
         maxlength="120"
         required
       />
@@ -49,6 +49,10 @@
           <span :style="{ color: tag.color }">{{ tag.name }}</span>
         </label>
       </fieldset>
+      <p v-else-if="tagsLoadError" class="dod-page__error" role="alert">
+        {{ tagsLoadError }}
+        <button type="button" class="board-filters__chip" @click="onRetryTags?.()">Повторить</button>
+      </p>
 
       <textarea
         v-model="subtasksText"
@@ -59,7 +63,7 @@
       <textarea
         v-model="checklistText"
         class="glass-input"
-        placeholder="Чеклист — по одному в строке&#10;Reproduce&#10;Fix&#10;Review"
+        placeholder="Чеклист — по одному в строке&#10;Воспроизвести&#10;Исправить&#10;Проверить"
         rows="3"
       />
       <label class="dod-page__toggle">
@@ -88,8 +92,10 @@ const props = defineProps({
   isCreating: { type: Boolean, default: false },
   isSeeding: { type: Boolean, default: false },
   errorMessage: { type: String, default: '' },
+  tagsLoadError: { type: String, default: '' },
   onCreate: { type: Function, required: true },
   onSeed: { type: Function, required: true },
+  onRetryTags: { type: Function, default: null },
 })
 
 const name = ref('')

@@ -82,7 +82,17 @@
       <button type="button" class="board-filters__reset" @click="saveOpen = false">Отмена</button>
     </form>
 
-    <p v-if="error" class="saved-filters__error" role="alert">{{ error }}</p>
+    <p v-if="error" class="saved-filters__error" role="alert">
+      {{ error }}
+      <button
+        v-if="onRetry"
+        type="button"
+        class="board-filters__chip"
+        @click="onRetry?.()"
+      >
+        Повторить
+      </button>
+    </p>
   </div>
 </template>
 
@@ -103,6 +113,7 @@ const props = defineProps({
   onTogglePinned: { type: Function, default: null },
   onToggleShared: { type: Function, default: null },
   onDelete: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
 
 const saveOpen = ref(false)

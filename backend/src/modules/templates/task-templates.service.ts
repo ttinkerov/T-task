@@ -110,7 +110,10 @@ export class TaskTemplatesService {
   async seedDefaults(workspaceId: string, userId: string) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
     const existing = await this.prisma.taskTemplate.findFirst({
-      where: { workspaceId, name: 'Bug' },
+      where: {
+        workspaceId,
+        OR: [{ name: 'Баг' }, { name: 'Bug' }],
+      },
       select: { id: true },
     });
     if (existing) {
@@ -119,14 +122,15 @@ export class TaskTemplatesService {
 
     const bugTag = await this.ensureTag(workspaceId, 'bug', '#ef4444');
     await this.create(workspaceId, userId, {
-      name: 'Bug',
+      name: 'Баг',
       title: '',
-      description: '## Steps to reproduce\n\n1.\n\n## Expected\n\n## Actual\n\n## Environment\n',
+      description:
+        '## Шаги воспроизведения\n\n1.\n\n## Ожидаемое поведение\n\n## Фактическое поведение\n\n## Окружение\n',
       priority: TaskPriority.HIGH,
       checklistGates: true,
       tagIds: [bugTag.id],
       subtaskTitles: ['Написать failing-тест', 'Исправить баг', 'Проверить на staging'],
-      checklistItems: ['Воспроизвести баг', 'Найти причину', 'Исправление', 'Тесты', 'Code review'],
+      checklistItems: ['Воспроизвести баг', 'Найти причину', 'Исправление', 'Тесты', 'Код-ревью'],
     });
     return this.list(workspaceId, userId);
   }

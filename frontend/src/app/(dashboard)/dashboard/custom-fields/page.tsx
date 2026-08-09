@@ -1,14 +1,15 @@
 'use client';
 
 import { CustomFieldsPage } from '@/features/custom-fields/components/custom-fields-page';
-import { useWorkspaceStore } from '@/stores/workspace.store';
+import { WorkspaceGateStatus } from '@/features/workspaces/components/workspace-gate-status';
+import { useWorkspaceRouteGate } from '@/features/workspaces/use-workspace-route-gate';
 
 export default function CustomFieldsRoutePage() {
-  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
+  const { workspaceId, isReady, isLoading, isError, onRetry } = useWorkspaceRouteGate();
 
-  return workspaceId ? (
+  return isReady && workspaceId ? (
     <CustomFieldsPage key={workspaceId} workspaceId={workspaceId} />
   ) : (
-    <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
+    <WorkspaceGateStatus isLoading={isLoading} isError={isError} onRetry={onRetry} />
   );
 }

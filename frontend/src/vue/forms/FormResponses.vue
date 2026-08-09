@@ -1,5 +1,10 @@
 <template>
-  <p v-if="!responsesData || responsesData.total === 0" class="forms-page__empty">
+  <div v-if="responsesError" role="alert">
+    <p class="forms-page__empty text-red-400">{{ responsesError }}</p>
+    <button type="button" class="btn-ghost" @click="onRetry?.()">Повторить</button>
+  </div>
+
+  <p v-else-if="!responsesData || responsesData.total === 0" class="forms-page__empty">
     Пока нет ответов на эту форму.
   </p>
 
@@ -51,6 +56,8 @@
 defineProps({
   fields: { type: Array, required: true },
   responsesData: { type: Object, default: null },
+  responsesError: { type: String, default: '' },
+  onRetry: { type: Function, default: null },
 })
 
 function formatDate(value) {

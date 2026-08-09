@@ -16,7 +16,7 @@ export async function serverApiFetch<T>(path: string): Promise<ApiResponse<T>> {
   const body = (await response.json()) as ApiResponse<T>;
 
   if (!response.ok || !body.success) {
-    throw new Error(body.error ?? 'Request failed');
+    throw new Error(body.error ?? 'Не удалось выполнить запрос');
   }
 
   return body;

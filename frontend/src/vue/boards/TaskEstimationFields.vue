@@ -21,7 +21,7 @@
         <span class="task-drawer__label">
           Очки (SP)
           <FieldHint
-            text="Story Points — оценка сложности, не часов. Нужна для velocity спринта."
+            text="Очки сложности (не часы). Нужны для скорости спринта."
           />
         </span>
         <select

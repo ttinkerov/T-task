@@ -23,6 +23,10 @@
 
     <div class="ai-rag-status" data-testid="ai-rag-status">
       <p v-if="ragLoading" class="settings-card__hint">Загрузка статуса RAG…</p>
+      <p v-else-if="ragError" class="settings-card__hint" role="alert">
+        {{ ragError }}
+        <button type="button" class="btn-ghost" @click="onRetryRag?.()">Повторить</button>
+      </p>
       <template v-else-if="ragStatus">
         <p class="settings-card__hint">
           RAG:
@@ -74,7 +78,7 @@
       </label>
 
       <label v-if="provider === 'CUSTOM'" class="task-drawer__field">
-        <span>Base URL</span>
+        <span>Адрес API</span>
         <input
           v-model="baseUrl"
           class="glass-input"
@@ -128,7 +132,7 @@
       </label>
 
       <label v-if="embeddingProvider === 'CUSTOM'" class="task-drawer__field">
-        <span>Embedding base URL</span>
+        <span>Адрес embedding API</span>
         <input
           v-model="embeddingBaseUrl"
           class="glass-input"
@@ -207,11 +211,13 @@ const props = defineProps({
   deletePending: { type: Boolean, default: false },
   ragStatus: { type: Object, default: null },
   ragLoading: { type: Boolean, default: false },
+  ragError: { type: String, default: '' },
   reindexPending: { type: Boolean, default: false },
   onSave: { type: Function, default: null },
   onTest: { type: Function, default: null },
   onDelete: { type: Function, default: null },
   onReindex: { type: Function, default: null },
+  onRetryRag: { type: Function, default: null },
 });
 
 const provider = ref('OPENAI');

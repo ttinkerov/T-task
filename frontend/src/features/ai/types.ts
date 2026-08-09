@@ -126,11 +126,11 @@ export const AI_PROVIDER_OPTIONS: Array<{ value: AiProvider; label: string }> = 
   { value: 'OPENAI', label: 'OpenAI' },
   { value: 'OPENROUTER', label: 'OpenRouter' },
   { value: 'GROQ', label: 'Groq' },
-  { value: 'CUSTOM', label: 'Custom (OpenAI-compatible)' },
+  { value: 'CUSTOM', label: 'Свой (совместимый с OpenAI)' },
 ];
 
 export const AI_EMBEDDING_PROVIDER_OPTIONS: Array<{ value: AiProvider; label: string }> = [
   { value: 'OPENAI', label: 'OpenAI' },
   { value: 'OPENROUTER', label: 'OpenRouter' },
-  { value: 'CUSTOM', label: 'Custom (OpenAI-compatible)' },
+  { value: 'CUSTOM', label: 'Свой (совместимый с OpenAI)' },
 ];

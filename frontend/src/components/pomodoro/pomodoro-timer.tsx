@@ -75,7 +75,7 @@ export function PomodoroTimer() {
     const label =
       status === 'running'
         ? `${formatTimer(secondsLeft)} — ${phase === 'focus' ? 'Фокус' : 'Перерыв'}`
-        : 'Pomodoro — T-task';
+        : 'Помодоро — T-task';
     document.title = label;
     return () => {
       document.title = 'T-task — управление проектами для команд';

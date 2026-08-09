@@ -7,13 +7,28 @@ import {
   useInvitationPreviewQuery,
 } from '@/features/workspaces/hooks';
 import { useMeQuery } from '@/features/auth/hooks';
+import type { WorkspaceRole } from '@/features/workspaces/types';
+
+const ROLE_LABELS: Record<WorkspaceRole, string> = {
+  VIEWER: 'наблюдателя',
+  MEMBER: 'участника',
+  ADMIN: 'администратора',
+  OWNER: 'владельца',
+};
 
 export default function InviteAcceptPage() {
   const params = useParams<{ token: string }>();
   const router = useRouter();
   const token = params.token;
   const { data: session } = useMeQuery();
-  const { data: preview, isLoading, isError } = useInvitationPreviewQuery(token);
+  const {
+    data: preview,
+    isLoading,
+    isError,
+    isFetched,
+    error,
+    refetch,
+  } = useInvitationPreviewQuery(token);
   const acceptMutation = useAcceptInvitationMutation();
 
   const handleAccept = async () => {
@@ -34,7 +49,38 @@ export default function InviteAcceptPage() {
     );
   }
 
-  if (isError || !preview) {
+  if (isError) {
+    const message = error instanceof Error ? error.message : 'Не удалось загрузить приглашение';
+    const looksInvalid =
+      /не найден|недействитель|истёк|истек|уже использован|not found|expired|invalid/i.test(
+        message,
+      );
+
+    return (
+      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 px-6">
+        <h1 className="text-2xl font-semibold">
+          {looksInvalid ? 'Приглашение недействительно' : 'Не удалось загрузить приглашение'}
+        </h1>
+        <p className="text-sm text-slate-600">
+          {looksInvalid ? 'Ссылка истекла или уже была использована.' : message}
+        </p>
+        {!looksInvalid ? (
+          <button
+            type="button"
+            className="board-filters__chip w-fit"
+            onClick={() => void refetch()}
+          >
+            Повторить
+          </button>
+        ) : null}
+        <Link href="/login" className="text-sm underline">
+          Войти
+        </Link>
+      </main>
+    );
+  }
+
+  if (isFetched && !preview) {
     return (
       <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 px-6">
         <h1 className="text-2xl font-semibold">Приглашение недействительно</h1>
@@ -44,6 +90,10 @@ export default function InviteAcceptPage() {
         </Link>
       </main>
     );
+  }
+
+  if (!preview) {
+    return null;
   }
 
   const acceptError =
@@ -59,7 +109,8 @@ export default function InviteAcceptPage() {
         <p className="text-sm font-medium uppercase tracking-wide text-slate-500">Приглашение</p>
         <h1 className="text-3xl font-semibold">{preview.workspace.name}</h1>
         <p className="text-sm text-slate-600 dark:text-slate-300">
-          Вас приглашают как <span className="font-medium">{preview.role}</span>
+          Вас приглашают как{' '}
+          <span className="font-medium">{ROLE_LABELS[preview.role] ?? preview.role}</span>
         </p>
         <p className="text-sm text-slate-500">Email: {preview.email}</p>
       </div>

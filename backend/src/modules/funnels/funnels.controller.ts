@@ -32,6 +32,8 @@ export class FunnelsController {
   constructor(private readonly funnelsService: FunnelsService) {}
 
   @Get('templates')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FUNNEL_GET_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async listTemplates() {
     const { FUNNEL_TEMPLATES } = await import('./templates/funnel-templates');
@@ -39,6 +41,8 @@ export class FunnelsController {
   }
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FUNNEL_GET_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async listFunnels(
     @Param('workspaceId') workspaceId: string,

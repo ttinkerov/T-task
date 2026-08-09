@@ -14,7 +14,7 @@
     >
       <header class="shortcuts-help__header">
         <div>
-          <p class="shortcuts-help__eyebrow">Power user</p>
+          <p class="shortcuts-help__eyebrow">Для быстрой работы</p>
           <h2>Шорткаты</h2>
         </div>
         <button type="button" class="btn-ghost" aria-label="Закрыть" @click="onClose?.()">×</button>

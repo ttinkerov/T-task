@@ -30,7 +30,10 @@
     </header>
 
     <p v-if="isLoading" class="stuck-tasks-card__hint">Загрузка…</p>
-    <p v-else-if="isError" class="stuck-tasks-card__error">Не удалось загрузить список</p>
+    <p v-else-if="isError" class="stuck-tasks-card__error" role="alert">
+      Не удалось загрузить список
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
+    </p>
     <p v-else-if="tasks.length === 0" class="stuck-tasks-card__empty">
       Нет застрявших задач за выбранный порог.
     </p>
@@ -80,6 +83,7 @@ const props = defineProps({
   insightError: { type: String, default: null },
   onDaysChange: { type: Function, default: null },
   onRequestInsight: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
 
 function onDaysChange(value) {

@@ -8,6 +8,7 @@ import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard'
 import {
   CUSTOM_FIELD_MUTATE_RATE_LIMIT,
   RateLimit,
+  RESOURCE_READ_RATE_LIMIT,
 } from '../../common/security/rate-limit.decorator';
 import { CreateCustomFieldDto } from './dto/create-custom-field.dto';
 import { UpdateCustomFieldDto } from './dto/update-custom-field.dto';
@@ -19,6 +20,8 @@ export class CustomFieldsController {
   constructor(private readonly customFieldsService: CustomFieldsService) {}
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(RESOURCE_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async list(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     return successResponse(await this.customFieldsService.listDefinitions(workspaceId, user.id));

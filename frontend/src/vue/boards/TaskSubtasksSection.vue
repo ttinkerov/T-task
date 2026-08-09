@@ -10,7 +10,12 @@
 
     <p v-if="isLoading" role="status">Загрузка подзадач...</p>
 
-    <ul class="task-subtasks__list" role="list">
+    <div v-else-if="loadError" role="alert">
+      <p class="text-sm text-red-400">{{ loadError }}</p>
+      <button type="button" class="btn-ghost" @click="onRetryLoad?.()">Повторить</button>
+    </div>
+
+    <ul v-else class="task-subtasks__list" role="list">
       <li v-for="subtask in subtasks" :key="subtask.id">
         <label>
           <input
@@ -32,7 +37,7 @@
       </li>
     </ul>
 
-    <form class="task-subtasks__create" @submit.prevent="submit">
+    <form v-if="!loadError" class="task-subtasks__create" @submit.prevent="submit">
       <input
         v-model="title"
         placeholder="Новая подзадача"
@@ -41,6 +46,8 @@
       />
       <button type="submit" :disabled="createPending || !title.trim()">Добавить</button>
     </form>
+
+    <p v-if="actionError" class="text-sm text-red-400" role="alert">{{ actionError }}</p>
   </section>
 </template>
 
@@ -51,9 +58,12 @@ import FieldHint from './FieldHint.vue'
 const props = defineProps({
   subtasks: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
+  actionError: { type: String, default: '' },
   createPending: { type: Boolean, default: false },
   updatePending: { type: Boolean, default: false },
   deletePending: { type: Boolean, default: false },
+  onRetryLoad: { type: Function, default: null },
   onToggle: { type: Function, default: null },
   onDelete: { type: Function, default: null },
   onCreate: { type: Function, default: null },
@@ -69,7 +79,7 @@ async function submit() {
     await props.onCreate?.(trimmed)
     title.value = ''
   } catch {
-    /* ignore */
+    /* surfaced via actionError */
   }
 }
 </script>

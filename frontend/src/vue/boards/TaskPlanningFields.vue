@@ -11,6 +11,12 @@
           {{ sprint.name }}
         </option>
       </select>
+      <p v-if="sprintsLoadError" class="text-sm text-red-400" role="alert">
+        {{ sprintsLoadError }}
+        <button type="button" class="board-filters__chip" @click="onRetrySprints?.()">
+          Повторить
+        </button>
+      </p>
     </label>
 
     <label class="task-drawer__field">
@@ -46,9 +52,11 @@ const props = defineProps({
   isEpic: { type: Boolean, default: false },
   sprints: { type: Array, default: () => [] },
   epicOptions: { type: Array, default: () => [] },
+  sprintsLoadError: { type: String, default: '' },
   onSprintChange: { type: Function, default: null },
   onEpicChange: { type: Function, default: null },
   onIsEpicChange: { type: Function, default: null },
+  onRetrySprints: { type: Function, default: null },
 });
 
 function onIsEpicToggle(event) {

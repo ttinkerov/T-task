@@ -28,7 +28,7 @@ const QUICK_LINKS = [
   { href: '/dashboard/board', label: 'Доска' },
   { href: '/dashboard/my-tasks', label: 'Мои задачи' },
   { href: '/dashboard/crm', label: 'CRM' },
-  { href: '/dashboard/focus', label: 'Pomodoro' },
+  { href: '/dashboard/focus', label: 'Фокус' },
   { href: '/dashboard/forms', label: 'Формы' },
   { href: '/dashboard/analytics', label: 'Аналитика' },
 ] as const;
@@ -171,12 +171,16 @@ export function DashboardContent() {
       onOpenTask: setSelectedTaskId,
       onWorkspaceChange: setCurrentWorkspaceId,
       onCreateWorkspace,
+      onRetry: () => {
+        void myTasksQuery.refetch();
+      },
     }),
     [
       session?.user.name,
       currentWorkspaceId,
       myTasksQuery.isLoading,
       myTasksQuery.isError,
+      myTasksQuery.refetch,
       dueSoonDays,
       slices,
       workspaces,

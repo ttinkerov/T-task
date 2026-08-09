@@ -67,12 +67,16 @@ export function StuckTasksCard({
       insightError,
       onDaysChange,
       onRequestInsight,
+      onRetry: () => {
+        void stuckQuery.refetch();
+      },
     }),
     [
       days,
       aiSettings?.configured,
       stuckQuery.isLoading,
       stuckQuery.isError,
+      stuckQuery.refetch,
       insightMutation.isPending,
       data?.count,
       data?.truncated,

@@ -31,7 +31,13 @@
       <form @submit.prevent="submit">
         <label class="automation-dialog__field">
           <span>Назначить исполнителя</span>
-          <select v-model="assignUserId">
+          <p v-if="membersLoadError" class="automation-dialog__error" role="alert">
+            {{ membersLoadError }}
+            <button type="button" class="board-filters__chip" @click="onRetryMembers?.()">
+              Повторить
+            </button>
+          </p>
+          <select v-model="assignUserId" :disabled="Boolean(membersLoadError)">
             <option value="">Не назначать</option>
             <option v-for="member in members" :key="member.userId" :value="member.userId">
               {{ member.name }} · {{ member.email }}
@@ -83,8 +89,10 @@ const props = defineProps({
   initialCompleteTask: { type: Boolean, default: false },
   pending: { type: Boolean, default: false },
   error: { type: String, default: '' },
+  membersLoadError: { type: String, default: '' },
   onSave: { type: Function, default: null },
   onClose: { type: Function, default: null },
+  onRetryMembers: { type: Function, default: null },
 })
 
 const dialogEl = ref(null)

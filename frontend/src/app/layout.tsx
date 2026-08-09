@@ -18,7 +18,7 @@ const siteUrl =
 
 const title = 'T-task — канбан и CRM для небольших команд';
 const description =
-  'Workspaces, доски, сделки, формы и whiteboard. Современный task tracker для малых команд.';
+  'Команды, доски, сделки, формы и whiteboard. Современный трекер задач для малых команд.';
 
 export const viewport: Viewport = {
   themeColor: [

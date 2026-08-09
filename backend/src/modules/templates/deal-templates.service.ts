@@ -87,7 +87,10 @@ export class DealTemplatesService {
   async seedDefaults(workspaceId: string, userId: string) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
     const existing = await this.prisma.dealTemplate.findFirst({
-      where: { workspaceId, name: 'Onboarding deal' },
+      where: {
+        workspaceId,
+        OR: [{ name: 'Онбординг сделки' }, { name: 'Onboarding deal' }],
+      },
       select: { id: true },
     });
     if (existing) {
@@ -95,10 +98,10 @@ export class DealTemplatesService {
     }
 
     await this.create(workspaceId, userId, {
-      name: 'Onboarding deal',
+      name: 'Онбординг сделки',
       title: 'Онбординг клиента',
       description:
-        '## Kickoff\n- Цели клиента\n- Стейкхолдеры\n- Срок пилота\n\n## Next steps\n- Доступ к системам\n- Первая демо-сессия\n',
+        '## Старт\n- Цели клиента\n- Стейкхолдеры\n- Срок пилота\n\n## Следующие шаги\n- Доступ к системам\n- Первая демо-сессия\n',
       amount: 0,
       contactName: '',
       companyName: '',

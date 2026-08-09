@@ -85,6 +85,7 @@
         <select
           class="glass-input"
           :value="assigneeFilter"
+          :disabled="Boolean(membersError)"
           @change="onAssigneeChange?.($event.target.value)"
         >
           <option value="">Вся команда</option>
@@ -93,6 +94,12 @@
           </option>
           <option value="unassigned">Без исполнителя</option>
         </select>
+        <p v-if="membersError" class="analytics-page__error" role="alert">
+          {{ membersError }}
+          <button type="button" class="board-filters__chip" @click="onRetryMembers?.()">
+            Повторить
+          </button>
+        </p>
       </label>
     </div>
 
@@ -210,6 +217,7 @@ const props = defineProps({
   summaryCards: { type: Array, default: () => [] },
   summaryError: { type: String, default: '' },
   workloadError: { type: String, default: '' },
+  membersError: { type: String, default: '' },
   workloadTruncated: { type: Boolean, default: false },
   workloadLoading: { type: Boolean, default: false },
   period: { type: String, required: true },
@@ -231,6 +239,7 @@ const props = defineProps({
   onStuckHostReady: { type: Function, default: null },
   onRetrySummary: { type: Function, default: null },
   onRetryWorkload: { type: Function, default: null },
+  onRetryMembers: { type: Function, default: null },
 })
 
 const periodOptions = [

@@ -52,7 +52,10 @@
       <p v-if="createError" class="apps-create__error" role="alert">{{ createError }}</p>
     </form>
 
-    <p v-if="pageError" class="apps-page__error" role="alert">{{ pageError }}</p>
+    <p v-if="pageError" class="apps-page__error" role="alert">
+      {{ pageError }}
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
+    </p>
 
     <AppsList
       v-if="items.length === 0"
@@ -61,10 +64,10 @@
       :pending-delete-id="pendingDeleteId"
       :is-deleting="isDeleting"
       :delete-error="deleteError"
-      @select="onSelect"
-      @request-delete="onRequestDelete"
-      @confirm-delete="onConfirmDelete"
-      @cancel-delete="onCancelDelete"
+      :on-select="onSelect"
+      :on-request-delete="onRequestDelete"
+      :on-confirm-delete="onConfirmDelete"
+      :on-cancel-delete="onCancelDelete"
     />
 
     <div v-else class="apps-workspace">
@@ -74,10 +77,10 @@
         :pending-delete-id="pendingDeleteId"
         :is-deleting="isDeleting"
         :delete-error="deleteError"
-        @select="onSelect"
-        @request-delete="onRequestDelete"
-        @confirm-delete="onConfirmDelete"
-        @cancel-delete="onCancelDelete"
+        :on-select="onSelect"
+        :on-request-delete="onRequestDelete"
+        :on-confirm-delete="onConfirmDelete"
+        :on-cancel-delete="onCancelDelete"
       />
 
       <div v-if="viewer" class="apps-viewer">
@@ -146,6 +149,7 @@ const props = defineProps({
   createPending: { type: Boolean, default: false },
   createError: { type: String, default: '' },
   pageError: { type: String, default: '' },
+  onRetry: { type: Function, default: null },
   items: { type: Array, default: () => [] },
   selectedId: { type: String, default: null },
   pendingDeleteId: { type: String, default: null },

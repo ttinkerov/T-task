@@ -30,6 +30,7 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
   const [activeIndex, setActiveIndex] = useState(0);
   const [remoteItems, setRemoteItems] = useState<CommandItem[]>([]);
   const [searchError, setSearchError] = useState('');
+  const [searchNonce, setSearchNonce] = useState(0);
 
   const filteredNav = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -108,7 +109,7 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [open, query, workspaceId]);
+  }, [open, query, workspaceId, searchNonce]);
 
   const runItem = useCallback(
     (item: CommandItem) => {
@@ -183,6 +184,7 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
       onQueryChange: setQuery,
       onActiveChange: setActiveIndex,
       onSelect,
+      onRetrySearch: () => setSearchNonce((current) => current + 1),
     }),
     [open, query, groups, activeIndex, searchError, onOpenChange, onSelect],
   );

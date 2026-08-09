@@ -26,7 +26,8 @@ export function DealDetailDrawer({
   stageName,
   onClose,
 }: DealDetailDrawerProps) {
-  const { data: members = [] } = useMembersQuery(workspaceId);
+  const membersQuery = useMembersQuery(workspaceId);
+  const members = membersQuery.data ?? [];
   const updateMutation = useUpdateDealMutation(workspaceId, funnelId);
   const deleteMutation = useDeleteDealMutation(workspaceId, funnelId);
 
@@ -36,6 +37,7 @@ export function DealDetailDrawer({
   const [contactName, setContactName] = useState(deal.contactName ?? '');
   const [companyName, setCompanyName] = useState(deal.companyName ?? '');
   const [assigneeId, setAssigneeId] = useState(deal.assigneeId ?? '');
+  const [actionError, setActionError] = useState('');
   const [hosts, setHosts] = useState<{
     template: HTMLElement | null;
     rollup: HTMLElement | null;
@@ -74,19 +76,24 @@ export function DealDetailDrawer({
     if (!title.trim()) return;
 
     const parsedAmount = amount.trim() === '' ? null : Number(amount);
+    setActionError('');
 
-    await updateMutation.mutateAsync({
-      dealId: deal.id,
-      data: {
-        title: title.trim(),
-        description: description.trim() || null,
-        amount: parsedAmount === null || Number.isNaN(parsedAmount) ? null : parsedAmount,
-        contactName: contactName.trim() || null,
-        companyName: companyName.trim() || null,
-        assigneeId: assigneeId || null,
-      },
-    });
-    onClose();
+    try {
+      await updateMutation.mutateAsync({
+        dealId: deal.id,
+        data: {
+          title: title.trim(),
+          description: description.trim() || null,
+          amount: parsedAmount === null || Number.isNaN(parsedAmount) ? null : parsedAmount,
+          contactName: contactName.trim() || null,
+          companyName: companyName.trim() || null,
+          assigneeId: assigneeId || null,
+        },
+      });
+      onClose();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Не удалось сохранить сделку');
+    }
   }, [
     amount,
     assigneeId,
@@ -100,9 +107,24 @@ export function DealDetailDrawer({
   ]);
 
   const onDelete = useCallback(async () => {
-    await deleteMutation.mutateAsync(deal.id);
-    onClose();
+    setActionError('');
+    try {
+      await deleteMutation.mutateAsync(deal.id);
+      onClose();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Не удалось удалить сделку');
+    }
   }, [deleteMutation, deal.id, onClose]);
+
+  const onRetryMembers = useCallback(() => {
+    void membersQuery.refetch();
+  }, [membersQuery]);
+
+  const membersLoadError = membersQuery.isError
+    ? membersQuery.error instanceof Error
+      ? membersQuery.error.message
+      : 'Не удалось загрузить участников'
+    : '';
 
   const viewProps = useMemo(
     () => ({
@@ -114,9 +136,10 @@ export function DealDetailDrawer({
       companyName,
       assigneeId,
       members,
+      membersLoadError,
       isSaving: updateMutation.isPending,
       canSave: Boolean(title.trim()),
-      saveError: updateMutation.error?.message ?? '',
+      saveError: actionError,
       deletePending: deleteMutation.isPending,
       onClose,
       onSubmit,
@@ -128,6 +151,7 @@ export function DealDetailDrawer({
       onCompanyNameChange: setCompanyName,
       onAssigneeChange: setAssigneeId,
       onHostsReady,
+      onRetryMembers,
     }),
     [
       stageName,
@@ -138,13 +162,15 @@ export function DealDetailDrawer({
       companyName,
       assigneeId,
       members,
+      membersLoadError,
       updateMutation.isPending,
-      updateMutation.error,
+      actionError,
       deleteMutation.isPending,
       onClose,
       onSubmit,
       onDelete,
       onHostsReady,
+      onRetryMembers,
     ],
   );
 

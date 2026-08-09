@@ -284,7 +284,7 @@ export class WorkspacesService {
       actorMembership.role !== WorkspaceRole.OWNER &&
       actorMembership.role !== WorkspaceRole.ADMIN
     ) {
-      throw new ForbiddenException('Недостаточно прав для изменения scopes');
+      throw new ForbiddenException('Недостаточно прав для изменения дополнительных прав');
     }
 
     const targetMember = await this.prisma.workspaceMember.findFirst({

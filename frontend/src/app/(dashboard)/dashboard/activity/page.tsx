@@ -2,25 +2,23 @@
 
 import { ActivityPage } from '@/features/activity/components/activity-page';
 import { useCanViewActivity } from '@/features/activity/hooks';
+import { WorkspaceGateStatus } from '@/features/workspaces/components/workspace-gate-status';
 
 export default function WorkspaceActivityRoutePage() {
-  const { canView, isLoading, workspaceId } = useCanViewActivity();
+  const { canView, isLoading, isError, onRetry, workspaceId } = useCanViewActivity();
 
-  return isLoading ? (
-    <p className="text-sm text-muted-foreground" role="status">
-      Проверяем доступ…
-    </p>
-  ) : workspaceId && canView ? (
-    <ActivityPage workspaceId={workspaceId} />
-  ) : workspaceId ? (
+  if (isLoading || isError || !workspaceId) {
+    return <WorkspaceGateStatus isLoading={isLoading} isError={isError} onRetry={onRetry} />;
+  }
+
+  if (canView) {
+    return <ActivityPage workspaceId={workspaceId} />;
+  }
+
+  return (
     <section className="activity-page__empty" aria-label="Доступ ограничен">
       <h2>Журнал доступен администраторам</h2>
       <p>Просматривать действия могут владельцы и администраторы рабочего пространства.</p>
-    </section>
-  ) : (
-    <section aria-label="Нет рабочего пространства">
-      <h2 className="sr-only">Нет выбранной команды</h2>
-      <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
     </section>
   );
 }

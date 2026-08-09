@@ -7,6 +7,7 @@ import { successResponse } from '../../common/interfaces/api-response.interface'
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
 import {
   RateLimit,
+  RESOURCE_READ_RATE_LIMIT,
   TASK_RELATION_MUTATE_RATE_LIMIT,
 } from '../../common/security/rate-limit.decorator';
 import { CreateTaskRelationDto } from './dto/create-task-relation.dto';
@@ -17,6 +18,8 @@ export class TaskRelationsController {
   constructor(private readonly taskRelationsService: TaskRelationsService) {}
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(RESOURCE_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async list(
     @Param('workspaceId') workspaceId: string,

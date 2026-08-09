@@ -30,12 +30,12 @@ class SubmitFormAnswersShapeConstraint implements ValidatorConstraintInterface {
   }
 
   defaultMessage(): string {
-    return 'answers must be an object with up to 50 string or string[] values';
+    return 'Ответы должны быть объектом не более чем с 50 полями типа string или string[]';
   }
 }
 
 export class SubmitFormDto {
-  @IsObject()
+  @IsObject({ message: 'Ответы должны быть объектом' })
   @Validate(SubmitFormAnswersShapeConstraint)
   answers!: Record<string, string | string[]>;
 }

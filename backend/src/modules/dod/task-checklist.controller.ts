@@ -5,7 +5,11 @@ import { ALL_WORKSPACE_ROLES, MEMBER_PLUS_ROLES } from '../../common/auth/worksp
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
-import { DOD_MUTATE_RATE_LIMIT, RateLimit } from '../../common/security/rate-limit.decorator';
+import {
+  DOD_MUTATE_RATE_LIMIT,
+  RateLimit,
+  RESOURCE_READ_RATE_LIMIT,
+} from '../../common/security/rate-limit.decorator';
 import { ApplyDodTemplateDto } from './dto/apply-dod-template.dto';
 import { CreateChecklistItemDto } from './dto/create-checklist-item.dto';
 import { UpdateChecklistItemDto } from './dto/update-checklist-item.dto';
@@ -16,6 +20,8 @@ export class TaskChecklistController {
   constructor(private readonly taskChecklistService: TaskChecklistService) {}
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(RESOURCE_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async list(
     @Param('workspaceId') workspaceId: string,

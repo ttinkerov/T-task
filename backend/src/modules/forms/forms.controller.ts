@@ -17,7 +17,11 @@ import { ALL_WORKSPACE_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
-import { FORM_MUTATE_RATE_LIMIT, RateLimit } from '../../common/security/rate-limit.decorator';
+import {
+  FORM_MUTATE_RATE_LIMIT,
+  FORM_READ_RATE_LIMIT,
+  RateLimit,
+} from '../../common/security/rate-limit.decorator';
 import { CreateFormFieldDto } from './dto/create-form-field.dto';
 import { CreateFormDto } from './dto/create-form.dto';
 import { ListFormResponsesQueryDto } from './dto/list-form-responses-query.dto';
@@ -30,6 +34,8 @@ export class FormsController {
   constructor(private readonly formsService: FormsService) {}
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FORM_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async list(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     const forms = await this.formsService.list(workspaceId, user.id);
@@ -51,6 +57,8 @@ export class FormsController {
   }
 
   @Get(':formId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FORM_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async get(
     @Param('workspaceId') workspaceId: string,
@@ -137,6 +145,8 @@ export class FormsController {
   }
 
   @Get(':formId/responses')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FORM_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async responses(
     @Param('workspaceId') workspaceId: string,

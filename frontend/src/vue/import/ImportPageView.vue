@@ -25,6 +25,12 @@
       <section class="import-page__block">
         <h2>2. Статусы → колонки</h2>
         <p v-if="boardLoading" class="import-page__hint">Загружаем доску…</p>
+        <p v-else-if="boardError" class="import-page__error" role="alert">
+          {{ boardError }}
+          <button type="button" class="board-filters__chip" @click="onRetryBoard?.()">
+            Повторить
+          </button>
+        </p>
         <ul v-else class="import-page__mappings">
           <li v-for="mapping in mappings" :key="mapping.status">
             <span class="import-page__status">{{ mapping.status }}</span>
@@ -75,8 +81,8 @@
         <button
           type="button"
           class="btn-primary"
-          :disabled="!allMapped || isImporting || columns.length === 0"
-          @click="emit('import')"
+          :disabled="!allMapped || isImporting || columns.length === 0 || Boolean(boardError)"
+          @click="onImport?.()"
         >
           {{ isImporting ? 'Импортируем…' : 'Импортировать ' + rowCount + ' задач' }}
         </button>
@@ -104,7 +110,7 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   fileName: { type: String, default: '' },
   parseError: { type: String, default: '' },
   warnings: { type: Array, default: () => [] },
@@ -112,6 +118,7 @@ defineProps({
   statusCount: { type: Number, default: 0 },
   showWizard: { type: Boolean, default: false },
   boardLoading: { type: Boolean, default: false },
+  boardError: { type: String, default: '' },
   mappings: { type: Array, default: () => [] },
   columns: { type: Array, default: () => [] },
   createNewValue: { type: String, required: true },
@@ -121,17 +128,19 @@ defineProps({
   importError: { type: String, default: '' },
   result: { type: Object, default: null },
   resultIssues: { type: Array, default: () => [] },
+  onFileSelect: { type: Function, default: null },
+  onUpdateMapping: { type: Function, default: null },
+  onImport: { type: Function, default: null },
+  onRetryBoard: { type: Function, default: null },
 })
-
-const emit = defineEmits(['file-select', 'update-mapping', 'import'])
 
 function onFileChange(event) {
   const file = event.target.files && event.target.files[0]
   event.target.value = ''
-  emit('file-select', file || null)
+  props.onFileSelect?.(file || null)
 }
 
 function onMappingChange(status, columnValue) {
-  emit('update-mapping', { status, columnValue })
+  props.onUpdateMapping?.({ status, columnValue })
 }
 </script>

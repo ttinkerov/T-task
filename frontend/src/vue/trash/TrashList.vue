@@ -7,7 +7,8 @@
     <p v-if="isLoading" class="trash-page__state" role="status">Загрузка корзины…</p>
 
     <p v-else-if="isError" class="trash-page__error" role="alert">
-      Не удалось загрузить корзину. Попробуйте обновить страницу.
+      Не удалось загрузить корзину.
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
     </p>
 
     <template v-else>
@@ -27,10 +28,12 @@
               :can-purge="canPurge"
               :busy="busyKey === itemKey(item)"
               :entity-name="item.entityName"
-              @restore="
-                onRestore?.({ entityType: item.entityType, entityId: item.entityId })
+              :on-restore="
+                () => onRestore?.({ entityType: item.entityType, entityId: item.entityId })
               "
-              @purge="onPurge?.({ entityType: item.entityType, entityId: item.entityId })"
+              :on-purge="
+                () => onPurge?.({ entityType: item.entityType, entityId: item.entityId })
+              "
             />
           </li>
         </ul>
@@ -81,6 +84,7 @@ defineProps({
   onRestore: { type: Function, default: null },
   onPurge: { type: Function, default: null },
   onPageChange: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
 
 function itemKey(item) {

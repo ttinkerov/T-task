@@ -20,9 +20,20 @@ export function ColumnAutomationDialog({
   onClose: () => void;
 }) {
   const titleId = useId();
-  const { data: members = [] } = useMembersQuery(workspaceId);
+  const membersQuery = useMembersQuery(workspaceId);
+  const members = membersQuery.data ?? [];
   const updateMutation = useUpdateColumnAutomationsMutation(workspaceId, boardId);
   const assignAutomation = column.automations.find((item) => item.action === 'ASSIGN_USER');
+
+  const onRetryMembers = useCallback(() => {
+    void membersQuery.refetch();
+  }, [membersQuery]);
+
+  const membersLoadError = membersQuery.isError
+    ? membersQuery.error instanceof Error
+      ? membersQuery.error.message
+      : 'Не удалось загрузить участников'
+    : '';
 
   const memberOptions = useMemo(
     () =>
@@ -63,8 +74,10 @@ export function ColumnAutomationDialog({
       initialCompleteTask: column.automations.some((item) => item.action === 'COMPLETE_TASK'),
       pending: updateMutation.isPending,
       error: updateMutation.error?.message ?? '',
+      membersLoadError,
       onSave,
       onClose,
+      onRetryMembers,
     }),
     [
       titleId,
@@ -74,8 +87,10 @@ export function ColumnAutomationDialog({
       assignAutomation?.assigneeId,
       updateMutation.isPending,
       updateMutation.error?.message,
+      membersLoadError,
       onSave,
       onClose,
+      onRetryMembers,
     ],
   );
 

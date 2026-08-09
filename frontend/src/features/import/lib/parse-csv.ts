@@ -141,7 +141,7 @@ export function parseJiraCsv(text: string): ParsedCsvFile {
 
     const cells = parseCsvLine(lines[i]);
     const title = cell(cells, titleIdx);
-    const status = cell(cells, statusIdx) || 'To Do';
+    const status = cell(cells, statusIdx) || 'Бэклог';
     if (!title) continue;
 
     rows.push({

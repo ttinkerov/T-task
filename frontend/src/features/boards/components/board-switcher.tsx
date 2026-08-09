@@ -44,7 +44,7 @@ export function BoardSwitcher({
   preferredBoardId = null,
   onBoardChange,
 }: BoardSwitcherProps) {
-  const { data, isLoading } = useBoardsQuery(workspaceId);
+  const { data, isLoading, isError, error: boardsError, refetch } = useBoardsQuery(workspaceId);
   const boards = data ?? EMPTY_BOARDS;
   const createMutation = useCreateBoardMutation(workspaceId);
   const updateMutation = useUpdateBoardMutation(workspaceId);
@@ -103,10 +103,15 @@ export function BoardSwitcher({
   }, [boardId, boards, deleteMutation, onBoardChange]);
 
   const error =
-    createMutation.error?.message ??
-    updateMutation.error?.message ??
-    deleteMutation.error?.message ??
-    templatesError ??
+    (isError
+      ? boardsError instanceof Error
+        ? boardsError.message
+        : 'Не удалось загрузить доски'
+      : '') ||
+    createMutation.error?.message ||
+    updateMutation.error?.message ||
+    deleteMutation.error?.message ||
+    templatesError ||
     '';
 
   const viewProps = useMemo(
@@ -124,6 +129,13 @@ export function BoardSwitcher({
       onRename,
       onDelete,
       onRequestTemplates,
+      onRetry: isError
+        ? () => {
+            void refetch();
+          }
+        : templatesError
+          ? onRequestTemplates
+          : undefined,
     }),
     [
       boards,
@@ -134,6 +146,9 @@ export function BoardSwitcher({
       updateMutation.isPending,
       deleteMutation.isPending,
       error,
+      isError,
+      templatesError,
+      refetch,
       onBoardChange,
       onCreate,
       onRename,

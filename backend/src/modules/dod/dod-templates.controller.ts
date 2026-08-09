@@ -5,7 +5,11 @@ import { ALL_WORKSPACE_ROLES, MEMBER_PLUS_ROLES } from '../../common/auth/worksp
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
-import { DOD_MUTATE_RATE_LIMIT, RateLimit } from '../../common/security/rate-limit.decorator';
+import {
+  DOD_MUTATE_RATE_LIMIT,
+  RateLimit,
+  RESOURCE_READ_RATE_LIMIT,
+} from '../../common/security/rate-limit.decorator';
 import { CreateDodTemplateDto } from './dto/create-dod-template.dto';
 import { UpdateDodTemplateDto } from './dto/update-dod-template.dto';
 import { DodTemplatesService } from './dod-templates.service';
@@ -15,6 +19,8 @@ export class DodTemplatesController {
   constructor(private readonly dodTemplatesService: DodTemplatesService) {}
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(RESOURCE_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async list(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     return successResponse(await this.dodTemplatesService.list(workspaceId, user.id));

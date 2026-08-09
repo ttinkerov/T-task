@@ -9,6 +9,7 @@ import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { ResponseEnvelopeInterceptor } from './common/interceptors/response-envelope.interceptor';
 import { assertSecureRuntime } from './common/security/assert-secure-runtime.util';
+import { ruValidationExceptionFactory } from './common/validation/ru-validation.exception-factory';
 import { RedisIoAdapter } from './infrastructure/redis/redis-io.adapter';
 
 const REQUEST_BODY_LIMIT = '100kb';
@@ -86,6 +87,7 @@ async function bootstrap(): Promise<void> {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory: ruValidationExceptionFactory,
     }),
   );
   app.useGlobalFilters(new GlobalExceptionFilter());

@@ -5,7 +5,7 @@ import { ALL_WORKSPACE_ROLES, MEMBER_PLUS_ROLES } from '../../common/auth/worksp
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
-import { RateLimit } from '../../common/security/rate-limit.decorator';
+import { RateLimit, RESOURCE_READ_RATE_LIMIT } from '../../common/security/rate-limit.decorator';
 import { UpsertWhiteboardDto } from './dto/upsert-whiteboard.dto';
 import { WhiteboardService } from './whiteboard.service';
 
@@ -14,6 +14,8 @@ export class WhiteboardController {
   constructor(private readonly whiteboardService: WhiteboardService) {}
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(RESOURCE_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async get(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     return successResponse(await this.whiteboardService.get(workspaceId, user.id));

@@ -121,7 +121,7 @@ describe('TasksService completion dependencies', () => {
   it('prevents moving to done when Definition of Done items are open', async () => {
     relationsService.assertCanComplete.mockResolvedValue(undefined);
     checklistService.assertDoDSatisfied.mockRejectedValue(
-      new ConflictException('Не выполнены пункты Definition of Done: Code review'),
+      new ConflictException('Не выполнены пункты критериев готовности: Код-ревью'),
     );
     prisma.boardColumn.findFirst
       .mockResolvedValueOnce({
@@ -138,7 +138,7 @@ describe('TasksService completion dependencies', () => {
         columnId: 'column-done',
         position: 0,
       }),
-    ).rejects.toThrow(/Definition of Done/);
+    ).rejects.toThrow(/критериев готовности/);
 
     expect(checklistService.assertDoDSatisfied).toHaveBeenCalledWith('task-b', prisma);
     expect(prisma.task.update).not.toHaveBeenCalled();

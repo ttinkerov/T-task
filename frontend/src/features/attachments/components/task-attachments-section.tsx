@@ -20,7 +20,13 @@ export function TaskAttachmentsSection({
   workspaceId: string;
   taskId: string;
 }) {
-  const { data, isLoading } = useAttachmentsQuery(workspaceId, taskId);
+  const {
+    data,
+    isLoading,
+    isError,
+    error: loadQueryError,
+    refetch,
+  } = useAttachmentsQuery(workspaceId, taskId);
   const attachments = data ?? EMPTY_ATTACHMENTS;
   const uploadMutation = useUploadAttachmentMutation(workspaceId, taskId);
   const deleteMutation = useDeleteAttachmentMutation(workspaceId, taskId);
@@ -76,8 +82,13 @@ export function TaskAttachmentsSection({
   );
 
   const onDelete = useCallback(
-    (attachmentId: string) => {
-      deleteMutation.mutate(attachmentId);
+    async (attachmentId: string) => {
+      setError('');
+      try {
+        await deleteMutation.mutateAsync(attachmentId);
+      } catch (deleteError) {
+        setError(deleteError instanceof Error ? deleteError.message : 'Не удалось удалить файл');
+      }
     },
     [deleteMutation],
   );
@@ -107,18 +118,29 @@ export function TaskAttachmentsSection({
       thumbnails,
       accept: ATTACHMENT_ACCEPT,
       isLoading,
+      isError,
+      loadError: isError
+        ? loadQueryError instanceof Error
+          ? loadQueryError.message
+          : 'Не удалось загрузить вложения'
+        : '',
       uploadPending: uploadMutation.isPending,
       deletePending: deleteMutation.isPending,
       error: error || uploadMutation.error?.message || deleteMutation.error?.message || '',
       onOpen,
       onDelete,
       onUpload,
+      onRetry: () => {
+        void refetch();
+      },
     }),
     [
       taskId,
       attachments,
       thumbnails,
       isLoading,
+      isError,
+      loadQueryError,
       uploadMutation.isPending,
       uploadMutation.error?.message,
       deleteMutation.isPending,
@@ -127,6 +149,7 @@ export function TaskAttachmentsSection({
       onOpen,
       onDelete,
       onUpload,
+      refetch,
     ],
   );
 

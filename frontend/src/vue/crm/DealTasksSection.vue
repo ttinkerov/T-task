@@ -7,6 +7,11 @@
 
     <p v-if="isLoading" role="status">Загрузка связей...</p>
 
+    <p v-else-if="loadError" class="task-tags__empty" role="alert">
+      {{ loadError }}
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
+    </p>
+
     <p v-else-if="links.length === 0" class="task-tags__empty">Нет связанных задач</p>
 
     <ul v-else class="task-subtasks__list" role="list">
@@ -47,11 +52,13 @@ const props = defineProps({
   links: { type: Array, default: () => [] },
   taskOptions: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
   linkPending: { type: Boolean, default: false },
   unlinkPending: { type: Boolean, default: false },
   error: { type: String, default: '' },
   onLink: { type: Function, default: null },
   onUnlink: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
 
 const taskId = ref('')

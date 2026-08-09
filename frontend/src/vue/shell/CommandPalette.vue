@@ -24,8 +24,13 @@
         <kbd>esc</kbd>
       </div>
 
-      <div className="cmdk__list" role="listbox">
-        <p v-if="searchError" class="cmdk__empty" role="alert">{{ searchError }}</p>
+      <div class="cmdk__list" role="listbox">
+        <p v-if="searchError" class="cmdk__empty" role="alert">
+          {{ searchError }}
+          <button type="button" class="board-filters__chip" @click="onRetrySearch?.()">
+            Повторить
+          </button>
+        </p>
         <p v-else-if="groups.length === 0" class="cmdk__empty">Ничего не найдено</p>
         <template v-else>
           <div v-for="group in groups" :key="group.name" class="cmdk__group">
@@ -75,6 +80,7 @@ const props = defineProps({
   onQueryChange: { type: Function, default: null },
   onActiveChange: { type: Function, default: null },
   onSelect: { type: Function, default: null },
+  onRetrySearch: { type: Function, default: null },
 })
 
 const inputEl = ref(null)

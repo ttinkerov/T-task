@@ -83,13 +83,24 @@ function TaskTemplatesPanel({
   canManage: boolean;
 }) {
   const templatesQuery = useTaskTemplatesQuery(workspaceId);
-  const { data: tags = [] } = useTagsQuery(workspaceId);
+  const tagsQuery = useTagsQuery(workspaceId);
+  const tags = tagsQuery.data ?? [];
   const createMutation = useCreateTaskTemplateMutation(workspaceId);
   const deleteMutation = useDeleteTaskTemplateMutation(workspaceId);
   const seedMutation = useSeedTaskTemplatesMutation(workspaceId);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   const templates = templatesQuery.data ?? [];
+
+  const tagsLoadError = tagsQuery.isError
+    ? tagsQuery.error instanceof Error
+      ? tagsQuery.error.message
+      : 'Не удалось загрузить теги'
+    : '';
+
+  const onRetryTags = useCallback(() => {
+    void tagsQuery.refetch();
+  }, [tagsQuery]);
 
   const onCreate = useCallback(
     async (payload: CreateTaskTemplatePayload) => {
@@ -121,16 +132,31 @@ function TaskTemplatesPanel({
       templates,
       tags,
       isLoading: templatesQuery.isLoading,
+      isError: Boolean(templatesQuery.error),
+      loadError:
+        templatesQuery.error instanceof Error
+          ? templatesQuery.error.message
+          : templatesQuery.error
+            ? 'Не удалось загрузить шаблоны задач'
+            : '',
       canManage,
       pendingId,
       isDeleting: deleteMutation.isPending,
       deleteError: deleteMutation.error?.message ?? '',
+      priorityLabels: Object.fromEntries(
+        PRIORITY_OPTIONS.filter((o) => o.value).map((o) => [o.value, o.label]),
+      ),
       onDelete,
+      onRetry: () => {
+        void templatesQuery.refetch();
+      },
     }),
     [
       templates,
       tags,
       templatesQuery.isLoading,
+      templatesQuery.error,
+      templatesQuery.refetch,
       canManage,
       pendingId,
       deleteMutation.isPending,
@@ -147,8 +173,10 @@ function TaskTemplatesPanel({
       isCreating: createMutation.isPending,
       isSeeding: seedMutation.isPending,
       errorMessage: createMutation.error?.message ?? seedMutation.error?.message ?? '',
+      tagsLoadError,
       onCreate,
       onSeed,
+      onRetryTags,
     }),
     [
       tags,
@@ -157,8 +185,10 @@ function TaskTemplatesPanel({
       createMutation.error,
       seedMutation.isPending,
       seedMutation.error,
+      tagsLoadError,
       onCreate,
       onSeed,
+      onRetryTags,
     ],
   );
 
@@ -216,15 +246,27 @@ function DealTemplatesPanel({
     () => ({
       templates,
       isLoading: templatesQuery.isLoading,
+      isError: Boolean(templatesQuery.error),
+      loadError:
+        templatesQuery.error instanceof Error
+          ? templatesQuery.error.message
+          : templatesQuery.error
+            ? 'Не удалось загрузить шаблоны сделок'
+            : '',
       canManage,
       pendingId,
       isDeleting: deleteMutation.isPending,
       deleteError: deleteMutation.error?.message ?? '',
       onDelete,
+      onRetry: () => {
+        void templatesQuery.refetch();
+      },
     }),
     [
       templates,
       templatesQuery.isLoading,
+      templatesQuery.error,
+      templatesQuery.refetch,
       canManage,
       pendingId,
       deleteMutation.isPending,

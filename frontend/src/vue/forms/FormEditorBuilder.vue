@@ -95,6 +95,8 @@
         </form>
       </section>
     </div>
+
+    <p v-if="actionError" class="text-sm text-red-400" role="alert">{{ actionError }}</p>
   </div>
 </template>
 
@@ -109,6 +111,7 @@ const props = defineProps({
   typeLabels: { type: Object, required: true },
   isAddingField: { type: Boolean, default: false },
   isDeletingField: { type: Boolean, default: false },
+  actionError: { type: String, default: '' },
   onUpdateMeta: { type: Function, required: true },
   onAddField: { type: Function, required: true },
   onDeleteField: { type: Function, required: true },

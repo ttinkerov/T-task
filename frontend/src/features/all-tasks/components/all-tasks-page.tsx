@@ -104,11 +104,22 @@ export function AllTasksPage({
     sortBy,
     sortOrder,
   };
-  const { data, isLoading, isFetching, isError } = useAllTasksQuery(workspaceId, query);
+  const { data, isLoading, isFetching, isError, refetch } = useAllTasksQuery(workspaceId, query);
   const { data: filterMeta } = useAllTasksMetaQuery(workspaceId);
-  const { data: members = [] } = useMembersQuery(workspaceId);
+  const membersQuery = useMembersQuery(workspaceId);
+  const members = membersQuery.data ?? [];
   const filterBoards = filterMeta?.boards ?? [];
   const filterTags = filterMeta?.tags ?? [];
+
+  const onRetryMembers = useCallback(() => {
+    void membersQuery.refetch();
+  }, [membersQuery]);
+
+  const membersLoadError = membersQuery.isError
+    ? membersQuery.error instanceof Error
+      ? membersQuery.error.message
+      : 'Не удалось загрузить участников'
+    : '';
 
   useEffect(() => {
     if (!initialTaskId || !data?.items.some((task) => task.id === initialTaskId)) {
@@ -217,8 +228,15 @@ export function AllTasksPage({
     setPage(1);
   }, [lockedAssigneeId]);
 
-  const onExport = useCallback(() => {
-    void downloadExport(workspaceId, 'tasks');
+  const [exportError, setExportError] = useState('');
+
+  const onExport = useCallback(async () => {
+    setExportError('');
+    try {
+      await downloadExport(workspaceId, 'tasks');
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Не удалось экспортировать CSV');
+    }
   }, [workspaceId]);
 
   const priorityOptions = useMemo(() => PRIORITY_OPTIONS.filter((option) => option.value), []);
@@ -234,12 +252,15 @@ export function AllTasksPage({
       tags: filterTags,
       priorityOptions,
       assigneeLocked: Boolean(lockedAssigneeId),
+      exportError,
+      membersLoadError,
       onSearchChange,
       onFiltersChange,
       onSortChange,
       onReset: onResetFilters,
       onExport,
       onSavedHostReady,
+      onRetryMembers,
     }),
     [
       searchInput,
@@ -252,12 +273,15 @@ export function AllTasksPage({
       filterTags,
       priorityOptions,
       lockedAssigneeId,
+      exportError,
+      membersLoadError,
       onSearchChange,
       onFiltersChange,
       onSortChange,
       onResetFilters,
       onExport,
       onSavedHostReady,
+      onRetryMembers,
     ],
   );
 
@@ -271,8 +295,21 @@ export function AllTasksPage({
       totalPages: data?.totalPages ?? 1,
       onOpenTask,
       onPageChange,
+      onRetry: () => {
+        void refetch();
+      },
     }),
-    [listRows, isLoading, isError, isFetching, page, data?.totalPages, onOpenTask, onPageChange],
+    [
+      listRows,
+      isLoading,
+      isError,
+      isFetching,
+      page,
+      data?.totalPages,
+      onOpenTask,
+      onPageChange,
+      refetch,
+    ],
   );
 
   return (
@@ -314,7 +351,14 @@ export function AllTasksPage({
       ) : (
         <>
           {isLoading ? <p role="status">Загрузка задач...</p> : null}
-          {isError ? <p className="all-tasks__error">Не удалось загрузить задачи.</p> : null}
+          {isError ? (
+            <p className="all-tasks__error" role="alert">
+              Не удалось загрузить задачи.{' '}
+              <button type="button" className="board-filters__chip" onClick={() => void refetch()}>
+                Повторить
+              </button>
+            </p>
+          ) : null}
           {data && !isError ? (
             <div
               aria-busy={isFetching}

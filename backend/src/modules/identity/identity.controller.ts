@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Public } from '../../common/auth/decorators/public.decorator';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
+import { AUTH_ME_RATE_LIMIT, RateLimit } from '../../common/security/rate-limit.decorator';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { LoginDto } from './dto/login.dto';
@@ -46,12 +47,14 @@ export class IdentityController {
   }
 
   @Public()
+  @UseGuards(AuthRateLimitGuard)
   @Post('logout')
   async logout(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
     const data = await this.identityService.logout(request, response);
     return successResponse(data);
   }
 
+  @UseGuards(AuthRateLimitGuard)
   @Post('logout-all')
   async logoutAll(
     @CurrentUser() user: AuthenticatedUser,
@@ -62,6 +65,8 @@ export class IdentityController {
   }
 
   @Get('me')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(AUTH_ME_RATE_LIMIT)
   async me(@CurrentUser() user: AuthenticatedUser) {
     const data = await this.identityService.getMe(user.id);
     return successResponse(data);

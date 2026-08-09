@@ -1,11 +1,6 @@
 <template>
   <div class="trash-list__actions">
-    <button
-      type="button"
-      class="trash-list__restore"
-      :disabled="busy"
-      @click="emit('restore')"
-    >
+    <button type="button" class="trash-list__restore" :disabled="busy" @click="onRestore?.()">
       {{ busy ? '…' : 'Восстановить' }}
     </button>
     <button
@@ -25,15 +20,15 @@ const props = defineProps({
   canPurge: { type: Boolean, default: false },
   busy: { type: Boolean, default: false },
   entityName: { type: String, required: true },
+  onRestore: { type: Function, default: null },
+  onPurge: { type: Function, default: null },
 })
-
-const emit = defineEmits(['restore', 'purge'])
 
 function onPurgeClick() {
   const confirmed = window.confirm(
     'Удалить «' + props.entityName + '» навсегда? Это действие нельзя отменить.',
   )
   if (!confirmed) return
-  emit('purge')
+  props.onPurge?.()
 }
 </script>

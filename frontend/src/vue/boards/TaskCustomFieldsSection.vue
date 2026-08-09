@@ -1,6 +1,6 @@
 <template>
   <section
-    v-if="isLoading || definitions.length > 0"
+    v-if="isLoading || loadError || definitions.length > 0"
     class="task-custom-fields"
     aria-labelledby="task-custom-fields-title"
   >
@@ -10,6 +10,11 @@
     </h3>
 
     <p v-if="isLoading" class="text-sm text-muted-foreground" role="status">Загрузка полей…</p>
+
+    <div v-else-if="loadError" role="alert">
+      <p class="task-custom-fields__error">{{ loadError }}</p>
+      <button type="button" class="btn-ghost" @click="onRetryLoad?.()">Повторить</button>
+    </div>
 
     <div v-else class="task-custom-fields__list">
       <CustomFieldEditor
@@ -37,9 +42,11 @@ const props = defineProps({
   values: { type: Array, default: () => [] },
   members: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
   pendingId: { type: String, default: null },
   error: { type: String, default: '' },
   onSave: { type: Function, default: null },
+  onRetryLoad: { type: Function, default: null },
 })
 
 const valueMap = computed(() => {

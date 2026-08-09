@@ -18,12 +18,14 @@
           :company-name="companyName"
           :assignee-id="assigneeId"
           :members="members"
+          :members-load-error="membersLoadError"
           :on-title-change="onTitleChange"
           :on-description-change="onDescriptionChange"
           :on-amount-change="onAmountChange"
           :on-contact-name-change="onContactNameChange"
           :on-company-name-change="onCompanyNameChange"
           :on-assignee-change="onAssigneeChange"
+          :on-retry-members="onRetryMembers"
         />
 
         <div ref="templateHost" />
@@ -58,6 +60,7 @@ const props = defineProps({
   companyName: { type: String, default: '' },
   assigneeId: { type: String, default: '' },
   members: { type: Array, default: () => [] },
+  membersLoadError: { type: String, default: '' },
   isSaving: { type: Boolean, default: false },
   canSave: { type: Boolean, default: false },
   saveError: { type: String, default: '' },
@@ -72,6 +75,7 @@ const props = defineProps({
   onCompanyNameChange: { type: Function, default: null },
   onAssigneeChange: { type: Function, default: null },
   onHostsReady: { type: Function, default: null },
+  onRetryMembers: { type: Function, default: null },
 });
 
 const templateHost = ref(null);

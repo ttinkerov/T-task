@@ -1,7 +1,8 @@
 'use client';
 
 import { EpicBoardPage } from '@/features/epic-board/components/epic-board-page';
-import { useWorkspaceStore } from '@/stores/workspace.store';
+import { WorkspaceGateStatus } from '@/features/workspaces/components/workspace-gate-status';
+import { useWorkspaceRouteGate } from '@/features/workspaces/use-workspace-route-gate';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
@@ -15,9 +16,9 @@ export default function EpicBoardRoute() {
 
 function EpicBoardRouteContent() {
   const searchParams = useSearchParams();
-  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
+  const { workspaceId, isReady, isLoading, isError, onRetry } = useWorkspaceRouteGate();
 
-  return workspaceId ? (
+  return isReady && workspaceId ? (
     <EpicBoardPage
       key={workspaceId}
       workspaceId={workspaceId}
@@ -25,7 +26,7 @@ function EpicBoardRouteContent() {
       initialTaskId={searchParams.get('task')}
     />
   ) : (
-    <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
+    <WorkspaceGateStatus isLoading={isLoading} isError={isError} onRetry={onRetry} />
   );
 }
 

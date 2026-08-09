@@ -36,6 +36,7 @@
       <p v-if="isLoading" class="notification-bell__empty" role="status">Загрузка…</p>
       <p v-else-if="error" class="notification-bell__error" role="alert">
         Не удалось загрузить уведомления.
+        <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
       </p>
       <p v-else-if="items.length === 0" class="notification-bell__empty">Здесь пока ничего нет</p>
       <ul v-else class="notification-bell__list" role="list">
@@ -57,6 +58,7 @@
           </button>
         </li>
       </ul>
+      <p v-if="markAllError" class="notification-bell__error" role="alert">{{ markAllError }}</p>
     </section>
   </div>
 </template>
@@ -71,10 +73,12 @@ defineProps({
   isLoading: { type: Boolean, default: false },
   error: { type: Boolean, default: false },
   markAllPending: { type: Boolean, default: false },
+  markAllError: { type: String, default: '' },
   items: { type: Array, default: () => [] },
   ariaLabel: { type: String, default: 'Уведомления' },
   onToggle: { type: Function, default: null },
   onMarkAll: { type: Function, default: null },
   onOpen: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
 </script>

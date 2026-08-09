@@ -9,7 +9,7 @@
       :class="{ 'focus-tools__tab--active': activeTool === 'pomodoro' }"
       @click="onSelect?.('pomodoro')"
     >
-      Pomodoro
+      Помодоро
     </button>
     <button
       type="button"

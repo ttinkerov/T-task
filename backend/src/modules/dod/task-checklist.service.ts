@@ -162,7 +162,7 @@ export class TaskChecklistService {
     const shown = pending.slice(0, 3).map((item) => item.text);
     const extra = pending.length > 3 ? ` и ещё ${pending.length - 3}` : '';
     throw new ConflictException(
-      `Не выполнены пункты Definition of Done: ${shown.join(', ')}${extra}`,
+      `Не выполнены пункты критериев готовности: ${shown.join(', ')}${extra}`,
     );
   }
 

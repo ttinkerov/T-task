@@ -18,13 +18,14 @@ import { ALL_WORKSPACE_ROLES, MEMBER_PLUS_ROLES } from '../../common/auth/worksp
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
-import { RateLimit } from '../../common/security/rate-limit.decorator';
+import { ATTACHMENT_READ_RATE_LIMIT, RateLimit } from '../../common/security/rate-limit.decorator';
 import { TaskAttachmentsService } from './task-attachments.service';
 
 const ATTACHMENT_MUTATE_RATE_LIMIT = {
   keyPrefix: 'task-attachment:mutate',
   windowSeconds: 60,
   maxAttempts: 30,
+  includeWorkspaceId: true,
 };
 
 @Controller('workspaces/:workspaceId/tasks/:taskId/attachments')
@@ -32,6 +33,8 @@ export class TaskAttachmentsController {
   constructor(private readonly attachmentsService: TaskAttachmentsService) {}
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(ATTACHMENT_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async list(
     @Param('workspaceId') workspaceId: string,
@@ -62,6 +65,8 @@ export class TaskAttachmentsController {
   }
 
   @Get(':attachmentId/content')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(ATTACHMENT_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async content(
     @Param('workspaceId') workspaceId: string,

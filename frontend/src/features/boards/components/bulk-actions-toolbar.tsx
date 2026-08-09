@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import { useSprintsQuery } from '@/features/sprints';
 import { useMembersQuery } from '@/features/workspaces/hooks';
@@ -21,10 +21,27 @@ export function BulkActionsToolbar({
   selectedIds: Set<string>;
   onClear: () => void;
 }) {
-  const { data: members = [] } = useMembersQuery(workspaceId);
-  const { data: sprints = [] } = useSprintsQuery(workspaceId);
+  const membersQuery = useMembersQuery(workspaceId);
+  const sprintsQuery = useSprintsQuery(workspaceId);
+  const members = membersQuery.data ?? [];
+  const sprints = sprintsQuery.data ?? [];
   const bulkMutation = useBulkUpdateTasksMutation(workspaceId, boardId);
   const count = selectedIds.size;
+  const [actionError, setActionError] = useState('');
+
+  const onRetryLoad = useCallback(() => {
+    void membersQuery.refetch();
+    void sprintsQuery.refetch();
+  }, [membersQuery, sprintsQuery]);
+
+  const loadError =
+    membersQuery.isError || sprintsQuery.isError
+      ? membersQuery.error instanceof Error
+        ? membersQuery.error.message
+        : sprintsQuery.error instanceof Error
+          ? sprintsQuery.error.message
+          : 'Не удалось загрузить участников и спринты'
+      : '';
 
   const memberOptions = useMemo(
     () => members.map((member) => ({ userId: member.userId, name: member.user.name })),
@@ -45,14 +62,16 @@ export function BulkActionsToolbar({
 
   const onApply = useCallback(
     async (patch: Omit<BulkUpdateTasksPayload, 'taskIds'>) => {
+      setActionError('');
       try {
         await bulkMutation.mutateAsync({
           taskIds: [...selectedIds],
           ...patch,
         });
         onClear();
-      } catch {
-        /* ignore */
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Не удалось применить изменения');
+        throw err;
       }
     },
     [bulkMutation, onClear, selectedIds],
@@ -66,9 +85,11 @@ export function BulkActionsToolbar({
       columns: columnOptions,
       priorityOptions,
       pending: bulkMutation.isPending,
-      error: bulkMutation.isError ? 'Не удалось применить изменения' : '',
+      error: actionError,
+      loadError,
       onApply,
       onClear,
+      onRetry: onRetryLoad,
     }),
     [
       count,
@@ -77,9 +98,11 @@ export function BulkActionsToolbar({
       columnOptions,
       priorityOptions,
       bulkMutation.isPending,
-      bulkMutation.isError,
+      actionError,
+      loadError,
       onApply,
       onClear,
+      onRetryLoad,
     ],
   );
 

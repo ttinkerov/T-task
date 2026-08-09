@@ -71,6 +71,9 @@ export function TrashPage({ workspaceId }: { workspaceId: string }) {
       onRestore,
       onPurge,
       onPageChange,
+      onRetry: () => {
+        void query.refetch();
+      },
     }),
     [
       result,
@@ -79,6 +82,7 @@ export function TrashPage({ workspaceId }: { workspaceId: string }) {
       query.isLoading,
       query.isFetching,
       query.error,
+      query.refetch,
       restoreMutation.error,
       purgeMutation.error,
       canPurge,

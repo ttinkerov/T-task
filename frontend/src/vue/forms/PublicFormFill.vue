@@ -2,7 +2,12 @@
   <main class="public-form">
     <p v-if="isLoading">Загрузка формы...</p>
 
-    <p v-else-if="isError || !form">Форма не найдена или недоступна.</p>
+    <p v-else-if="isError" class="public-form__error" role="alert">
+      Не удалось загрузить форму.
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
+    </p>
+
+    <p v-else-if="!form">Форма не найдена или недоступна.</p>
 
     <div v-else-if="submitted" class="public-form__card">
       <h1>Спасибо!</h1>
@@ -96,6 +101,7 @@ const props = defineProps({
   isPending: { type: Boolean, default: false },
   errorMessage: { type: String, default: '' },
   onSubmit: { type: Function, required: true },
+  onRetry: { type: Function, default: null },
 })
 
 const answers = ref({})

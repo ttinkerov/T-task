@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import { computeDealLinkRollup, formatRollupDue } from '@/features/boards/lib/task-rollup';
 import DealRollupSectionView from '@/vue/crm/DealRollupSection.vue';
@@ -23,21 +23,32 @@ export function DealRollupSection({
 
   const isLoading = tasksQuery.isLoading;
   const isEmpty = tasks.length === 0;
+  const loadError = tasksQuery.isError
+    ? tasksQuery.error instanceof Error
+      ? tasksQuery.error.message
+      : 'Не удалось загрузить сводку'
+    : '';
+
+  const onRetry = useCallback(() => {
+    void tasksQuery.refetch();
+  }, [tasksQuery]);
 
   const viewProps = useMemo(
     () => ({
       isLoading,
       isEmpty,
+      loadError,
       doneLabel:
         rollup.donePercent === null
           ? '—'
           : `${rollup.donePercent}% · ${rollup.completedTaskCount}/${rollup.linkedTaskCount}`,
       dueLabel: formatRollupDue(rollup.nearestDue),
+      onRetry,
     }),
-    [isLoading, isEmpty, rollup],
+    [isLoading, isEmpty, loadError, rollup, onRetry],
   );
 
-  if (!isLoading && isEmpty) {
+  if (!isLoading && !loadError && isEmpty) {
     return null;
   }
 

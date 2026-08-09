@@ -1,7 +1,10 @@
 <template>
   <div>
     <p v-if="isLoading" role="status">Загрузка задач...</p>
-    <p v-if="isError" class="all-tasks__error">Не удалось загрузить задачи.</p>
+    <p v-if="isError" class="all-tasks__error" role="alert">
+      Не удалось загрузить задачи.
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
+    </p>
 
     <div
       v-if="showContent"
@@ -79,6 +82,7 @@ const props = defineProps({
   totalPages: { type: Number, default: 1 },
   onOpenTask: { type: Function, required: true },
   onPageChange: { type: Function, required: true },
+  onRetry: { type: Function, default: null },
 })
 
 const showContent = computed(() => !props.isLoading && !props.isError)

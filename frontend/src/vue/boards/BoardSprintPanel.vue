@@ -3,7 +3,9 @@
     <div class="board-sprint-panel__head">
       <div>
         <p class="board-sprint-panel__eyebrow">Спринт</p>
-        <strong>{{ active ? active.name : 'Нет активного спринта' }}</strong>
+        <strong>{{
+          loadError ? 'Ошибка загрузки' : active ? active.name : 'Нет активного спринта'
+        }}</strong>
       </div>
       <div class="board-sprint-panel__actions">
         <button
@@ -34,6 +36,10 @@
       <button type="submit" class="btn-primary" :disabled="createPending">Создать</button>
     </form>
 
+    <p v-if="loadError" class="board-sprint-panel__error" role="alert">
+      {{ loadError }}
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
+    </p>
     <p v-if="actionError" class="board-sprint-panel__error" role="alert">{{ actionError }}</p>
 
     <p v-if="activePoints" class="board-sprint-panel__meta board-sprint-panel__meta--points">
@@ -103,8 +109,10 @@ const props = defineProps({
   createPending: { type: Boolean, default: false },
   closePending: { type: Boolean, default: false },
   actionError: { type: String, default: '' },
+  loadError: { type: String, default: '' },
   onCreate: { type: Function, default: null },
   onCloseSprint: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
 
 const formOpen = ref(false)

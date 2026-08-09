@@ -53,6 +53,7 @@
       :type-labels="typeLabels"
       :is-adding-field="isAddingField"
       :is-deleting-field="isDeletingField"
+      :action-error="actionError"
       :on-update-meta="onUpdateMeta"
       :on-add-field="onAddField"
       :on-delete-field="onDeleteField"
@@ -62,6 +63,8 @@
       v-else
       :fields="fields"
       :responses-data="responsesData"
+      :responses-error="responsesError"
+      :on-retry="onRetryResponses"
     />
   </div>
 </template>
@@ -82,7 +85,10 @@ const props = defineProps({
   typeLabels: { type: Object, required: true },
   isAddingField: { type: Boolean, default: false },
   isDeletingField: { type: Boolean, default: false },
+  actionError: { type: String, default: '' },
   responsesData: { type: Object, default: null },
+  responsesError: { type: String, default: '' },
+  onRetryResponses: { type: Function, default: null },
   onUpdateMeta: { type: Function, required: true },
   onAddField: { type: Function, required: true },
   onDeleteField: { type: Function, required: true },

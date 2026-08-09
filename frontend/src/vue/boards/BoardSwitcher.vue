@@ -64,7 +64,17 @@
       <button type="button" class="board-filters__reset" @click="renaming = false">Отмена</button>
     </form>
 
-    <p v-if="error" class="board-switcher__error" role="alert">{{ error }}</p>
+    <p v-if="error" class="board-switcher__error" role="alert">
+      {{ error }}
+      <button
+        v-if="onRetry"
+        type="button"
+        class="board-filters__chip"
+        @click="onRetry?.()"
+      >
+        Повторить
+      </button>
+    </p>
   </div>
 </template>
 
@@ -85,6 +95,7 @@ const props = defineProps({
   onRename: { type: Function, default: null },
   onDelete: { type: Function, default: null },
   onRequestTemplates: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
 
 const creating = ref(false)

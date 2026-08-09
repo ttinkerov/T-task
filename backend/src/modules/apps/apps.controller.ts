@@ -5,7 +5,7 @@ import { ALL_WORKSPACE_ROLES, MEMBER_PLUS_ROLES } from '../../common/auth/worksp
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
-import { RateLimit } from '../../common/security/rate-limit.decorator';
+import { RateLimit, RESOURCE_READ_RATE_LIMIT } from '../../common/security/rate-limit.decorator';
 import { AppsService } from './apps.service';
 import { CreateExternalAppDto } from './dto/create-external-app.dto';
 
@@ -14,6 +14,8 @@ export class AppsController {
   constructor(private readonly appsService: AppsService) {}
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(RESOURCE_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async list(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     return successResponse(await this.appsService.list(workspaceId, user.id));

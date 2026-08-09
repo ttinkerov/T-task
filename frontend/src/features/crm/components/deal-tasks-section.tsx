@@ -7,7 +7,8 @@ import DealTasksSectionView from '@/vue/crm/DealTasksSection.vue';
 import { useDealTasksQuery, useLinkDealTaskMutation, useUnlinkDealTaskMutation } from '../hooks';
 
 export function DealTasksSection({ workspaceId, dealId }: { workspaceId: string; dealId: string }) {
-  const { data: links = [], isLoading } = useDealTasksQuery(workspaceId, dealId);
+  const dealsQuery = useDealTasksQuery(workspaceId, dealId);
+  const links = dealsQuery.data ?? [];
   const { data: allTasks } = useAllTasksQuery(workspaceId, {
     search: '',
     priority: '',
@@ -59,27 +60,41 @@ export function DealTasksSection({ workspaceId, dealId }: { workspaceId: string;
     [unlinkMutation],
   );
 
+  const onRetry = useCallback(() => {
+    void dealsQuery.refetch();
+  }, [dealsQuery]);
+
+  const loadError = dealsQuery.isError
+    ? dealsQuery.error instanceof Error
+      ? dealsQuery.error.message
+      : 'Не удалось загрузить задачи'
+    : '';
+
   const viewProps = useMemo(
     () => ({
       links: linkRows,
       taskOptions,
-      isLoading,
+      isLoading: dealsQuery.isLoading,
+      loadError,
       linkPending: linkMutation.isPending,
       unlinkPending: unlinkMutation.isPending,
       error: (linkMutation.error ?? unlinkMutation.error)?.message ?? '',
       onLink,
       onUnlink,
+      onRetry,
     }),
     [
       linkRows,
       taskOptions,
-      isLoading,
+      dealsQuery.isLoading,
+      loadError,
       linkMutation.isPending,
       linkMutation.error,
       unlinkMutation.isPending,
       unlinkMutation.error,
       onLink,
       onUnlink,
+      onRetry,
     ],
   );
 

@@ -28,23 +28,39 @@ export function TaskDrawerActions({
   const deleteMutation = useDeleteTaskMutation(workspaceId);
   const duplicateMutation = useDuplicateTaskMutation(workspaceId);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [actionError, setActionError] = useState('');
 
   const onDelete = useCallback(async () => {
-    await deleteMutation.mutateAsync(taskId);
-    onClose();
+    setActionError('');
+    try {
+      await deleteMutation.mutateAsync(taskId);
+      onClose();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Не удалось удалить задачу');
+    }
   }, [deleteMutation, taskId, onClose]);
 
   const onDuplicate = useCallback(async () => {
-    const copy = await duplicateMutation.mutateAsync(taskId);
-    if (copy?.id) {
-      onOpenTask(copy.id);
+    setActionError('');
+    try {
+      const copy = await duplicateMutation.mutateAsync(taskId);
+      if (copy?.id) {
+        onOpenTask(copy.id);
+      }
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Не удалось дублировать задачу');
     }
   }, [duplicateMutation, taskId, onOpenTask]);
 
   const onCopyLink = useCallback(async () => {
-    await copyTaskLink(taskId, linkSource);
-    setLinkCopied(true);
-    window.setTimeout(() => setLinkCopied(false), 2000);
+    setActionError('');
+    try {
+      await copyTaskLink(taskId, linkSource);
+      setLinkCopied(true);
+      window.setTimeout(() => setLinkCopied(false), 2000);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Не удалось скопировать ссылку');
+    }
   }, [taskId, linkSource]);
 
   const viewProps = useMemo(
@@ -52,6 +68,7 @@ export function TaskDrawerActions({
       isSaving,
       canSave: Boolean(title.trim()),
       saveError: saveError ?? '',
+      actionError,
       linkCopied,
       duplicatePending: duplicateMutation.isPending,
       deletePending: deleteMutation.isPending,
@@ -63,6 +80,7 @@ export function TaskDrawerActions({
       isSaving,
       title,
       saveError,
+      actionError,
       linkCopied,
       duplicateMutation.isPending,
       deleteMutation.isPending,

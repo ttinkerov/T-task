@@ -38,8 +38,13 @@
     </div>
 
     <p v-if="isLoading" class="roadmap__status">Загрузка роадмапа...</p>
-    <p v-if="isError" class="roadmap__status roadmap__status--error">
+    <p v-if="isError" class="roadmap__status roadmap__status--error" role="alert">
       Не удалось загрузить задачи.
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
+    </p>
+    <p v-if="sprintsError" class="roadmap__status roadmap__status--error" role="alert">
+      {{ sprintsError }}
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
     </p>
     <p v-if="truncationNote" class="roadmap__status">{{ truncationNote }}</p>
 
@@ -120,12 +125,14 @@ const props = defineProps({
   epicCount: { type: Number, default: 0 },
   isLoading: { type: Boolean, default: false },
   isError: { type: Boolean, default: false },
+  sprintsError: { type: String, default: '' },
   truncationNote: { type: String, default: '' },
   onMonthCountChange: { type: Function, default: null },
   onPrevPeriod: { type: Function, default: null },
   onNextPeriod: { type: Function, default: null },
   onGoToday: { type: Function, default: null },
   onOpenTask: { type: Function, required: true },
+  onRetry: { type: Function, default: null },
 })
 
 const monthOptions = [

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import {
   useCreateSubtaskMutation,
@@ -19,33 +19,52 @@ export function TaskSubtasksSection({
   taskId: string;
   boardId?: string | null;
 }) {
-  const { data: subtasks = [], isLoading } = useSubtasksQuery(workspaceId, taskId);
+  const {
+    data: subtasks = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useSubtasksQuery(workspaceId, taskId);
   const createMutation = useCreateSubtaskMutation(workspaceId, taskId, boardId);
   const updateMutation = useUpdateSubtaskMutation(workspaceId, taskId, boardId);
   const deleteMutation = useDeleteSubtaskMutation(workspaceId, taskId, boardId);
+  const [actionError, setActionError] = useState('');
 
   const onToggle = useCallback(
-    (subtaskId: string, completed: boolean) => {
-      updateMutation.mutate({ subtaskId, data: { completed } });
+    async (subtaskId: string, completed: boolean) => {
+      setActionError('');
+      try {
+        await updateMutation.mutateAsync({ subtaskId, data: { completed } });
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Не удалось обновить подзадачу');
+      }
     },
     [updateMutation],
   );
 
   const onDelete = useCallback(
-    (subtaskId: string) => {
-      deleteMutation.mutate(subtaskId);
+    async (subtaskId: string) => {
+      setActionError('');
+      try {
+        await deleteMutation.mutateAsync(subtaskId);
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Не удалось удалить подзадачу');
+      }
     },
     [deleteMutation],
   );
 
   const onCreate = useCallback(
-    (title: string) =>
-      new Promise<void>((resolve, reject) => {
-        createMutation.mutate(title, {
-          onSuccess: () => resolve(),
-          onError: (error) => reject(error),
-        });
-      }),
+    async (title: string) => {
+      setActionError('');
+      try {
+        await createMutation.mutateAsync(title);
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Не удалось добавить подзадачу');
+        throw err;
+      }
+    },
     [createMutation],
   );
 
@@ -53,9 +72,18 @@ export function TaskSubtasksSection({
     () => ({
       subtasks,
       isLoading,
+      loadError: isError
+        ? error instanceof Error
+          ? error.message
+          : 'Не удалось загрузить подзадачи'
+        : '',
+      actionError,
       createPending: createMutation.isPending,
       updatePending: updateMutation.isPending,
       deletePending: deleteMutation.isPending,
+      onRetryLoad: () => {
+        void refetch();
+      },
       onToggle,
       onDelete,
       onCreate,
@@ -63,9 +91,13 @@ export function TaskSubtasksSection({
     [
       subtasks,
       isLoading,
+      isError,
+      error,
+      actionError,
       createMutation.isPending,
       updateMutation.isPending,
       deleteMutation.isPending,
+      refetch,
       onToggle,
       onDelete,
       onCreate,

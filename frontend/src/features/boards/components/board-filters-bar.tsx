@@ -28,10 +28,13 @@ export function BoardFiltersBar({
   filters,
   onChange,
 }: BoardFiltersBarProps) {
-  const { data: members = [] } = useMembersQuery(workspaceId);
-  const { data: tags = [] } = useTagsQuery(workspaceId);
-  const { data: sprints = [] } = useSprintsQuery(workspaceId);
+  const membersQuery = useMembersQuery(workspaceId);
+  const tagsQuery = useTagsQuery(workspaceId);
+  const sprintsQuery = useSprintsQuery(workspaceId);
   const { data: board } = useBoardQuery(workspaceId, boardId);
+  const members = membersQuery.data ?? [];
+  const tags = tagsQuery.data ?? [];
+  const sprints = sprintsQuery.data ?? [];
 
   const activeSprint = sprints.find((sprint) => sprint.active) ?? null;
   const epics = useMemo(() => {
@@ -60,6 +63,23 @@ export function BoardFiltersBar({
     onChange(EMPTY_BOARD_FILTERS);
   }, [onChange]);
 
+  const onRetry = useCallback(() => {
+    void membersQuery.refetch();
+    void tagsQuery.refetch();
+    void sprintsQuery.refetch();
+  }, [membersQuery, tagsQuery, sprintsQuery]);
+
+  const loadError =
+    membersQuery.isError || tagsQuery.isError || sprintsQuery.isError
+      ? membersQuery.error instanceof Error
+        ? membersQuery.error.message
+        : tagsQuery.error instanceof Error
+          ? tagsQuery.error.message
+          : sprintsQuery.error instanceof Error
+            ? sprintsQuery.error.message
+            : 'Не удалось загрузить данные фильтров'
+      : '';
+
   const viewProps = useMemo(
     () => ({
       filters,
@@ -71,8 +91,10 @@ export function BoardFiltersBar({
       priorityOptions,
       overdueOptions: OVERDUE_FILTER_OPTIONS,
       hasActiveFilters,
+      loadError,
       onChange,
       onReset,
+      onRetry,
     }),
     [
       filters,
@@ -83,8 +105,10 @@ export function BoardFiltersBar({
       activeSprint,
       priorityOptions,
       hasActiveFilters,
+      loadError,
       onChange,
       onReset,
+      onRetry,
     ],
   );
 

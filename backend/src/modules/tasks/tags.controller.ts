@@ -9,7 +9,7 @@ import {
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
-import { RateLimit } from '../../common/security/rate-limit.decorator';
+import { RateLimit, RESOURCE_READ_RATE_LIMIT } from '../../common/security/rate-limit.decorator';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { SetTaskTagsDto } from './dto/set-task-tags.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
@@ -26,6 +26,8 @@ export class TagsController {
   constructor(private readonly tagsService: TagsService) {}
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(RESOURCE_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async list(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     return successResponse(await this.tagsService.list(workspaceId, user.id));

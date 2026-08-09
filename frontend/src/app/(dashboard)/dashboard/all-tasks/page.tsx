@@ -1,7 +1,8 @@
 'use client';
 
 import { AllTasksPage } from '@/features/all-tasks/components/all-tasks-page';
-import { useWorkspaceStore } from '@/stores/workspace.store';
+import { WorkspaceGateStatus } from '@/features/workspaces/components/workspace-gate-status';
+import { useWorkspaceRouteGate } from '@/features/workspaces/use-workspace-route-gate';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
@@ -15,16 +16,16 @@ export default function AllTasksRoute() {
 
 function AllTasksRouteContent() {
   const searchParams = useSearchParams();
-  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
+  const { workspaceId, isReady, isLoading, isError, onRetry } = useWorkspaceRouteGate();
 
-  return workspaceId ? (
+  return isReady && workspaceId ? (
     <AllTasksPage
       key={workspaceId}
       workspaceId={workspaceId}
       initialTaskId={searchParams.get('task')}
     />
   ) : (
-    <p className="text-sm text-muted-foreground">Выберите команду справа в шапке.</p>
+    <WorkspaceGateStatus isLoading={isLoading} isError={isError} onRetry={onRetry} />
   );
 }
 

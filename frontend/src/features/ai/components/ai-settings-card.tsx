@@ -25,7 +25,13 @@ export function AiSettingsCard({
   canManage: boolean;
 }) {
   const { data: settings, isLoading, isError, error, refetch } = useAiSettingsQuery(workspaceId);
-  const { data: ragStatus, isLoading: ragLoading } = useAiRagStatusQuery(workspaceId);
+  const {
+    data: ragStatus,
+    isLoading: ragLoading,
+    isError: ragIsError,
+    error: ragQueryError,
+    refetch: refetchRag,
+  } = useAiRagStatusQuery(workspaceId);
   const upsertMutation = useUpsertAiSettingsMutation(workspaceId);
   const deleteMutation = useDeleteAiSettingsMutation(workspaceId);
   const testMutation = useTestAiConnectionMutation(workspaceId);
@@ -63,11 +69,19 @@ export function AiSettingsCard({
       deletePending: deleteMutation.isPending,
       ragStatus: ragStatus ?? null,
       ragLoading,
+      ragError: ragIsError
+        ? ragQueryError instanceof Error
+          ? ragQueryError.message
+          : 'Не удалось загрузить статус RAG'
+        : '',
       reindexPending: reindexMutation.isPending,
       onSave,
       onTest,
       onDelete,
       onReindex,
+      onRetryRag: () => {
+        void refetchRag();
+      },
     }),
     [
       settings,
@@ -81,6 +95,9 @@ export function AiSettingsCard({
       deleteMutation.isPending,
       ragStatus,
       ragLoading,
+      ragIsError,
+      ragQueryError,
+      refetchRag,
       reindexMutation.isPending,
       onSave,
       onTest,

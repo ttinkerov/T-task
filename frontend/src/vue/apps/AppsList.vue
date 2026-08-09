@@ -12,7 +12,7 @@
         :key="app.id"
         :class="['apps-list__item', { 'apps-list__item--active': selectedId === app.id }]"
       >
-        <button type="button" :aria-pressed="selectedId === app.id" @click="emit('select', app.id)">
+        <button type="button" :aria-pressed="selectedId === app.id" @click="onSelect?.(app.id)">
           <span
             :class="'apps-list__provider apps-list__provider--' + app.providerTone"
             aria-hidden="true"
@@ -34,15 +34,11 @@
               type="button"
               class="apps-list__confirm-yes"
               :disabled="isDeleting"
-              @click="emit('confirm-delete', app.id)"
+              @click="onConfirmDelete?.(app.id)"
             >
               Удалить
             </button>
-            <button
-              type="button"
-              class="apps-list__confirm-no"
-              @click="emit('cancel-delete')"
-            >
+            <button type="button" class="apps-list__confirm-no" @click="onCancelDelete?.()">
               Отмена
             </button>
           </div>
@@ -52,7 +48,7 @@
             class="apps-list__delete"
             :disabled="isDeleting"
             :aria-label="'Удалить «' + app.title + '»'"
-            @click="emit('request-delete', app.id)"
+            @click="onRequestDelete?.(app.id)"
           >
             ×
           </button>
@@ -71,7 +67,9 @@ defineProps({
   pendingDeleteId: { type: String, default: null },
   isDeleting: { type: Boolean, default: false },
   deleteError: { type: String, default: '' },
+  onSelect: { type: Function, default: null },
+  onRequestDelete: { type: Function, default: null },
+  onConfirmDelete: { type: Function, default: null },
+  onCancelDelete: { type: Function, default: null },
 })
-
-const emit = defineEmits(['select', 'request-delete', 'confirm-delete', 'cancel-delete'])
 </script>

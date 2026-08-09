@@ -61,6 +61,10 @@ export function TaskRelationsSection({
     [deleteMutation],
   );
 
+  const onRetry = useCallback(() => {
+    void relationsQuery.refetch();
+  }, [relationsQuery]);
+
   const viewProps = useMemo(
     () => ({
       relations,
@@ -76,6 +80,7 @@ export function TaskRelationsSection({
       onOpenTask,
       onDelete,
       onCreate,
+      onRetry,
     }),
     [
       relations,
@@ -89,6 +94,7 @@ export function TaskRelationsSection({
       onOpenTask,
       onDelete,
       onCreate,
+      onRetry,
     ],
   );
 

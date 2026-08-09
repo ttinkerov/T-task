@@ -18,7 +18,10 @@
     </p>
 
     <p v-if="hasWorkspace && isLoading" role="status">Загрузка задач...</p>
-    <p v-if="hasWorkspace && isError" class="all-tasks__error">Не удалось загрузить задачи.</p>
+    <p v-if="hasWorkspace && isError" class="all-tasks__error" role="alert">
+      Не удалось загрузить задачи.
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
+    </p>
 
     <template v-if="hasWorkspace && !isLoading && !isError">
       <ul class="home-dashboard__stats" aria-label="Сводка по вашим задачам">
@@ -134,5 +137,6 @@ defineProps({
   onOpenTask: { type: Function, default: null },
   onWorkspaceChange: { type: Function, default: null },
   onCreateWorkspace: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 });
 </script>

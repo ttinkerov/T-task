@@ -14,6 +14,7 @@ import {
   AI_EPIC_BREAKDOWN_RATE_LIMIT,
   AI_RAG_REINDEX_RATE_LIMIT,
   RateLimit,
+  RESOURCE_READ_RATE_LIMIT,
 } from '../../common/security/rate-limit.decorator';
 import { AiService } from './ai.service';
 import { AiChatDto } from './dto/ai-chat.dto';
@@ -27,6 +28,8 @@ export class AiController {
   constructor(private readonly aiService: AiService) {}
 
   @Get('settings')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(RESOURCE_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async getSettings(
     @Param('workspaceId') workspaceId: string,
@@ -36,6 +39,8 @@ export class AiController {
   }
 
   @Get('rag/status')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(RESOURCE_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async getRagStatus(
     @Param('workspaceId') workspaceId: string,

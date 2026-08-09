@@ -18,6 +18,7 @@
     <p v-if="isLoading" class="task-relations__empty" role="status">Загружаем упоминания…</p>
     <p v-else-if="loadError" class="task-relations__error" role="alert">
       Не удалось загрузить упоминания.
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
     </p>
     <ul v-else class="task-relations__list">
       <li v-for="link in backlinks" :key="link.id">
@@ -45,5 +46,6 @@ defineProps({
   isLoading: { type: Boolean, default: false },
   loadError: { type: Boolean, default: false },
   onOpenTask: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
 </script>

@@ -7,6 +7,7 @@
     <button type="button" class="board-filters__chip" @click="onExport?.()">
       CSV
     </button>
+    <p v-if="exportError" class="text-sm text-red-400" role="alert">{{ exportError }}</p>
 
     <input
       :value="searchInput"
@@ -49,6 +50,10 @@
         {{ member.user.name }}
       </option>
     </select>
+    <p v-if="membersLoadError" class="text-sm text-red-400" role="alert">
+      {{ membersLoadError }}
+      <button type="button" class="board-filters__chip" @click="onRetryMembers?.()">Повторить</button>
+    </p>
 
     <select
       :value="filters.tagId"
@@ -127,12 +132,15 @@ const props = defineProps({
   tags: { type: Array, default: () => [] },
   priorityOptions: { type: Array, default: () => [] },
   assigneeLocked: { type: Boolean, default: false },
+  exportError: { type: String, default: '' },
+  membersLoadError: { type: String, default: '' },
   onSearchChange: { type: Function, default: null },
   onFiltersChange: { type: Function, default: null },
   onSortChange: { type: Function, default: null },
   onReset: { type: Function, default: null },
   onExport: { type: Function, default: null },
   onSavedHostReady: { type: Function, default: null },
+  onRetryMembers: { type: Function, default: null },
 })
 
 const savedHostEl = ref(null)

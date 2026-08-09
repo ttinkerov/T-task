@@ -7,7 +7,11 @@ import { ALL_WORKSPACE_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
-import { DEAL_TASK_MUTATE_RATE_LIMIT, RateLimit } from '../../common/security/rate-limit.decorator';
+import {
+  DEAL_TASK_MUTATE_RATE_LIMIT,
+  RateLimit,
+  RESOURCE_READ_RATE_LIMIT,
+} from '../../common/security/rate-limit.decorator';
 import { LinkTaskDealDto } from './dto/link-deal-task.dto';
 import { DealTasksService } from './deal-tasks.service';
 
@@ -16,6 +20,8 @@ export class TaskDealsController {
   constructor(private readonly dealTasksService: DealTasksService) {}
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(RESOURCE_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async list(
     @Param('workspaceId') workspaceId: string,

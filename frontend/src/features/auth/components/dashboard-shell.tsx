@@ -205,9 +205,9 @@ export function DashboardShell({
         items: [
           { href: '/dashboard/forms', label: 'Формы', iconKey: 'form' },
           { href: '/dashboard/apps', label: 'Приложения', iconKey: 'apps' },
-          { href: '/dashboard/calendar', label: 'iCal', iconKey: 'calendar' },
+          { href: '/dashboard/calendar', label: 'Календарь', iconKey: 'calendar' },
           { href: '/dashboard/custom-fields', label: 'Поля', iconKey: 'settings' },
-          { href: '/dashboard/dod', label: 'DoD', iconKey: 'checks' },
+          { href: '/dashboard/dod', label: 'Готовность', iconKey: 'checks' },
           { href: '/dashboard/templates', label: 'Шаблоны', iconKey: 'template' },
           { href: '/dashboard/import', label: 'Импорт', iconKey: 'upload' },
           { href: '/dashboard/tags', label: 'Теги', iconKey: 'tags' },

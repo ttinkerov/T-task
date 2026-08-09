@@ -14,6 +14,7 @@
     <p v-if="isLoading" class="task-relations__empty" role="status">Загружаем связи…</p>
     <p v-else-if="loadError" class="task-relations__error" role="alert">
       Не удалось загрузить связи.
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
     </p>
     <p v-else-if="relations.length === 0" class="task-relations__empty">
       У задачи пока нет связей
@@ -90,6 +91,7 @@ const props = defineProps({
   onOpenTask: { type: Function, default: null },
   onDelete: { type: Function, default: null },
   onCreate: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
 
 const relationOptions = [

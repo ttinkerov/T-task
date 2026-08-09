@@ -7,6 +7,7 @@ import { successResponse } from '../../common/interfaces/api-response.interface'
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
 import {
   NOTIFICATION_MUTATE_RATE_LIMIT,
+  NOTIFICATION_READ_RATE_LIMIT,
   RateLimit,
 } from '../../common/security/rate-limit.decorator';
 import { NotificationsService } from './notifications.service';
@@ -16,6 +17,8 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(NOTIFICATION_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async list(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     return successResponse(await this.notificationsService.list(workspaceId, user.id));

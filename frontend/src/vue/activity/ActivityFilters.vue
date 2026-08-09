@@ -5,7 +5,7 @@
       <select
         class="board-filters__select"
         :value="action"
-        @change="emit('update-action', $event.target.value)"
+        @change="onUpdateAction?.($event.target.value)"
       >
         <option value="">Все</option>
         <option v-for="option in actionOptions" :key="option.value" :value="option.value">
@@ -20,7 +20,7 @@
         type="date"
         class="glass-input"
         :value="from"
-        @change="emit('update-from', $event.target.value)"
+        @change="onUpdateFrom?.($event.target.value)"
       />
     </label>
 
@@ -30,7 +30,7 @@
         type="date"
         class="glass-input"
         :value="to"
-        @change="emit('update-to', $event.target.value)"
+        @change="onUpdateTo?.($event.target.value)"
       />
     </label>
   </div>
@@ -42,7 +42,8 @@ defineProps({
   from: { type: String, default: '' },
   to: { type: String, default: '' },
   actionOptions: { type: Array, required: true },
+  onUpdateAction: { type: Function, default: null },
+  onUpdateFrom: { type: Function, default: null },
+  onUpdateTo: { type: Function, default: null },
 })
-
-const emit = defineEmits(['update-action', 'update-from', 'update-to'])
 </script>

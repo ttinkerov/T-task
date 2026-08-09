@@ -61,13 +61,19 @@ export function RoadmapPage({
   const [rangeStart, setRangeStart] = useState(() => startOfMonth(new Date()));
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
-  const { data, isLoading, isError } = useAllTasksQuery(workspaceId, {
+  const { data, isLoading, isError, refetch } = useAllTasksQuery(workspaceId, {
     ...ROADMAP_TASKS_QUERY,
   });
-  const { data: sprints = [] } = useSprintsQuery(workspaceId);
+  const sprintsQuery = useSprintsQuery(workspaceId);
+  const sprints = sprintsQuery.data ?? [];
 
   const items = data?.items ?? [];
   const isTruncated = data != null && data.total > data.limit;
+  const sprintsError = sprintsQuery.isError
+    ? sprintsQuery.error instanceof Error
+      ? sprintsQuery.error.message
+      : 'Не удалось загрузить спринты'
+    : '';
 
   useEffect(() => {
     if (!initialTaskId || !items.some((task) => task.id === initialTaskId)) {
@@ -206,6 +212,11 @@ export function RoadmapPage({
     setRangeStart(startOfMonth(new Date()));
   }, []);
 
+  const onRetry = useCallback(() => {
+    void refetch();
+    void sprintsQuery.refetch();
+  }, [refetch, sprintsQuery]);
+
   const viewProps = useMemo(
     () => ({
       monthCount,
@@ -217,12 +228,14 @@ export function RoadmapPage({
       epicCount: datedEpics.length + undatedEpics.length,
       isLoading,
       isError,
+      sprintsError,
       truncationNote,
       onMonthCountChange,
       onPrevPeriod,
       onNextPeriod,
       onGoToday,
       onOpenTask,
+      onRetry,
     }),
     [
       monthCount,
@@ -235,12 +248,14 @@ export function RoadmapPage({
       undatedEpics.length,
       isLoading,
       isError,
+      sprintsError,
       truncationNote,
       onMonthCountChange,
       onPrevPeriod,
       onNextPeriod,
       onGoToday,
       onOpenTask,
+      onRetry,
     ],
   );
 

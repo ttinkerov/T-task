@@ -12,6 +12,7 @@ const ACTION_LABELS: Record<string, string> = {
   WORKSPACE_CREATED: 'создал(а) рабочее пространство',
   WORKSPACE_UPDATED: 'изменил(а) настройки пространства',
   WORKSPACE_ARCHIVED: 'архивировал(а) рабочее пространство',
+  WORKSPACE_UNARCHIVED: 'разархивировал(а) рабочее пространство',
   WORKSPACE_DELETED: 'удалил(а) рабочее пространство',
   MEMBER_JOINED: 'присоединился(-ась) к пространству',
   MEMBER_ROLE_UPDATED: 'изменил(а) роль участника',
@@ -122,6 +123,9 @@ export function ActivityPage({ workspaceId }: { workspaceId: string }) {
       statusMessage,
       actionLabels: ACTION_LABELS,
       onPageChange,
+      onRetry: () => {
+        void query.refetch();
+      },
     }),
     [
       result?.items,
@@ -130,6 +134,7 @@ export function ActivityPage({ workspaceId }: { workspaceId: string }) {
       query.isLoading,
       query.isFetching,
       query.error,
+      query.refetch,
       statusMessage,
       onPageChange,
     ],

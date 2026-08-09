@@ -60,7 +60,13 @@ export function KanbanBoard({
   initialBoardId?: string | null;
 }) {
   const { data: session } = useMeQuery();
-  const { data: boards = [], isLoading: boardsLoading } = useBoardsQuery(workspaceId);
+  const {
+    data: boards = [],
+    isLoading: boardsLoading,
+    isError: boardsError,
+    error: boardsLoadError,
+    refetch: refetchBoards,
+  } = useBoardsQuery(workspaceId);
   const createBoardMutation = useCreateBoardMutation(workspaceId);
   const [boardId, setBoardId] = useState<string | null>(() => {
     if (typeof window === 'undefined') return initialBoardId;
@@ -149,6 +155,21 @@ export function KanbanBoard({
         />
         <BoardSkeleton />
       </>
+    );
+  }
+
+  if (boardsError) {
+    return (
+      <div className="empty-state empty-state--board" role="alert">
+        <p className="text-sm text-red-600">
+          {boardsLoadError instanceof Error
+            ? boardsLoadError.message
+            : 'Не удалось загрузить список досок'}
+        </p>
+        <button type="button" className="btn-ghost" onClick={() => void refetchBoards()}>
+          Повторить
+        </button>
+      </div>
     );
   }
 

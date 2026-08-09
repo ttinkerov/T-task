@@ -13,7 +13,12 @@ import {
 import BoardSprintPanelView from '@/vue/boards/BoardSprintPanel.vue';
 
 export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
-  const { data: sprints = [] } = useSprintsQuery(workspaceId);
+  const {
+    data: sprints = [],
+    isError: sprintsError,
+    error: sprintsLoadError,
+    refetch: refetchSprints,
+  } = useSprintsQuery(workspaceId);
   const { data: velocity } = useSprintVelocityQuery(workspaceId);
   const createMutation = useCreateSprintMutation(workspaceId);
   const closeMutation = useCloseSprintMutation(workspaceId);
@@ -103,8 +108,16 @@ export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
       createPending: createMutation.isPending,
       closePending: closeMutation.isPending,
       actionError,
+      loadError: sprintsError
+        ? sprintsLoadError instanceof Error
+          ? sprintsLoadError.message
+          : 'Не удалось загрузить спринты'
+        : '',
       onCreate,
       onCloseSprint,
+      onRetry: () => {
+        void refetchSprints();
+      },
     }),
     [
       active,
@@ -115,8 +128,11 @@ export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
       createMutation.isPending,
       closeMutation.isPending,
       actionError,
+      sprintsError,
+      sprintsLoadError,
       onCreate,
       onCloseSprint,
+      refetchSprints,
     ],
   );
 

@@ -21,7 +21,7 @@ export class AccessTokenDenyService {
       this.logger.error(
         `Failed to revoke access jti: ${error instanceof Error ? error.message : 'unknown'}`,
       );
-      throw new ServiceUnavailableException('Unable to revoke access token');
+      throw new ServiceUnavailableException('Не удалось отозвать access-токен');
     }
   }
 
@@ -34,7 +34,7 @@ export class AccessTokenDenyService {
       this.logger.error(
         `Failed to revoke user access epoch: ${error instanceof Error ? error.message : 'unknown'}`,
       );
-      throw new ServiceUnavailableException('Unable to revoke sessions');
+      throw new ServiceUnavailableException('Не удалось отозвать сессии');
     }
   }
 
@@ -62,7 +62,7 @@ export class AccessTokenDenyService {
       if (hasJti) {
         const denied = values[offset++];
         if (denied) {
-          throw new UnauthorizedException('Access-токен отозван');
+          throw new UnauthorizedException('Токен доступа отозван');
         }
       }
 
@@ -71,7 +71,7 @@ export class AccessTokenDenyService {
         if (epochRaw) {
           const epoch = Number(epochRaw);
           if (Number.isFinite(epoch) && payload.iat <= epoch) {
-            throw new UnauthorizedException('Access-токен отозван');
+            throw new UnauthorizedException('Токен доступа отозван');
           }
         }
       }

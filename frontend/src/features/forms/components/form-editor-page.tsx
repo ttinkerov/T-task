@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import FormEditorPageView from '@/vue/forms/FormEditorPageView.vue';
 import {
@@ -14,14 +14,25 @@ import { FORM_FIELD_TYPE_LABELS, FORM_FIELD_TYPE_OPTIONS, type FormFieldType } f
 
 export function FormEditorPage({ workspaceId, formId }: { workspaceId: string; formId: string }) {
   const { data: form, isLoading, isError, error, refetch } = useFormQuery(workspaceId, formId);
-  const { data: responsesData } = useFormResponsesQuery(workspaceId, formId);
+  const {
+    data: responsesData,
+    isError: responsesIsError,
+    error: responsesError,
+    refetch: refetchResponses,
+  } = useFormResponsesQuery(workspaceId, formId);
   const updateFormMutation = useUpdateFormMutation(workspaceId, formId);
   const addFieldMutation = useAddFormFieldMutation(workspaceId, formId);
   const deleteFieldMutation = useDeleteFormFieldMutation(workspaceId, formId);
+  const [actionError, setActionError] = useState('');
 
   const onUpdateMeta = useCallback(
-    (payload: { createTaskOnSubmit?: boolean; isPublic?: boolean }) => {
-      updateFormMutation.mutate(payload);
+    async (payload: { createTaskOnSubmit?: boolean; isPublic?: boolean }) => {
+      setActionError('');
+      try {
+        await updateFormMutation.mutateAsync(payload);
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Не удалось сохранить настройки формы');
+      }
     },
     [updateFormMutation],
   );
@@ -33,14 +44,25 @@ export function FormEditorPage({ workspaceId, formId }: { workspaceId: string; f
       options?: string[];
       required?: boolean;
     }) => {
-      await addFieldMutation.mutateAsync(payload);
+      setActionError('');
+      try {
+        await addFieldMutation.mutateAsync(payload);
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Не удалось добавить поле');
+        throw err;
+      }
     },
     [addFieldMutation],
   );
 
   const onDeleteField = useCallback(
-    (fieldId: string) => {
-      deleteFieldMutation.mutate(fieldId);
+    async (fieldId: string) => {
+      setActionError('');
+      try {
+        await deleteFieldMutation.mutateAsync(fieldId);
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Не удалось удалить поле');
+      }
     },
     [deleteFieldMutation],
   );
@@ -57,7 +79,16 @@ export function FormEditorPage({ workspaceId, formId }: { workspaceId: string; f
       typeLabels: FORM_FIELD_TYPE_LABELS,
       isAddingField: addFieldMutation.isPending,
       isDeletingField: deleteFieldMutation.isPending,
+      actionError,
       responsesData: responsesData ?? null,
+      responsesError: responsesIsError
+        ? responsesError instanceof Error
+          ? responsesError.message
+          : 'Не удалось загрузить ответы'
+        : '',
+      onRetryResponses: () => {
+        void refetchResponses();
+      },
       onUpdateMeta,
       onAddField,
       onDeleteField,
@@ -71,7 +102,11 @@ export function FormEditorPage({ workspaceId, formId }: { workspaceId: string; f
       form?.isPublic,
       addFieldMutation.isPending,
       deleteFieldMutation.isPending,
+      actionError,
       responsesData,
+      responsesIsError,
+      responsesError,
+      refetchResponses,
       onUpdateMeta,
       onAddField,
       onDeleteField,

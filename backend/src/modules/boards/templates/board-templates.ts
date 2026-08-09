@@ -15,8 +15,8 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
   {
     id: 'sprint',
     name: 'Спринт',
-    description: 'Для итераций и daily stand-up',
-    columns: ['To Do', 'In Progress', 'Review', 'Done'],
+    description: 'Для итераций и ежедневных стендапов',
+    columns: ['К выполнению', 'В работе', 'Ревью', 'Готово'],
   },
   {
     id: 'bugs',

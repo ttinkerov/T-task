@@ -6,6 +6,7 @@ import { useMeQuery } from '@/features/auth/hooks';
 import { InvitationsList } from '@/features/workspaces/components/invitations-list';
 import { InviteMemberForm } from '@/features/workspaces/components/invite-member-form';
 import { MembersTable } from '@/features/workspaces/components/members-table';
+import { WorkspaceGateStatus } from '@/features/workspaces/components/workspace-gate-status';
 import { WorkspaceOverdueSettings } from '@/features/workspaces/components/workspace-overdue-settings';
 import { AiSettingsCard } from '@/features/ai/components/ai-settings-card';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
@@ -14,7 +15,7 @@ export default function WorkspaceSettingsPage() {
   const params = useParams<{ workspaceId: string }>();
   const workspaceId = params.workspaceId;
   const { data: session } = useMeQuery();
-  const { data: workspaces = [] } = useWorkspacesQuery();
+  const { data: workspaces = [], isLoading, isError, refetch } = useWorkspacesQuery();
 
   const workspace = workspaces.find((item) => item.id === workspaceId);
   const canManage = workspace?.role === 'OWNER' || workspace?.role === 'ADMIN';
@@ -57,6 +58,12 @@ export default function WorkspaceSettingsPage() {
             <AiSettingsCard workspaceId={workspaceId} canManage={false} />
           )}
         </>
+      ) : isLoading || isError ? (
+        <WorkspaceGateStatus
+          isLoading={isLoading}
+          isError={isError}
+          onRetry={() => void refetch()}
+        />
       ) : (
         <p className="text-sm text-muted-foreground">Команда не найдена или нет доступа.</p>
       )}

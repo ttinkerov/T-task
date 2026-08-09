@@ -31,7 +31,7 @@ export function useWorkspaceActivityQuery(
 }
 
 export function useCanViewActivity() {
-  const { data: workspaces = [], isLoading } = useWorkspacesQuery();
+  const { data: workspaces = [], isLoading, isError, refetch } = useWorkspacesQuery();
   const currentWorkspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   const workspace = workspaces.find((item) => item.id === currentWorkspaceId);
   const canView = workspace?.role === 'OWNER' || workspace?.role === 'ADMIN';
@@ -39,6 +39,10 @@ export function useCanViewActivity() {
   return {
     canView,
     isLoading,
+    isError,
+    onRetry: () => {
+      void refetch();
+    },
     workspaceId: currentWorkspaceId,
   };
 }

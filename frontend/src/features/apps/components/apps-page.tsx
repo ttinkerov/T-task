@@ -18,7 +18,7 @@ const EMBED_TIMEOUT_MS = 8_000;
 export function AppsPage({ workspaceId }: { workspaceId: string }) {
   const { data: session } = useMeQuery();
   const { data: workspaces = [] } = useWorkspacesQuery();
-  const { data: apps = [], isLoading, error } = useExternalAppsQuery(workspaceId);
+  const { data: apps = [], isLoading, error, refetch } = useExternalAppsQuery(workspaceId);
   const createMutation = useCreateExternalAppMutation(workspaceId);
   const deleteMutation = useDeleteExternalAppMutation(workspaceId);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
@@ -101,6 +101,9 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
 
   const onIframeLoad = useCallback(() => setIframeState('ready'), []);
   const onIframeError = useCallback(() => setIframeState('blocked'), []);
+  const onRetry = useCallback(() => {
+    void refetch();
+  }, [refetch]);
 
   const listItems = useMemo(
     () =>
@@ -128,6 +131,7 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
       createPending: createMutation.isPending,
       createError: createMutation.error?.message ?? '',
       pageError: error?.message ?? '',
+      onRetry,
       items: listItems,
       selectedId: displayedAppId,
       pendingDeleteId,
@@ -160,6 +164,7 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
       createMutation.isPending,
       createMutation.error,
       error,
+      onRetry,
       listItems,
       displayedAppId,
       pendingDeleteId,

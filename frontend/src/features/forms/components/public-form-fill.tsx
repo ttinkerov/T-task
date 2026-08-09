@@ -6,7 +6,7 @@ import PublicFormFillView from '@/vue/forms/PublicFormFill.vue';
 import { usePublicFormQuery, useSubmitPublicFormMutation } from '../hooks';
 
 export function PublicFormFill({ token }: { token: string }) {
-  const { data: form, isLoading, isError } = usePublicFormQuery(token);
+  const { data: form, isLoading, isError, refetch } = usePublicFormQuery(token);
   const submitMutation = useSubmitPublicFormMutation(token);
 
   const onSubmit = useCallback(
@@ -24,8 +24,11 @@ export function PublicFormFill({ token }: { token: string }) {
       isPending: submitMutation.isPending,
       errorMessage: submitMutation.error?.message ?? '',
       onSubmit,
+      onRetry: () => {
+        void refetch();
+      },
     }),
-    [form, isLoading, isError, submitMutation.isPending, submitMutation.error, onSubmit],
+    [form, isLoading, isError, submitMutation.isPending, submitMutation.error, onSubmit, refetch],
   );
 
   return <VueIsland component={PublicFormFillView} componentProps={fillProps} />;

@@ -1,6 +1,8 @@
 <template>
   <div>
-    <p v-if="saveError" class="text-sm text-red-400">{{ saveError }}</p>
+    <p v-if="saveError || actionError" class="text-sm text-red-400" role="alert">
+      {{ actionError || saveError }}
+    </p>
 
     <div class="task-drawer__actions">
       <button type="button" class="btn-ghost" @click="onCopyLink?.()">
@@ -34,6 +36,7 @@ defineProps({
   isSaving: { type: Boolean, default: false },
   canSave: { type: Boolean, default: false },
   saveError: { type: String, default: '' },
+  actionError: { type: String, default: '' },
   linkCopied: { type: Boolean, default: false },
   duplicatePending: { type: Boolean, default: false },
   deletePending: { type: Boolean, default: false },

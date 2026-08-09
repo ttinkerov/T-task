@@ -2,7 +2,7 @@
   <div class="pomodoro-page">
     <header class="pomodoro-page__header">
       <div>
-        <h1 class="pomodoro-page__title">Pomodoro-таймер</h1>
+        <h1 class="pomodoro-page__title">Помодоро-таймер</h1>
         <p class="pomodoro-page__subtitle">
           Чередуйте периоды фокуса и отдыха. Настройте интервалы под себя — звуковой сигнал напомнит
           о переключении.
@@ -97,7 +97,7 @@
         </label>
 
         <p class="pomodoro-settings__tip">
-          Классический Pomodoro — 25 минут работы и 5 минут отдыха. После 4 циклов сделайте длинный
+          Классический Помодоро — 25 минут работы и 5 минут отдыха. После 4 циклов сделайте длинный
           перерыв.
         </p>
       </aside>

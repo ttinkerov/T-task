@@ -8,7 +8,7 @@ import { buildTaskCalendar, CalendarTask } from './utils/icalendar.util';
 
 const FEED_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const MAX_FEED_TASKS = 2000;
-const FEED_NOT_FOUND_MESSAGE = 'Calendar feed not found';
+const FEED_NOT_FOUND_MESSAGE = 'Календарная лента не найдена';
 
 function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');

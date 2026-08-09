@@ -7,6 +7,7 @@ import { successResponse } from '../../common/interfaces/api-response.interface'
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
 import {
   MENTION_SOURCE_MUTATE_RATE_LIMIT,
+  COMMENT_READ_RATE_LIMIT,
   RateLimit,
 } from '../../common/security/rate-limit.decorator';
 import { CommentsService } from './comments.service';
@@ -17,6 +18,8 @@ export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
   @Get()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(COMMENT_READ_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   async list(
     @Param('workspaceId') workspaceId: string,

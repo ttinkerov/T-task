@@ -13,8 +13,10 @@ import {
 import TaskDealsSectionView from '@/vue/boards/TaskDealsSection.vue';
 
 export function TaskDealsSection({ workspaceId, taskId }: { workspaceId: string; taskId: string }) {
-  const { data: links = [], isLoading } = useTaskDealsQuery(workspaceId, taskId);
-  const { data: funnels = [] } = useFunnelsQuery(workspaceId);
+  const dealsQuery = useTaskDealsQuery(workspaceId, taskId);
+  const funnelsQuery = useFunnelsQuery(workspaceId);
+  const links = dealsQuery.data ?? [];
+  const funnels = funnelsQuery.data ?? [];
   const [funnelId, setFunnelId] = useState('');
   const funnelQuery = useFunnelQuery(workspaceId, funnelId || null);
   const linkMutation = useLinkTaskDealMutation(workspaceId, taskId);
@@ -60,26 +62,44 @@ export function TaskDealsSection({ workspaceId, taskId }: { workspaceId: string;
     [unlinkMutation],
   );
 
+  const onRetry = useCallback(() => {
+    void dealsQuery.refetch();
+    void funnelsQuery.refetch();
+  }, [dealsQuery, funnelsQuery]);
+
+  const loadError =
+    dealsQuery.isError || funnelsQuery.isError
+      ? dealsQuery.error instanceof Error
+        ? dealsQuery.error.message
+        : funnelsQuery.error instanceof Error
+          ? funnelsQuery.error.message
+          : 'Не удалось загрузить сделки'
+      : '';
+
   const viewProps = useMemo(
     () => ({
       links: linkRows,
       funnels,
       dealOptions,
       funnelId,
-      isLoading,
+      isLoading: dealsQuery.isLoading || funnelsQuery.isLoading,
+      loadError,
       linkPending: linkMutation.isPending,
       unlinkPending: unlinkMutation.isPending,
       error: (linkMutation.error ?? unlinkMutation.error)?.message ?? '',
       onFunnelSelect,
       onLink,
       onUnlink,
+      onRetry,
     }),
     [
       linkRows,
       funnels,
       dealOptions,
       funnelId,
-      isLoading,
+      dealsQuery.isLoading,
+      funnelsQuery.isLoading,
+      loadError,
       linkMutation.isPending,
       linkMutation.error,
       unlinkMutation.isPending,
@@ -87,6 +107,7 @@ export function TaskDealsSection({ workspaceId, taskId }: { workspaceId: string;
       onFunnelSelect,
       onLink,
       onUnlink,
+      onRetry,
     ],
   );
 

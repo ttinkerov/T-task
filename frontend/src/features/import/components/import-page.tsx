@@ -10,6 +10,7 @@ import { mapPriority } from '../lib/map-priority';
 import { parseJiraCsv } from '../lib/parse-csv';
 import { suggestColumnMappings } from '../lib/suggest-mappings';
 import type { ImportColumnMapping, ImportTasksResult, ParsedCsvFile } from '../types';
+import { PRIORITY_LABELS } from '@/features/boards/types';
 
 const CREATE_NEW = '__create_new__';
 
@@ -38,13 +39,16 @@ export function ImportPage({ workspaceId }: { workspaceId: string }) {
 
   const previewRows = useMemo(
     () =>
-      (parsed?.rows.slice(0, 8) ?? []).map((row) => ({
-        title: row.title,
-        status: row.status,
-        priority: mapPriority(row.priorityRaw) ?? '—',
-        assignee: row.assignee || '—',
-        labels: row.labels.join(', ') || '—',
-      })),
+      (parsed?.rows.slice(0, 8) ?? []).map((row) => {
+        const priority = mapPriority(row.priorityRaw);
+        return {
+          title: row.title,
+          status: row.status,
+          priority: priority ? PRIORITY_LABELS[priority] : '—',
+          assignee: row.assignee || '—',
+          labels: row.labels.join(', ') || '—',
+        };
+      }),
     [parsed],
   );
 
@@ -142,6 +146,11 @@ export function ImportPage({ workspaceId }: { workspaceId: string }) {
       statusCount: parsed?.statuses.length ?? 0,
       showWizard: Boolean(parsed && parsed.rows.length > 0),
       boardLoading: boardQuery.isLoading,
+      boardError: boardQuery.isError
+        ? boardQuery.error instanceof Error
+          ? boardQuery.error.message
+          : 'Не удалось загрузить доску'
+        : '',
       mappings,
       columns,
       createNewValue: CREATE_NEW,
@@ -156,12 +165,18 @@ export function ImportPage({ workspaceId }: { workspaceId: string }) {
       onFileSelect,
       onUpdateMapping,
       onImport,
+      onRetryBoard: () => {
+        void boardQuery.refetch();
+      },
     }),
     [
       fileName,
       parseError,
       parsed,
       boardQuery.isLoading,
+      boardQuery.isError,
+      boardQuery.error,
+      boardQuery.refetch,
       mappings,
       columns,
       previewRows,

@@ -4,8 +4,13 @@
 
     <p v-if="isLoading">Загрузка...</p>
 
+    <p v-else-if="isError" class="dod-page__error" role="alert">
+      {{ loadError || 'Не удалось загрузить шаблоны.' }}
+      <button type="button" class="board-filters__chip" @click="onRetry?.()">Повторить</button>
+    </p>
+
     <p v-else-if="templates.length === 0" class="dod-page__empty">
-      Пока нет шаблонов DoD.
+      Пока нет шаблонов критериев готовности.
     </p>
 
     <ul class="dod-page__list">
@@ -27,7 +32,7 @@
               type="checkbox"
               :checked="template.gatesCompletion"
               :disabled="pendingId === template.id"
-              @change="onToggle(template.id, $event)"
+              @change="handleToggle(template.id, $event)"
             />
             Блокировать «Готово»
           </label>
@@ -35,7 +40,7 @@
             type="button"
             class="btn-ghost"
             :disabled="pendingId === template.id"
-            @click="emit('delete', template.id)"
+            @click="onDelete?.(template.id)"
           >
             Удалить
           </button>
@@ -49,18 +54,21 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   templates: { type: Array, required: true },
   isLoading: { type: Boolean, default: false },
+  isError: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
   canManage: { type: Boolean, default: false },
   pendingId: { type: String, default: null },
   deleteError: { type: String, default: '' },
   updateError: { type: String, default: '' },
+  onToggleGate: { type: Function, default: null },
+  onDelete: { type: Function, default: null },
+  onRetry: { type: Function, default: null },
 })
 
-const emit = defineEmits(['toggle-gate', 'delete'])
-
-function onToggle(templateId, event) {
-  emit('toggle-gate', { templateId, gatesCompletion: event.target.checked })
+function handleToggle(templateId, event) {
+  props.onToggleGate?.({ templateId, gatesCompletion: event.target.checked })
 }
 </script>
