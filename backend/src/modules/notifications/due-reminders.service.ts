@@ -205,8 +205,13 @@ export class DueRemindersService implements OnModuleInit, OnModuleDestroy {
       }
       const result = await client.set(TICK_LOCK_KEY, '1', 'EX', TICK_LOCK_TTL_SECONDS, 'NX');
       return result === 'OK';
-    } catch {
-      return true;
+    } catch (error) {
+      this.logger.warn(
+        `Due-reminder lock unavailable, skipping tick: ${
+          error instanceof Error ? error.message : 'unknown'
+        }`,
+      );
+      return false;
     }
   }
 }

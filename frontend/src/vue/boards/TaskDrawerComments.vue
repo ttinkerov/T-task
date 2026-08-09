@@ -6,6 +6,10 @@
     </h3>
 
     <p v-if="loading" class="text-sm text-muted-foreground">Загрузка...</p>
+    <div v-else-if="loadError" class="task-drawer__comments-error" role="alert">
+      <p>{{ loadError }}</p>
+      <button type="button" class="btn-ghost" @click="onRetryLoad?.()">Повторить</button>
+    </div>
     <p v-else-if="comments.length === 0" class="text-sm text-muted-foreground">
       Пока нет комментариев
     </p>
@@ -29,6 +33,8 @@
         </p>
       </li>
     </ul>
+
+    <p v-if="actionError" class="task-drawer__comments-error" role="alert">{{ actionError }}</p>
 
     <form class="task-drawer__comment-form" @submit.prevent="submit">
       <MentionTextarea
@@ -61,6 +67,8 @@ import MentionTextarea from '../mentions/MentionTextarea.vue';
 
 const props = defineProps({
   loading: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
+  actionError: { type: String, default: '' },
   comments: { type: Array, default: () => [] },
   members: { type: Array, default: () => [] },
   commentBody: { type: String, default: '' },
@@ -74,6 +82,7 @@ const props = defineProps({
   onCommentBodyChange: { type: Function, default: null },
   onSubmit: { type: Function, default: null },
   onDelete: { type: Function, default: null },
+  onRetryLoad: { type: Function, default: null },
 });
 
 function submit() {

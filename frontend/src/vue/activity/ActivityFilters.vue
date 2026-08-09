@@ -8,8 +8,8 @@
         @change="emit('update-action', $event.target.value)"
       >
         <option value="">Все</option>
-        <option v-for="key in actionKeys" :key="key" :value="key">
-          {{ key }}
+        <option v-for="option in actionOptions" :key="option.value" :value="option.value">
+          {{ option.label }}
         </option>
       </select>
     </label>
@@ -41,7 +41,7 @@ defineProps({
   action: { type: String, default: '' },
   from: { type: String, default: '' },
   to: { type: String, default: '' },
-  actionKeys: { type: Array, required: true },
+  actionOptions: { type: Array, required: true },
 })
 
 const emit = defineEmits(['update-action', 'update-from', 'update-to'])

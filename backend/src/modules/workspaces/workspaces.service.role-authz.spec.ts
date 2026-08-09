@@ -3,6 +3,8 @@ import { WorkspaceRole } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WorkspacesService } from './workspaces.service';
 
+type Membership = { role: WorkspaceRole; userId: string };
+
 function makePrisma() {
   return {
     workspaceMember: {
@@ -14,8 +16,21 @@ function makePrisma() {
       findUnique: vi.fn(),
     },
     user: { findUnique: vi.fn() },
+    invitation: { findFirst: vi.fn(), findUnique: vi.fn() },
     $transaction: vi.fn(),
   };
+}
+
+function stubMembership(
+  service: WorkspacesService,
+  resolve: (workspaceId: string, userId: string) => Membership | Promise<Membership>,
+) {
+  vi.spyOn(
+    service as unknown as {
+      getMembership: (workspaceId: string, userId: string) => Promise<Membership>;
+    },
+    'getMembership',
+  ).mockImplementation(async (workspaceId, userId) => resolve(workspaceId, userId));
 }
 
 describe('WorkspacesService.updateMemberRole authz', () => {
@@ -31,10 +46,7 @@ describe('WorkspacesService.updateMemberRole authz', () => {
       { getClient: () => ({ get: vi.fn(), setex: vi.fn(), del: vi.fn() }) } as never,
     );
 
-    vi.spyOn(service as never, 'getMembership' as never).mockImplementation((async (
-      _workspaceId: string,
-      userId: string,
-    ) => {
+    stubMembership(service, async (_workspaceId, userId) => {
       if (userId === 'admin-user') {
         return { role: WorkspaceRole.ADMIN, userId: 'admin-user' };
       }
@@ -42,7 +54,7 @@ describe('WorkspacesService.updateMemberRole authz', () => {
         return { role: WorkspaceRole.OWNER, userId: 'owner-user' };
       }
       return { role: WorkspaceRole.MEMBER, userId };
-    }) as never);
+    });
   });
 
   it('forbids ADMIN from demoting an OWNER', async () => {
@@ -113,8 +125,6 @@ describe('WorkspacesService.createInvitation authz', () => {
 
   beforeEach(() => {
     prisma = makePrisma();
-    prisma.user = { findUnique: vi.fn() } as never;
-    prisma.invitation = { findFirst: vi.fn() } as never;
     service = new WorkspacesService(
       prisma as never,
       { record: vi.fn() } as never,
@@ -122,15 +132,12 @@ describe('WorkspacesService.createInvitation authz', () => {
       { getClient: () => ({ get: vi.fn(), setex: vi.fn(), del: vi.fn() }) } as never,
     );
 
-    vi.spyOn(service as never, 'getMembership' as never).mockImplementation((async (
-      _workspaceId: string,
-      userId: string,
-    ) => {
+    stubMembership(service, async (_workspaceId, userId) => {
       if (userId === 'admin-user') {
         return { role: WorkspaceRole.ADMIN, userId: 'admin-user' };
       }
       return { role: WorkspaceRole.OWNER, userId: 'owner-user' };
-    }) as never);
+    });
   });
 
   it('forbids ADMIN from inviting another ADMIN', async () => {
@@ -146,29 +153,23 @@ describe('WorkspacesService.createInvitation authz', () => {
 describe('WorkspacesService invitation lifecycle', () => {
   it('rejects accept when workspace is deleted or archived', async () => {
     const { NotFoundException } = await import('@nestjs/common');
-    const prisma = {
-      invitation: {
-        findUnique: vi.fn().mockResolvedValue({
-          id: 'inv-1',
-          workspaceId: 'ws-1',
-          email: 'a@x.com',
-          role: WorkspaceRole.MEMBER,
-          revokedAt: null,
-          acceptedAt: null,
-          expiresAt: new Date(Date.now() + 86_400_000),
-          workspace: {
-            id: 'ws-1',
-            name: 'Gone',
-            slug: 'gone',
-            deletedAt: new Date(),
-            archivedAt: null,
-          },
-        }),
+    const prisma = makePrisma();
+    prisma.invitation.findUnique.mockResolvedValue({
+      id: 'inv-1',
+      workspaceId: 'ws-1',
+      email: 'a@x.com',
+      role: WorkspaceRole.MEMBER,
+      revokedAt: null,
+      acceptedAt: null,
+      expiresAt: new Date(Date.now() + 86_400_000),
+      workspace: {
+        id: 'ws-1',
+        name: 'Gone',
+        slug: 'gone',
+        deletedAt: new Date(),
+        archivedAt: null,
       },
-      user: { findUnique: vi.fn() },
-      workspaceMember: { findUnique: vi.fn() },
-      $transaction: vi.fn(),
-    };
+    });
     const service = new WorkspacesService(
       prisma as never,
       { record: vi.fn() } as never,

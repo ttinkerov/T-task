@@ -30,7 +30,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
     if (payload.type !== 'access') {
-      throw new UnauthorizedException('Invalid access token type');
+      throw new UnauthorizedException('Неверный тип access-токена');
     }
 
     await this.accessTokenDeny.assertNotRevoked(payload);
@@ -38,7 +38,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.authUserCache.getActiveUser(payload.sub);
 
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Пользователь не найден');
     }
 
     return user;

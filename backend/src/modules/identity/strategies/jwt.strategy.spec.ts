@@ -1,5 +1,6 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { JwtPayload } from '../../../common/auth/interfaces/authenticated-user.interface';
 import { JwtStrategy } from './jwt.strategy';
 
 describe('JwtStrategy', () => {
@@ -19,15 +20,17 @@ describe('JwtStrategy', () => {
   });
 
   it('rejects non-access tokens', async () => {
-    await expect(
-      strategy.validate({
-        sub: 'u1',
-        email: 'a@b.c',
-        type: 'refresh',
-        jti: 'j1',
-        iat: 1,
-      }),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    const refreshLikePayload = {
+      sub: 'u1',
+      email: 'a@b.c',
+      type: 'refresh',
+      jti: 'j1',
+      iat: 1,
+    } as unknown as JwtPayload;
+
+    await expect(strategy.validate(refreshLikePayload)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 
   it('returns the cached active user after deny checks', async () => {

@@ -127,6 +127,27 @@ export const AI_RAG_REINDEX_RATE_LIMIT: RateLimitConfig = {
   includeWorkspaceId: true,
 };
 
+export const INVITATION_CREATE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'invitation:create',
+  windowSeconds: 60,
+  maxAttempts: 20,
+  includeWorkspaceId: true,
+};
+
+export const INVITATION_ACCEPT_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'invitation:accept',
+  windowSeconds: 60,
+  maxAttempts: 20,
+  includeRouteParam: 'token',
+};
+
+export const DEAL_MUTATE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'deal:mutate',
+  windowSeconds: 60,
+  maxAttempts: 60,
+  includeWorkspaceId: true,
+};
+
 export const EXPORT_RATE_LIMIT: RateLimitConfig = {
   keyPrefix: 'export:csv',
   windowSeconds: 60,
@@ -160,8 +181,64 @@ export const BOARD_GET_RATE_LIMIT: RateLimitConfig = {
   includeWorkspaceId: true,
 };
 
+export const BOARD_MUTATE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'board:mutate',
+  windowSeconds: 60,
+  maxAttempts: 60,
+  includeWorkspaceId: true,
+};
+
+export const TASK_MUTATE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'task:mutate',
+  windowSeconds: 60,
+  maxAttempts: 60,
+  includeWorkspaceId: true,
+};
+
 export const FUNNEL_GET_RATE_LIMIT: RateLimitConfig = {
   keyPrefix: 'funnel:get',
+  windowSeconds: 60,
+  maxAttempts: 60,
+  includeWorkspaceId: true,
+};
+
+export const FUNNEL_MUTATE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'funnel:mutate',
+  windowSeconds: 60,
+  maxAttempts: 60,
+  includeWorkspaceId: true,
+};
+
+export const FORM_MUTATE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'form:mutate',
+  windowSeconds: 60,
+  maxAttempts: 60,
+  includeWorkspaceId: true,
+};
+
+export const SPRINT_MUTATE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'sprint:mutate',
+  windowSeconds: 60,
+  maxAttempts: 30,
+  includeWorkspaceId: true,
+};
+
+export const SPRINT_READ_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'sprint:read',
+  windowSeconds: 60,
+  maxAttempts: 60,
+  includeWorkspaceId: true,
+};
+
+export const WORKSPACE_MUTATE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'workspace:mutate',
+  windowSeconds: 60,
+  maxAttempts: 30,
+  includeWorkspaceId: true,
+};
+
+export const WATCHER_MUTATE_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'watcher:mutate',
   windowSeconds: 60,
   maxAttempts: 60,
   includeWorkspaceId: true,

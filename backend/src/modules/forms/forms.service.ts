@@ -263,7 +263,7 @@ export class FormsService {
     });
 
     if (!form || form.workspace.deletedAt || form.workspace.archivedAt) {
-      throw new NotFoundException('Form not found');
+      throw new NotFoundException('Форма не найдена');
     }
 
     return {
@@ -291,7 +291,7 @@ export class FormsService {
     });
 
     if (!form || form.workspace.deletedAt || form.workspace.archivedAt) {
-      throw new NotFoundException('Form not found');
+      throw new NotFoundException('Форма не найдена');
     }
 
     await this.rateLimitService.consume(
@@ -392,7 +392,7 @@ export class FormsService {
 
     for (const key of Object.keys(answers)) {
       if (!allowedFieldIds.has(key)) {
-        throw new BadRequestException('Unknown form field in answers');
+        throw new BadRequestException('Неизвестное поле формы в ответах');
       }
     }
 
@@ -510,7 +510,7 @@ export class FormsService {
     });
 
     if (!form) {
-      throw new NotFoundException('Form not found');
+      throw new NotFoundException('Форма не найдена');
     }
 
     return form;
@@ -526,7 +526,7 @@ export class FormsService {
     });
 
     if (!field) {
-      throw new NotFoundException('Field not found');
+      throw new NotFoundException('Поле не найдено');
     }
 
     return field;

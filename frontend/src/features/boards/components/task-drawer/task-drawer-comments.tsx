@@ -23,10 +23,17 @@ export function TaskDrawerComments({
   const listboxId = useId();
   const { data: session } = useMeQuery();
   const { data: members = [] } = useMembersQuery(workspaceId);
-  const { data: comments = [], isLoading: commentsLoading } = useCommentsQuery(workspaceId, taskId);
+  const {
+    data: comments = [],
+    isLoading: commentsLoading,
+    isError: commentsError,
+    error: commentsLoadError,
+    refetch,
+  } = useCommentsQuery(workspaceId, taskId);
   const createCommentMutation = useCreateCommentMutation(workspaceId, taskId);
   const deleteCommentMutation = useDeleteCommentMutation(workspaceId, taskId);
   const [commentBody, setCommentBody] = useState('');
+  const [actionError, setActionError] = useState('');
 
   const memberOptions = useMemo(
     () =>
@@ -81,15 +88,31 @@ export function TaskDrawerComments({
     [canModerate, comments, namesById, session?.user.id],
   );
 
+  const loadError = commentsError
+    ? commentsLoadError instanceof Error
+      ? commentsLoadError.message
+      : 'Не удалось загрузить комментарии'
+    : '';
+
   const onSubmit = useCallback(async () => {
     if (!commentBody.trim()) return;
-    await createCommentMutation.mutateAsync(commentBody.trim());
-    setCommentBody('');
+    setActionError('');
+    try {
+      await createCommentMutation.mutateAsync(commentBody.trim());
+      setCommentBody('');
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Не удалось отправить комментарий');
+    }
   }, [commentBody, createCommentMutation]);
 
   const onDelete = useCallback(
-    (commentId: string) => {
-      deleteCommentMutation.mutate(commentId);
+    async (commentId: string) => {
+      setActionError('');
+      try {
+        await deleteCommentMutation.mutateAsync(commentId);
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Не удалось удалить комментарий');
+      }
     },
     [deleteCommentMutation],
   );
@@ -97,6 +120,8 @@ export function TaskDrawerComments({
   const viewProps = useMemo(
     () => ({
       loading: commentsLoading,
+      loadError,
+      actionError,
       comments: commentItems,
       members: memberOptions,
       commentBody,
@@ -110,9 +135,14 @@ export function TaskDrawerComments({
       onCommentBodyChange: setCommentBody,
       onSubmit,
       onDelete,
+      onRetryLoad: () => {
+        void refetch();
+      },
     }),
     [
       commentsLoading,
+      loadError,
+      actionError,
       commentItems,
       memberOptions,
       commentBody,
@@ -120,6 +150,7 @@ export function TaskDrawerComments({
       listboxId,
       onSubmit,
       onDelete,
+      refetch,
     ],
   );
 

@@ -24,7 +24,14 @@
       <button type="submit" :disabled="isCreating || !name.trim()">Добавить</button>
     </form>
 
+    <p v-if="actionError" class="tags-page__error" role="alert">{{ actionError }}</p>
+
     <p v-if="isLoading" role="status">Загрузка тегов...</p>
+
+    <div v-else-if="isError" role="alert">
+      <p class="tags-page__error">{{ loadError || 'Не удалось загрузить теги' }}</p>
+      <button type="button" class="btn-ghost" @click="onRetryLoad?.()">Повторить</button>
+    </div>
 
     <ul v-else class="tags-page__list" role="list">
       <li v-for="tag in tags" :key="tag.id">
@@ -37,7 +44,7 @@
       </li>
     </ul>
 
-    <p v-if="!isLoading && tags.length === 0" class="tags-page__empty">
+    <p v-if="!isLoading && !isError && tags.length === 0" class="tags-page__empty">
       Пока нет тегов — создайте первый выше.
     </p>
   </div>
@@ -50,33 +57,42 @@ import TagChip from './TagChip.vue'
 const props = defineProps({
   tags: { type: Array, required: true },
   isLoading: { type: Boolean, default: false },
+  isError: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
+  actionError: { type: String, default: '' },
   isCreating: { type: Boolean, default: false },
   colorOptions: { type: Array, required: true },
+  onRetryLoad: { type: Function, default: null },
+  onRename: { type: Function, default: null },
+  onDelete: { type: Function, default: null },
+  onCreate: { type: Function, default: null },
 })
-
-const emit = defineEmits(['rename', 'delete', 'create'])
 
 const name = ref('')
 const color = ref(props.colorOptions[4] || props.colorOptions[0])
 
-function onSubmit() {
+async function onSubmit() {
   const trimmed = name.value.trim()
   if (!trimmed) return
 
-  emit('create', { name: trimmed, color: color.value })
-  name.value = ''
+  try {
+    await props.onCreate?.({ name: trimmed, color: color.value })
+    name.value = ''
+  } catch {
+    /* surfaced via actionError */
+  }
 }
 
 function onRenameClick(tag) {
   const next = window.prompt('Новое название', tag.name)
   if (next && next.trim() && next.trim() !== tag.name) {
-    emit('rename', { tagId: tag.id, name: next.trim() })
+    void props.onRename?.({ tagId: tag.id, name: next.trim() })
   }
 }
 
 function onDeleteClick(tag) {
   if (window.confirm('Удалить тег «' + tag.name + '»?')) {
-    emit('delete', tag.id)
+    void props.onDelete?.(tag.id)
   }
 }
 </script>

@@ -4,7 +4,7 @@
 
 Kanban and CRM for small teams. Workspaces, boards, deals, forms, and notifications.
 
-**Stack:** Next.js, NestJS, Vue, Prisma, PostgreSQL, Redis
+**Stack:** Next.js (App Router) + Vue islands, NestJS, Prisma, PostgreSQL, Redis
 
 ## Features
 
@@ -16,7 +16,7 @@ Kanban and CRM for small teams. Workspaces, boards, deals, forms, and notificati
 - **Forms** — public forms → tasks / deals
 - **DoD / Templates** — checklists and card templates
 - **Analytics** — throughput, cycle time, workload
-- **Apps** — iCal calendar feed, import, AI assistant, trash
+- **Apps** — iCal calendar feed, import, AI assistant with RAG, trash
 - **Whiteboard** — drawing (tldraw), autosave per workspace
 
 ## Quick start
@@ -56,11 +56,13 @@ npm run dev:frontend  # :3000
 
 ```text
 T-task/
-├── frontend/                 # Next.js App Router
-├── backend/                  # NestJS API + Prisma
+├── frontend/                 # Next.js shell + Vue islands (UI)
+├── backend/                  # NestJS API + Prisma + jobs
 ├── docker-compose.yml        # local stack (dev)
 └── docker-compose.prod.yml   # production overlay
 ```
+
+Next.js is the app shell; Vue powers the interactive screens (`VueIsland`).
 
 ## Scripts
 
@@ -69,6 +71,9 @@ npm run dev:backend
 npm run dev:frontend
 npm run build
 npm run lint
+npm run typecheck
+npm run test
+npm run test:e2e:smoke
 npm run prisma:migrate -w backend
 ```
 

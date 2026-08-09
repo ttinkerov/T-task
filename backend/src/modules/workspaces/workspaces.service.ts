@@ -216,7 +216,7 @@ export class WorkspacesService {
     const membership = await this.getMembership(workspaceId, userId);
 
     if (membership.role !== WorkspaceRole.OWNER) {
-      throw new ForbiddenException('Only workspace owner can delete workspace');
+      throw new ForbiddenException('Только владелец может удалить рабочее пространство');
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -284,14 +284,14 @@ export class WorkspacesService {
       actorMembership.role !== WorkspaceRole.OWNER &&
       actorMembership.role !== WorkspaceRole.ADMIN
     ) {
-      throw new ForbiddenException('Insufficient permissions to change scopes');
+      throw new ForbiddenException('Недостаточно прав для изменения scopes');
     }
 
     const targetMember = await this.prisma.workspaceMember.findFirst({
       where: { id: memberId, workspaceId },
     });
     if (!targetMember) {
-      throw new NotFoundException('Member not found');
+      throw new NotFoundException('Участник не найден');
     }
 
     const allowed = new Set(['CRM_WRITE', 'FORMS_WRITE', 'TASK_DELETE', 'DEAL_DELETE']);
@@ -327,7 +327,7 @@ export class WorkspacesService {
       actorMembership.role !== WorkspaceRole.OWNER &&
       actorMembership.role !== WorkspaceRole.ADMIN
     ) {
-      throw new ForbiddenException('Insufficient permissions to change roles');
+      throw new ForbiddenException('Недостаточно прав для изменения ролей');
     }
 
     const targetMember = await this.prisma.workspaceMember.findFirst({
@@ -335,21 +335,21 @@ export class WorkspacesService {
     });
 
     if (!targetMember) {
-      throw new NotFoundException('Member not found');
+      throw new NotFoundException('Участник не найден');
     }
 
     if (targetMember.role === WorkspaceRole.OWNER && actorMembership.role !== WorkspaceRole.OWNER) {
-      throw new ForbiddenException('Only owner can change another owner role');
+      throw new ForbiddenException('Только владелец может менять роль другого владельца');
     }
 
     if (targetMember.role === WorkspaceRole.ADMIN && actorMembership.role !== WorkspaceRole.OWNER) {
-      throw new ForbiddenException('Only owner can change an admin role');
+      throw new ForbiddenException('Только владелец может менять роль администратора');
     }
 
     try {
       assertCanAssignRole(actorMembership.role, dto.role);
     } catch {
-      throw new ForbiddenException('You cannot assign this role');
+      throw new ForbiddenException('Вы не можете назначить эту роль');
     }
 
     if (targetMember.role === WorkspaceRole.OWNER && dto.role !== WorkspaceRole.OWNER) {
@@ -442,7 +442,7 @@ export class WorkspacesService {
       actorMembership.role !== WorkspaceRole.OWNER &&
       actorMembership.role !== WorkspaceRole.ADMIN
     ) {
-      throw new ForbiddenException('Insufficient permissions to remove members');
+      throw new ForbiddenException('Недостаточно прав для удаления участников');
     }
 
     const targetMember = await this.prisma.workspaceMember.findFirst({
@@ -455,11 +455,11 @@ export class WorkspacesService {
     });
 
     if (!targetMember) {
-      throw new NotFoundException('Member not found');
+      throw new NotFoundException('Участник не найден');
     }
 
     if (targetMember.role === WorkspaceRole.OWNER && actorMembership.role !== WorkspaceRole.OWNER) {
-      throw new ForbiddenException('Only owner can remove another owner');
+      throw new ForbiddenException('Только владелец может удалить другого владельца');
     }
 
     if (targetMember.role === WorkspaceRole.OWNER) {
@@ -553,13 +553,13 @@ export class WorkspacesService {
     const role = dto.role ?? WorkspaceRole.MEMBER;
 
     if (role === WorkspaceRole.OWNER) {
-      throw new BadRequestException('Cannot invite with owner role');
+      throw new BadRequestException('Нельзя пригласить с ролью владельца');
     }
 
     try {
       assertCanAssignRole(actorMembership.role, role);
     } catch {
-      throw new ForbiddenException('You cannot invite with this role');
+      throw new ForbiddenException('Вы не можете пригласить с этой ролью');
     }
 
     const existingMember = await this.prisma.user.findUnique({
@@ -572,7 +572,7 @@ export class WorkspacesService {
     });
 
     if (existingMember?.memberships.length) {
-      throw new ConflictException('User is already a workspace member');
+      throw new ConflictException('Пользователь уже участник пространства');
     }
 
     const activeInvite = await this.prisma.invitation.findFirst({
@@ -586,7 +586,7 @@ export class WorkspacesService {
     });
 
     if (activeInvite) {
-      throw new ConflictException('Active invitation already exists for this email');
+      throw new ConflictException('Активное приглашение для этого email уже есть');
     }
 
     const rawToken = generateRefreshToken();
@@ -652,7 +652,7 @@ export class WorkspacesService {
     });
 
     if (!invitation) {
-      throw new NotFoundException('Invitation not found');
+      throw new NotFoundException('Приглашение не найдено');
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -696,11 +696,11 @@ export class WorkspacesService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
     if (!user || user.deletedAt) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('Пользователь не найден');
     }
 
     if (user.email.toLowerCase() !== invitation.email.toLowerCase()) {
-      throw new ForbiddenException('Invitation email does not match your account');
+      throw new ForbiddenException('Email приглашения не совпадает с вашим аккаунтом');
     }
 
     const existingMembership = await this.prisma.workspaceMember.findUnique({
@@ -713,7 +713,7 @@ export class WorkspacesService {
     });
 
     if (existingMembership) {
-      throw new ConflictException('You are already a member of this workspace');
+      throw new ConflictException('Вы уже участник этого пространства');
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -728,7 +728,7 @@ export class WorkspacesService {
       });
 
       if (claimed.count !== 1) {
-        throw new NotFoundException('Invitation not found or expired');
+        throw new NotFoundException('Приглашение не найдено или истекло');
       }
 
       const workspace = await tx.workspace.findFirst({
@@ -740,7 +740,7 @@ export class WorkspacesService {
       });
 
       if (!workspace) {
-        throw new NotFoundException('Invitation not found or expired');
+        throw new NotFoundException('Приглашение не найдено или истекло');
       }
 
       const membership = await tx.workspaceMember.create({
@@ -799,7 +799,7 @@ export class WorkspacesService {
       invitation.workspace.deletedAt ||
       invitation.workspace.archivedAt
     ) {
-      throw new NotFoundException('Invitation not found or expired');
+      throw new NotFoundException('Приглашение не найдено или истекло');
     }
 
     return invitation;
@@ -809,7 +809,7 @@ export class WorkspacesService {
     const membership = await this.getMembership(workspaceId, userId);
 
     if (membership.role !== WorkspaceRole.OWNER && membership.role !== WorkspaceRole.ADMIN) {
-      throw new ForbiddenException('Insufficient permissions to manage invitations');
+      throw new ForbiddenException('Недостаточно прав для управления приглашениями');
     }
 
     return membership;
@@ -879,7 +879,7 @@ export class WorkspacesService {
     });
 
     if (!membership || membership.workspace.deletedAt) {
-      throw new NotFoundException('Workspace not found');
+      throw new NotFoundException('Рабочее пространство не найдено');
     }
 
     this.assertMembershipUsable(membership);
@@ -894,11 +894,11 @@ export class WorkspacesService {
     };
   }) {
     if (membership.workspace.deletedAt) {
-      throw new NotFoundException('Workspace not found');
+      throw new NotFoundException('Рабочее пространство не найдено');
     }
     if (membership.workspace.archivedAt) {
       if (membership.role !== WorkspaceRole.OWNER && membership.role !== WorkspaceRole.ADMIN) {
-        throw new ForbiddenException('Workspace is archived');
+        throw new ForbiddenException('Рабочее пространство в архиве');
       }
     }
   }
@@ -909,7 +909,7 @@ export class WorkspacesService {
     });
 
     if (ownerCount <= 1) {
-      throw new BadRequestException('Workspace must have at least one owner');
+      throw new BadRequestException('В рабочем пространстве должен остаться хотя бы один владелец');
     }
   }
 

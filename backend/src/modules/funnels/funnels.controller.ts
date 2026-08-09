@@ -15,7 +15,11 @@ import { ALL_WORKSPACE_ROLES, MEMBER_PLUS_ROLES } from '../../common/auth/worksp
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
-import { FUNNEL_GET_RATE_LIMIT, RateLimit } from '../../common/security/rate-limit.decorator';
+import {
+  FUNNEL_GET_RATE_LIMIT,
+  FUNNEL_MUTATE_RATE_LIMIT,
+  RateLimit,
+} from '../../common/security/rate-limit.decorator';
 import { CreateFunnelDto } from './dto/create-funnel.dto';
 import { CreateStageDto } from './dto/create-stage.dto';
 import { ListStageDealsQueryDto } from './dto/list-stage-deals-query.dto';
@@ -45,6 +49,8 @@ export class FunnelsController {
   }
 
   @Post()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FUNNEL_MUTATE_RATE_LIMIT)
   @Roles(...MEMBER_PLUS_ROLES)
   async createFunnel(
     @Param('workspaceId') workspaceId: string,
@@ -91,6 +97,8 @@ export class FunnelsController {
   }
 
   @Post(':funnelId/stages')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FUNNEL_MUTATE_RATE_LIMIT)
   @Roles(...MEMBER_PLUS_ROLES)
   async createStage(
     @Param('workspaceId') workspaceId: string,
@@ -103,6 +111,8 @@ export class FunnelsController {
   }
 
   @Patch(':funnelId/stages/:stageId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FUNNEL_MUTATE_RATE_LIMIT)
   @Roles(...MEMBER_PLUS_ROLES)
   async updateStage(
     @Param('workspaceId') workspaceId: string,
@@ -122,6 +132,8 @@ export class FunnelsController {
   }
 
   @Patch(':funnelId/stages/:stageId/move')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FUNNEL_MUTATE_RATE_LIMIT)
   @Roles(...MEMBER_PLUS_ROLES)
   async moveStage(
     @Param('workspaceId') workspaceId: string,
@@ -135,6 +147,8 @@ export class FunnelsController {
   }
 
   @Delete(':funnelId/stages/:stageId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FUNNEL_MUTATE_RATE_LIMIT)
   @Roles(...MEMBER_PLUS_ROLES)
   async deleteStage(
     @Param('workspaceId') workspaceId: string,

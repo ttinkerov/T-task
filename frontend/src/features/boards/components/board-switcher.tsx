@@ -50,6 +50,7 @@ export function BoardSwitcher({
   const updateMutation = useUpdateBoardMutation(workspaceId);
   const deleteMutation = useDeleteBoardMutation(workspaceId);
   const [templates, setTemplates] = useState<BoardTemplate[]>([]);
+  const [templatesError, setTemplatesError] = useState('');
 
   useEffect(() => {
     if (!boards.length) return;
@@ -66,9 +67,15 @@ export function BoardSwitcher({
   }, [boardId, boards, onBoardChange, preferredBoardId, workspaceId]);
 
   const onRequestTemplates = useCallback(() => {
+    setTemplatesError('');
     void fetchBoardTemplates(workspaceId)
       .then((response) => setTemplates(response.data ?? []))
-      .catch(() => setTemplates([]));
+      .catch((err) => {
+        setTemplates([]);
+        setTemplatesError(
+          err instanceof Error ? err.message : 'Не удалось загрузить шаблоны досок',
+        );
+      });
   }, [workspaceId]);
 
   const onCreate = useCallback(
@@ -99,6 +106,7 @@ export function BoardSwitcher({
     createMutation.error?.message ??
     updateMutation.error?.message ??
     deleteMutation.error?.message ??
+    templatesError ??
     '';
 
   const viewProps = useMemo(

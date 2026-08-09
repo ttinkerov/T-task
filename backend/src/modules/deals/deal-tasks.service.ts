@@ -105,7 +105,7 @@ export class DealTasksService {
       where: { dealId_taskId: { dealId, taskId } },
     });
     if (existing) {
-      throw new ConflictException('Deal is already linked to this task');
+      throw new ConflictException('Сделка уже связана с этой задачей');
     }
 
     try {
@@ -126,7 +126,7 @@ export class DealTasksService {
       };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('Deal is already linked to this task');
+        throw new ConflictException('Сделка уже связана с этой задачей');
       }
       throw error;
     }
@@ -137,7 +137,7 @@ export class DealTasksService {
       where: { dealId, taskId },
     });
     if (deleted.count === 0) {
-      throw new NotFoundException('Deal-task link not found');
+      throw new NotFoundException('Связь сделки и задачи не найдена');
     }
     return { success: true };
   }
@@ -155,7 +155,7 @@ export class DealTasksService {
     });
 
     if (!deal) {
-      throw new NotFoundException('Deal not found');
+      throw new NotFoundException('Сделка не найдена');
     }
 
     return deal;
@@ -174,7 +174,7 @@ export class DealTasksService {
     });
 
     if (!task) {
-      throw new NotFoundException('Task not found');
+      throw new NotFoundException('Задача не найдена');
     }
 
     return task;

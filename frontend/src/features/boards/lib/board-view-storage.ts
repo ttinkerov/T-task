@@ -18,7 +18,7 @@ export function readStoredViewPrefs(workspaceId: string): {
       normalizeCalendarRange(storedRange) ?? calendarRangeFromStoredView(stored) ?? 'WEEK';
     return { mode, calendarRange };
   } catch (error) {
-    console.warn('Unable to read the saved board view mode', error);
+    console.warn('Не удалось прочитать сохранённый режим доски', error);
     return { mode: 'BOARD', calendarRange: 'WEEK' };
   }
 }
@@ -27,7 +27,7 @@ export function storeViewMode(workspaceId: string, mode: BoardViewMode) {
   try {
     window.localStorage.setItem(`ttask:view-mode:${workspaceId}`, mode);
   } catch (error) {
-    console.warn('Unable to save the board view mode', error);
+    console.warn('Не удалось сохранить режим доски', error);
   }
 }
 
@@ -35,6 +35,6 @@ export function storeCalendarRange(workspaceId: string, range: CalendarRange) {
   try {
     window.localStorage.setItem(`ttask:calendar-range:${workspaceId}`, range);
   } catch (error) {
-    console.warn('Unable to save the calendar range', error);
+    console.warn('Не удалось сохранить диапазон календаря', error);
   }
 }

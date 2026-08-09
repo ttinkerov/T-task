@@ -1,6 +1,6 @@
 'use client';
 
-import { RefObject, useCallback, useMemo } from 'react';
+import { RefObject, useCallback, useMemo, useState } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import KanbanColumnHeaderView from '@/vue/boards/KanbanColumnHeader.vue';
 import { useDeleteColumnMutation, useUpdateColumnMutation } from '../../hooks';
@@ -29,6 +29,7 @@ export function KanbanColumnHeader({
 }) {
   const updateColumnMutation = useUpdateColumnMutation(workspaceId, boardId);
   const deleteColumnMutation = useDeleteColumnMutation(workspaceId, boardId);
+  const [actionError, setActionError] = useState('');
 
   const countLabel = column.wipLimit
     ? `${column.tasks.length}/${column.wipLimit}`
@@ -40,7 +41,13 @@ export function KanbanColumnHeader({
     async (raw: string) => {
       const next = raw.trim();
       if (!next || next === column.name) return;
-      await updateColumnMutation.mutateAsync({ columnId: column.id, name: next });
+      setActionError('');
+      try {
+        await updateColumnMutation.mutateAsync({ columnId: column.id, name: next });
+      } catch (error) {
+        setActionError(error instanceof Error ? error.message : 'Не удалось переименовать колонку');
+        throw error;
+      }
     },
     [column.id, column.name, updateColumnMutation],
   );
@@ -51,7 +58,12 @@ export function KanbanColumnHeader({
       const next = trimmed === '' ? null : Number(trimmed);
       if (next !== null && (!Number.isInteger(next) || next < 1)) return;
       if (next === (column.wipLimit ?? null)) return;
-      await updateColumnMutation.mutateAsync({ columnId: column.id, wipLimit: next });
+      setActionError('');
+      try {
+        await updateColumnMutation.mutateAsync({ columnId: column.id, wipLimit: next });
+      } catch (error) {
+        setActionError(error instanceof Error ? error.message : 'Не удалось обновить WIP');
+      }
     },
     [column.id, column.wipLimit, updateColumnMutation],
   );
@@ -62,7 +74,12 @@ export function KanbanColumnHeader({
         ? `Удалить колонку «${column.name}» вместе с ${column.tasks.length} задачами?`
         : `Удалить колонку «${column.name}»?`;
     if (!window.confirm(message)) return;
-    await deleteColumnMutation.mutateAsync(column.id);
+    setActionError('');
+    try {
+      await deleteColumnMutation.mutateAsync(column.id);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Не удалось удалить колонку');
+    }
   }, [column.id, column.name, column.tasks.length, deleteColumnMutation]);
 
   const viewProps = useMemo(
@@ -128,6 +145,12 @@ export function KanbanColumnHeader({
         >
           ×
         </button>
+      ) : null}
+
+      {actionError ? (
+        <p className="kanban-column__error" role="alert">
+          {actionError}
+        </p>
       ) : null}
     </div>
   );

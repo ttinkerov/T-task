@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
 import { Scopes } from '../../common/auth/decorators/scopes.decorator';
@@ -6,6 +6,8 @@ import { WorkspaceScope } from '../../common/auth/scopes';
 import { ALL_WORKSPACE_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
+import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
+import { DEAL_MUTATE_RATE_LIMIT, RateLimit } from '../../common/security/rate-limit.decorator';
 import { ApplyDealTemplateDto } from '../templates/dto/apply-deal-template.dto';
 import { CreateDealDto } from './dto/create-deal.dto';
 import { MoveDealDto } from './dto/move-deal.dto';
@@ -13,6 +15,8 @@ import { UpdateDealDto } from './dto/update-deal.dto';
 import { DealsService } from './deals.service';
 
 @Controller('workspaces/:workspaceId/deals')
+@UseGuards(AuthRateLimitGuard)
+@RateLimit(DEAL_MUTATE_RATE_LIMIT)
 export class DealsController {
   constructor(private readonly dealsService: DealsService) {}
 

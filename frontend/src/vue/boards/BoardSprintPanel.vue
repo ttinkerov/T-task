@@ -34,13 +34,15 @@
       <button type="submit" class="btn-primary" :disabled="createPending">Создать</button>
     </form>
 
+    <p v-if="actionError" class="board-sprint-panel__error" role="alert">{{ actionError }}</p>
+
     <p v-if="activePoints" class="board-sprint-panel__meta board-sprint-panel__meta--points">
       Очки: {{ activePoints.completedPoints }} / {{ activePoints.committedPoints }} SP{{
         velocityLabel
       }}
     </p>
 
-    <div v-if="burndownChart" class="board-sprint-panel__chart" aria-label="Burndown">
+    <div v-if="burndownChart" class="board-sprint-panel__chart" aria-label="Сгорание">
       <svg :viewBox="burndownChart.viewBox" role="img">
         <polyline
           fill="none"
@@ -58,8 +60,12 @@
       <p class="board-sprint-panel__meta">{{ burndownChart.meta }}</p>
     </div>
 
-    <div v-if="velocityBars.length" class="board-sprint-panel__velocity" aria-label="Velocity">
-      <p class="board-sprint-panel__eyebrow">Velocity</p>
+    <div
+      v-if="velocityBars.length"
+      class="board-sprint-panel__velocity"
+      aria-label="Скорость команды"
+    >
+      <p class="board-sprint-panel__eyebrow">Скорость</p>
       <div class="board-sprint-panel__bars">
         <div
           v-for="bar in velocityBars"
@@ -96,6 +102,7 @@ const props = defineProps({
   averageVelocity: { type: Number, default: 0 },
   createPending: { type: Boolean, default: false },
   closePending: { type: Boolean, default: false },
+  actionError: { type: String, default: '' },
   onCreate: { type: Function, default: null },
   onCloseSprint: { type: Function, default: null },
 })
@@ -106,25 +113,29 @@ const startDate = ref('')
 const endDate = ref('')
 
 const velocityLabel = computed(() =>
-  props.averageVelocity > 0 ? ` · velocity ${props.averageVelocity}` : '',
+  props.averageVelocity > 0 ? ` · скорость ${props.averageVelocity}` : '',
 )
 
 const velocityAverageLabel = computed(() =>
   props.averageVelocity > 0
-    ? `Средняя velocity по закрытым спринтам: ${props.averageVelocity} SP`
-    : 'Средняя velocity по закрытым спринтам: —',
+    ? `Средняя скорость по закрытым спринтам: ${props.averageVelocity} SP`
+    : 'Средняя скорость по закрытым спринтам: —',
 )
 
 async function submitCreate() {
   if (!name.value.trim() || !startDate.value || !endDate.value) return
-  await props.onCreate?.({
-    name: name.value.trim(),
-    startDate: startDate.value,
-    endDate: endDate.value,
-  })
-  formOpen.value = false
-  name.value = ''
-  startDate.value = ''
-  endDate.value = ''
+  try {
+    await props.onCreate?.({
+      name: name.value.trim(),
+      startDate: startDate.value,
+      endDate: endDate.value,
+    })
+    formOpen.value = false
+    name.value = ''
+    startDate.value = ''
+    endDate.value = ''
+  } catch {
+    /* surfaced via actionError */
+  }
 }
 </script>

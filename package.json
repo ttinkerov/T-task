@@ -13,6 +13,8 @@
     "dev:frontend": "npm run dev -w frontend",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck -w backend && npm run typecheck -w frontend",
+    "test": "npm run test -w backend && npm run test -w frontend",
     "test:e2e": "npm run test:e2e -w frontend",
     "test:e2e:smoke": "npm run test:e2e:smoke -w frontend",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml,css}\"",

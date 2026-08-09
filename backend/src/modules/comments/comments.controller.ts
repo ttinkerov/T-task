@@ -42,6 +42,8 @@ export class CommentsController {
   }
 
   @Delete(':commentId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(MENTION_SOURCE_MUTATE_RATE_LIMIT)
   @Roles(...MEMBER_PLUS_ROLES)
   async remove(
     @Param('workspaceId') workspaceId: string,

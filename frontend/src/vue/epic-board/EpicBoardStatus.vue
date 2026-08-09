@@ -1,5 +1,9 @@
 <template>
   <p v-if="status === 'loading-epics'" class="text-sm text-muted-foreground">Загружаем эпики…</p>
+  <div v-else-if="status === 'load-error'" role="alert">
+    <p class="epic-board__error">{{ loadError || 'Не удалось загрузить доску эпиков' }}</p>
+    <button type="button" class="btn-ghost" @click="onRetryLoad?.()">Повторить</button>
+  </div>
   <p v-else-if="status === 'no-epics'" class="epic-board__empty">
     Отметьте задачу как эпик в карточке — здесь появятся её стикеры.
   </p>
@@ -23,5 +27,7 @@ defineProps({
   boardName: { type: String, default: '' },
   foreignCount: { type: Number, default: 0 },
   moveError: { type: String, default: '' },
+  loadError: { type: String, default: '' },
+  onRetryLoad: { type: Function, default: null },
 })
 </script>

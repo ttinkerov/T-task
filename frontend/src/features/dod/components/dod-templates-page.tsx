@@ -99,7 +99,7 @@ export function DodTemplatesPage({ workspaceId }: { workspaceId: string }) {
   return (
     <div className="dod-page">
       <header className="dod-page__header">
-        <h1>Definition of Done</h1>
+        <h1>Критерии готовности</h1>
         <p>
           Шаблоны чеклистов для задач. Обязательные пункты блокируют перенос в «Готово», пока не
           отмечены.

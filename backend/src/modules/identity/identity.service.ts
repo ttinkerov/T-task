@@ -66,7 +66,7 @@ export class IdentityService {
     });
 
     if (existingUser) {
-      throw new ConflictException('Email is already registered');
+      throw new ConflictException('Email уже зарегистрирован');
     }
 
     const passwordHash = await argon2.hash(dto.password);
@@ -100,13 +100,13 @@ export class IdentityService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Неверный email или пароль');
     }
 
     const passwordValid = await argon2.verify(user.passwordHash, dto.password);
 
     if (!passwordValid) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Неверный email или пароль');
     }
 
     const tokens = await this.issueTokens(user.id, user.email, request);
@@ -124,7 +124,7 @@ export class IdentityService {
     const refreshToken = request.cookies?.[REFRESH_TOKEN_COOKIE] as string | undefined;
 
     if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token is missing');
+      throw new UnauthorizedException('Отсутствует refresh-токен');
     }
 
     const tokenHash = hashToken(refreshToken);
@@ -136,20 +136,20 @@ export class IdentityService {
     });
 
     if (!session) {
-      throw new UnauthorizedException('Refresh token is invalid or expired');
+      throw new UnauthorizedException('Refresh-токен недействителен или истёк');
     }
 
     if (session.revokedAt) {
       await this.revokeRefreshFamily(session.familyId);
-      throw new UnauthorizedException('Refresh token is invalid or expired');
+      throw new UnauthorizedException('Refresh-токен недействителен или истёк');
     }
 
     if (session.expiresAt < new Date()) {
-      throw new UnauthorizedException('Refresh token is invalid or expired');
+      throw new UnauthorizedException('Refresh-токен недействителен или истёк');
     }
 
     if (session.user.deletedAt) {
-      throw new UnauthorizedException('User is not available');
+      throw new UnauthorizedException('Пользователь недоступен');
     }
 
     const revoked = await this.prisma.refreshSession.updateMany({
@@ -164,7 +164,7 @@ export class IdentityService {
 
     if (revoked.count === 0) {
       await this.revokeRefreshFamily(session.familyId);
-      throw new UnauthorizedException('Refresh token is invalid or expired');
+      throw new UnauthorizedException('Refresh-токен недействителен или истёк');
     }
 
     const tokens = await this.issueTokens(
@@ -233,7 +233,7 @@ export class IdentityService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Пользователь не найден');
     }
 
     const workspaces = await this.workspacesService.listForUser(userId);

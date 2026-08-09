@@ -46,7 +46,11 @@ export function NotificationBell({ workspaceId }: { workspaceId: string | null }
       const notification = inbox.items.find((item) => item.id === notificationId);
       if (!notification) return;
       if (!notification.read) {
-        await markReadMutation.mutateAsync(notification.id);
+        try {
+          await markReadMutation.mutateAsync(notification.id);
+        } catch {
+          /* navigation is more important than mark-read */
+        }
       }
       setOpen(false);
       router.push(`/dashboard/board?task=${encodeURIComponent(notification.task.id)}`);

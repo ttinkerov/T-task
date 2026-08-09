@@ -90,7 +90,7 @@ export class BoardsService {
     });
 
     if (!column) {
-      throw new NotFoundException('Column not found');
+      throw new NotFoundException('Колонка не найдена');
     }
 
     const take = Math.min(Math.max(limit, 1), BOARD_COLUMN_TASK_LIMIT);
@@ -244,7 +244,7 @@ export class BoardsService {
     });
 
     if (!board) {
-      throw new NotFoundException('Board not found');
+      throw new NotFoundException('Доска не найдена');
     }
 
     return board;
@@ -312,7 +312,7 @@ export class BoardsService {
     });
 
     if (!board) {
-      throw new NotFoundException('Board not found');
+      throw new NotFoundException('Доска не найдена');
     }
 
     return board;
@@ -324,7 +324,7 @@ export class BoardsService {
     });
 
     if (!column) {
-      throw new NotFoundException('Column not found');
+      throw new NotFoundException('Колонка не найдена');
     }
 
     return column;
@@ -416,7 +416,9 @@ export class BoardsService {
     const column = await this.findColumnInWorkspace(workspaceId, columnId);
 
     if (dto.startTimer && dto.completeTask) {
-      throw new BadRequestException('A column cannot start a timer and complete a task together');
+      throw new BadRequestException(
+        'Колонка не может одновременно запускать таймер и завершать задачу',
+      );
     }
 
     await this.prisma.$transaction(async (tx) => {
@@ -430,7 +432,9 @@ export class BoardsService {
         });
 
         if (!membership) {
-          throw new BadRequestException('Automation assignee must be a workspace member');
+          throw new BadRequestException(
+            'Исполнитель автоматизации должен быть участником пространства',
+          );
         }
       }
 
@@ -506,7 +510,7 @@ export class BoardsService {
     });
 
     if (!column) {
-      throw new NotFoundException('Column not found');
+      throw new NotFoundException('Колонка не найдена');
     }
 
     return column.automations.map((automation) => ({
@@ -526,7 +530,7 @@ export class BoardsService {
     });
 
     if (columnCount <= 1) {
-      throw new BadRequestException('Cannot delete the last column');
+      throw new BadRequestException('Нельзя удалить последнюю колонку');
     }
 
     const trashedTasks = await this.prisma.task.count({

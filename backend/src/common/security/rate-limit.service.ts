@@ -35,7 +35,10 @@ export class RateLimitService {
     }
 
     if (attempts > config.maxAttempts) {
-      throw new HttpException('Too many requests. Try again later.', HttpStatus.TOO_MANY_REQUESTS);
+      throw new HttpException(
+        'Слишком много запросов. Попробуйте позже.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
   }
 
@@ -59,7 +62,10 @@ export class RateLimitService {
     });
 
     if (nextCount > config.maxAttempts) {
-      throw new HttpException('Too many requests. Try again later.', HttpStatus.TOO_MANY_REQUESTS);
+      throw new HttpException(
+        'Слишком много запросов. Попробуйте позже.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
   }
 }

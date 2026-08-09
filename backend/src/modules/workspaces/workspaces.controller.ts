@@ -5,6 +5,12 @@ import { Public } from '../../common/auth/decorators/public.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
 import { ALL_WORKSPACE_ROLES, ADMIN_PLUS_ROLES } from '../../common/auth/workspace-roles';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
+import {
+  INVITATION_ACCEPT_RATE_LIMIT,
+  INVITATION_CREATE_RATE_LIMIT,
+  RateLimit,
+  WORKSPACE_MUTATE_RATE_LIMIT,
+} from '../../common/security/rate-limit.decorator';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
@@ -25,6 +31,8 @@ export class WorkspacesController {
   }
 
   @Post()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(WORKSPACE_MUTATE_RATE_LIMIT)
   async create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateWorkspaceDto) {
     const workspace = await this.workspacesService.create(user.id, dto);
     return successResponse(workspace);
@@ -38,6 +46,8 @@ export class WorkspacesController {
   }
 
   @Patch(':workspaceId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(WORKSPACE_MUTATE_RATE_LIMIT)
   @Roles(...ADMIN_PLUS_ROLES)
   async update(
     @Param('workspaceId') workspaceId: string,
@@ -49,6 +59,8 @@ export class WorkspacesController {
   }
 
   @Post(':workspaceId/archive')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(WORKSPACE_MUTATE_RATE_LIMIT)
   @Roles(...ADMIN_PLUS_ROLES)
   async archive(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     const result = await this.workspacesService.archive(workspaceId, user.id);
@@ -56,6 +68,8 @@ export class WorkspacesController {
   }
 
   @Post(':workspaceId/unarchive')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(WORKSPACE_MUTATE_RATE_LIMIT)
   @Roles(...ADMIN_PLUS_ROLES)
   async unarchive(
     @Param('workspaceId') workspaceId: string,
@@ -66,6 +80,8 @@ export class WorkspacesController {
   }
 
   @Delete(':workspaceId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(WORKSPACE_MUTATE_RATE_LIMIT)
   @Roles(WorkspaceRole.OWNER)
   async remove(@Param('workspaceId') workspaceId: string, @CurrentUser() user: AuthenticatedUser) {
     const result = await this.workspacesService.remove(workspaceId, user.id);
@@ -83,6 +99,8 @@ export class WorkspacesController {
   }
 
   @Patch(':workspaceId/members/:memberId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(WORKSPACE_MUTATE_RATE_LIMIT)
   @Roles(...ADMIN_PLUS_ROLES)
   async updateMemberRole(
     @Param('workspaceId') workspaceId: string,
@@ -100,6 +118,8 @@ export class WorkspacesController {
   }
 
   @Patch(':workspaceId/members/:memberId/scopes')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(WORKSPACE_MUTATE_RATE_LIMIT)
   @Roles(...ADMIN_PLUS_ROLES)
   async updateMemberScopes(
     @Param('workspaceId') workspaceId: string,
@@ -117,6 +137,8 @@ export class WorkspacesController {
   }
 
   @Delete(':workspaceId/members/:memberId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(WORKSPACE_MUTATE_RATE_LIMIT)
   @Roles(...ADMIN_PLUS_ROLES)
   async removeMember(
     @Param('workspaceId') workspaceId: string,
@@ -138,6 +160,8 @@ export class WorkspacesController {
   }
 
   @Post(':workspaceId/invitations')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(INVITATION_CREATE_RATE_LIMIT)
   @Roles(...ADMIN_PLUS_ROLES)
   async createInvitation(
     @Param('workspaceId') workspaceId: string,
@@ -149,6 +173,8 @@ export class WorkspacesController {
   }
 
   @Delete(':workspaceId/invitations/:invitationId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(INVITATION_CREATE_RATE_LIMIT)
   @Roles(...ADMIN_PLUS_ROLES)
   async revokeInvitation(
     @Param('workspaceId') workspaceId: string,
@@ -176,6 +202,8 @@ export class InvitationsController {
     return successResponse(invitation);
   }
 
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(INVITATION_ACCEPT_RATE_LIMIT)
   @Post(':token/accept')
   async accept(@Param('token') token: string, @CurrentUser() user: AuthenticatedUser) {
     const result = await this.workspacesService.acceptInvitation(token, user.id);

@@ -100,20 +100,31 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
   const summaryCards = useMemo(
     () => [
       {
-        label: 'Throughput',
+        label: 'Пропускная способность',
         value: summaryQuery.isLoading ? '…' : String(summaryQuery.data?.throughput ?? '—'),
       },
       {
-        label: 'Avg cycle (ч)',
+        label: 'Средний цикл (ч)',
         value: summaryQuery.isLoading ? '…' : String(summaryQuery.data?.avgCycleTimeHours ?? '—'),
       },
       {
-        label: 'Overdue',
+        label: 'Просрочено',
         value: summaryQuery.isLoading ? '…' : String(summaryQuery.data?.overdueCount ?? '—'),
       },
     ],
     [summaryQuery.data, summaryQuery.isLoading],
   );
+
+  const summaryError = summaryQuery.isError
+    ? summaryQuery.error instanceof Error
+      ? summaryQuery.error.message
+      : 'Не удалось загрузить сводку'
+    : '';
+  const workloadError = workloadQuery.isError
+    ? workloadQuery.error instanceof Error
+      ? workloadQuery.error.message
+      : 'Не удалось загрузить нагрузку'
+    : '';
 
   const rowViews = useMemo<WorkloadRowView[]>(
     () =>
@@ -203,9 +214,19 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
     setStuckHost(el);
   }, []);
 
+  const onRetrySummary = useCallback(() => {
+    void summaryQuery.refetch();
+  }, [summaryQuery]);
+
+  const onRetryWorkload = useCallback(() => {
+    void workloadQuery.refetch();
+  }, [workloadQuery]);
+
   const viewProps = useMemo(
     () => ({
       summaryCards,
+      summaryError,
+      workloadError,
       workloadTruncated: Boolean(workloadQuery.data?.truncated),
       workloadLoading: workloadQuery.isLoading,
       period,
@@ -225,9 +246,13 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
       onToggleDrilldown,
       onCloseDrilldown,
       onStuckHostReady,
+      onRetrySummary,
+      onRetryWorkload,
     }),
     [
       summaryCards,
+      summaryError,
+      workloadError,
       workloadQuery.data?.truncated,
       workloadQuery.isLoading,
       period,
@@ -247,6 +272,8 @@ export function AnalyticsPage({ workspaceId }: AnalyticsPageProps) {
       onToggleDrilldown,
       onCloseDrilldown,
       onStuckHostReady,
+      onRetrySummary,
+      onRetryWorkload,
     ],
   );
 

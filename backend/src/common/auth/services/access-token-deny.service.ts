@@ -62,7 +62,7 @@ export class AccessTokenDenyService {
       if (hasJti) {
         const denied = values[offset++];
         if (denied) {
-          throw new UnauthorizedException('Access token revoked');
+          throw new UnauthorizedException('Access-токен отозван');
         }
       }
 
@@ -71,7 +71,7 @@ export class AccessTokenDenyService {
         if (epochRaw) {
           const epoch = Number(epochRaw);
           if (Number.isFinite(epoch) && payload.iat <= epoch) {
-            throw new UnauthorizedException('Access token revoked');
+            throw new UnauthorizedException('Access-токен отозван');
           }
         }
       }

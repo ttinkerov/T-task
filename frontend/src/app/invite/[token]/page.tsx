@@ -17,9 +17,13 @@ export default function InviteAcceptPage() {
   const acceptMutation = useAcceptInvitationMutation();
 
   const handleAccept = async () => {
-    await acceptMutation.mutateAsync(token);
-    router.push('/dashboard');
-    router.refresh();
+    try {
+      await acceptMutation.mutateAsync(token);
+      router.push('/dashboard');
+      router.refresh();
+    } catch {
+      /* error shown via acceptMutation.error */
+    }
   };
 
   if (isLoading) {
@@ -41,6 +45,13 @@ export default function InviteAcceptPage() {
       </main>
     );
   }
+
+  const acceptError =
+    acceptMutation.error instanceof Error
+      ? acceptMutation.error.message
+      : acceptMutation.isError
+        ? 'Не удалось принять приглашение'
+        : '';
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-6 py-16">
@@ -68,14 +79,21 @@ export default function InviteAcceptPage() {
           Вы вошли как {session.user.email}, но приглашение для {preview.email}.
         </p>
       ) : (
-        <button
-          type="button"
-          onClick={handleAccept}
-          disabled={acceptMutation.isPending}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-slate-100 dark:text-slate-900"
-        >
-          {acceptMutation.isPending ? 'Принимаем...' : 'Принять приглашение'}
-        </button>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => void handleAccept()}
+            disabled={acceptMutation.isPending}
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white dark:bg-slate-100 dark:text-slate-900"
+          >
+            {acceptMutation.isPending ? 'Принимаем...' : 'Принять приглашение'}
+          </button>
+          {acceptError ? (
+            <p className="text-sm text-red-600" role="alert">
+              {acceptError}
+            </p>
+          ) : null}
+        </div>
       )}
     </main>
   );

@@ -27,7 +27,7 @@ export class TokenExtractorService {
       });
 
       if (payload.type !== 'access') {
-        throw new UnauthorizedException('Invalid access token type');
+        throw new UnauthorizedException('Неверный тип access-токена');
       }
 
       return payload;
@@ -35,7 +35,7 @@ export class TokenExtractorService {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      throw new UnauthorizedException('Invalid or expired access token');
+      throw new UnauthorizedException('Недействительный или истёкший access-токен');
     }
   }
 

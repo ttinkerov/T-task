@@ -109,7 +109,8 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
             loadSnapshot(store, snapshot as unknown as TLEditorSnapshot);
             loadedContent = true;
           } catch {
-            /* ignore */
+            setSaveError('Не удалось восстановить снимок доски — открыта пустая канва');
+            setSaveStatus('error');
           }
         }
 

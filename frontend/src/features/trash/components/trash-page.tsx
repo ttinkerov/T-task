@@ -58,6 +58,12 @@ export function TrashPage({ workspaceId }: { workspaceId: string }) {
       isLoading: query.isLoading,
       isFetching: query.isFetching,
       isError: Boolean(query.error),
+      actionError:
+        restoreMutation.error instanceof Error
+          ? restoreMutation.error.message
+          : purgeMutation.error instanceof Error
+            ? purgeMutation.error.message
+            : '',
       canPurge,
       busyKey,
       typeLabels: TYPE_LABELS,
@@ -73,6 +79,8 @@ export function TrashPage({ workspaceId }: { workspaceId: string }) {
       query.isLoading,
       query.isFetching,
       query.error,
+      restoreMutation.error,
+      purgeMutation.error,
       canPurge,
       busyKey,
       onRestore,

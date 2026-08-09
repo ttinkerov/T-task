@@ -11,9 +11,9 @@ interface InviteMemberFormProps {
 }
 
 const ROLE_OPTIONS: Array<{ value: WorkspaceRole; label: string }> = [
-  { value: 'VIEWER', label: 'Viewer' },
-  { value: 'MEMBER', label: 'Member' },
-  { value: 'ADMIN', label: 'Admin' },
+  { value: 'VIEWER', label: 'Наблюдатель' },
+  { value: 'MEMBER', label: 'Участник' },
+  { value: 'ADMIN', label: 'Админ' },
 ];
 
 export function InviteMemberForm({ workspaceId }: InviteMemberFormProps) {

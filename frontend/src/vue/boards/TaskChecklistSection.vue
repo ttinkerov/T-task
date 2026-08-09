@@ -6,7 +6,7 @@
   >
     <div class="task-checklist__header">
       <h3 id="task-checklist-title" class="task-drawer__section-title">
-        Definition of Done
+        Критерии готовности
         <FieldHint text="Критерии готовности. Обязательные пункты блокируют перевод в «Готово»." />
       </h3>
       <span>

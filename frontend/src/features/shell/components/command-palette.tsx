@@ -29,6 +29,7 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const [remoteItems, setRemoteItems] = useState<CommandItem[]>([]);
+  const [searchError, setSearchError] = useState('');
 
   const filteredNav = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -46,6 +47,7 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
     if (!open) return;
     setQuery('');
     setRemoteItems([]);
+    setSearchError('');
     setActiveIndex(0);
   }, [open]);
 
@@ -57,6 +59,7 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
     const q = query.trim();
     if (!open || !workspaceId || q.length < 2) {
       setRemoteItems([]);
+      setSearchError('');
       return;
     }
 
@@ -90,10 +93,14 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
               iconKey: 'message',
             })),
           ];
+          setSearchError('');
           setRemoteItems(next);
         })
         .catch(() => {
-          if (!cancelled) setRemoteItems([]);
+          if (!cancelled) {
+            setRemoteItems([]);
+            setSearchError('Не удалось выполнить поиск. Попробуйте ещё раз.');
+          }
         });
     }, 250);
 
@@ -171,12 +178,13 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
       query,
       groups,
       activeIndex,
+      searchError,
       onClose: () => onOpenChange(false),
       onQueryChange: setQuery,
       onActiveChange: setActiveIndex,
       onSelect,
     }),
-    [open, query, groups, activeIndex, onOpenChange, onSelect],
+    [open, query, groups, activeIndex, searchError, onOpenChange, onSelect],
   );
 
   if (!open) return null;

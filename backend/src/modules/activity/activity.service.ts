@@ -58,11 +58,11 @@ export class ActivityService {
     });
 
     if (!membership || membership.workspace.deletedAt) {
-      throw new NotFoundException('Workspace not found');
+      throw new NotFoundException('Рабочее пространство не найдено');
     }
 
     if (membership.role !== WorkspaceRole.OWNER && membership.role !== WorkspaceRole.ADMIN) {
-      throw new ForbiddenException('Activity log is available to workspace administrators');
+      throw new ForbiddenException('Журнал активности доступен администраторам пространства');
     }
 
     const page = query.page;

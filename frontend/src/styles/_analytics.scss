@@ -23,6 +23,20 @@
   max-width: 42rem;
 }
 
+.analytics-page__error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+  color: var(--tt-danger);
+  font-size: 0.85rem;
+
+  p {
+    margin: 0;
+  }
+}
+
 .analytics-summary-cards--grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));

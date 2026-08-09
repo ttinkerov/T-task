@@ -14,7 +14,7 @@
           <strong>{{ template.name }}</strong>
           <p>
             {{ (template.items && template.items.length) || 0 }} пунктов
-            {{ template.gatesCompletion ? ' · блокирует Done' : ' · без блокировки' }}
+            {{ template.gatesCompletion ? ' · блокирует «Готово»' : ' · без блокировки' }}
           </p>
           <ol v-if="template.items && template.items.length > 0">
             <li v-for="item in template.items" :key="item.id">{{ item.text }}</li>
@@ -29,7 +29,7 @@
               :disabled="pendingId === template.id"
               @change="onToggle(template.id, $event)"
             />
-            Gate
+            Блокировать «Готово»
           </label>
           <button
             type="button"

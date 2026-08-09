@@ -24,8 +24,9 @@
         <kbd>esc</kbd>
       </div>
 
-      <div class="cmdk__list" role="listbox">
-        <p v-if="groups.length === 0" class="cmdk__empty">Ничего не найдено</p>
+      <div className="cmdk__list" role="listbox">
+        <p v-if="searchError" class="cmdk__empty" role="alert">{{ searchError }}</p>
+        <p v-else-if="groups.length === 0" class="cmdk__empty">Ничего не найдено</p>
         <template v-else>
           <div v-for="group in groups" :key="group.name" class="cmdk__group">
             <p class="cmdk__group-label">{{ group.name }}</p>
@@ -69,6 +70,7 @@ const props = defineProps({
   query: { type: String, default: '' },
   groups: { type: Array, default: () => [] },
   activeIndex: { type: Number, default: 0 },
+  searchError: { type: String, default: '' },
   onClose: { type: Function, default: null },
   onQueryChange: { type: Function, default: null },
   onActiveChange: { type: Function, default: null },

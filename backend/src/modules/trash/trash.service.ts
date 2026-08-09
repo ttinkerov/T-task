@@ -120,7 +120,7 @@ export class TrashService {
       });
 
       if (!task) {
-        throw new NotFoundException('Trash item not found');
+        throw new NotFoundException('Элемент корзины не найден');
       }
 
       const column = await this.prisma.boardColumn.findUnique({
@@ -128,7 +128,7 @@ export class TrashService {
       });
 
       if (column?.deletedAt) {
-        throw new ConflictException('Cannot restore task from a deleted column');
+        throw new ConflictException('Нельзя восстановить задачу из удалённой колонки');
       }
 
       const lastTask = await this.prisma.task.findFirst({
@@ -166,7 +166,7 @@ export class TrashService {
       });
 
       if (!deal) {
-        throw new NotFoundException('Trash item not found');
+        throw new NotFoundException('Элемент корзины не найден');
       }
 
       const stage = await this.prisma.funnelStage.findUnique({
@@ -174,7 +174,7 @@ export class TrashService {
       });
 
       if (stage?.deletedAt) {
-        throw new ConflictException('Cannot restore deal from a deleted stage');
+        throw new ConflictException('Нельзя восстановить сделку из удалённого этапа');
       }
 
       const lastDeal = await this.prisma.deal.findFirst({
@@ -211,7 +211,7 @@ export class TrashService {
     });
 
     if (!app) {
-      throw new NotFoundException('Trash item not found');
+      throw new NotFoundException('Элемент корзины не найден');
     }
 
     const appCount = await this.prisma.workspaceExternalApp.count({
@@ -260,7 +260,7 @@ export class TrashService {
       });
 
       if (!task) {
-        throw new NotFoundException('Trash item not found');
+        throw new NotFoundException('Элемент корзины не найден');
       }
 
       await this.prisma.task.delete({ where: { id: task.id } });
@@ -286,7 +286,7 @@ export class TrashService {
       });
 
       if (!deal) {
-        throw new NotFoundException('Trash item not found');
+        throw new NotFoundException('Элемент корзины не найден');
       }
 
       await this.prisma.deal.delete({ where: { id: deal.id } });
@@ -311,7 +311,7 @@ export class TrashService {
     });
 
     if (!app) {
-      throw new NotFoundException('Trash item not found');
+      throw new NotFoundException('Элемент корзины не найден');
     }
 
     await this.prisma.workspaceExternalApp.delete({ where: { id: app.id } });
@@ -333,7 +333,7 @@ export class TrashService {
       entityType !== TrashEntityType.DEAL &&
       entityType !== TrashEntityType.APP
     ) {
-      throw new BadRequestException('Unsupported trash entity type');
+      throw new BadRequestException('Неподдерживаемый тип элемента корзины');
     }
   }
 
@@ -341,7 +341,7 @@ export class TrashService {
     const membership = await this.getMembership(workspaceId, userId);
 
     if (membership.role !== WorkspaceRole.OWNER && membership.role !== WorkspaceRole.ADMIN) {
-      throw new ForbiddenException('Insufficient permissions to access trash');
+      throw new ForbiddenException('Недостаточно прав для доступа к корзине');
     }
 
     return membership;
@@ -351,7 +351,7 @@ export class TrashService {
     const membership = await this.getMembership(workspaceId, userId);
 
     if (membership.role !== WorkspaceRole.OWNER) {
-      throw new ForbiddenException('Only workspace owner can permanently delete trash items');
+      throw new ForbiddenException('Только владелец может окончательно удалять из корзины');
     }
 
     return membership;
@@ -369,7 +369,7 @@ export class TrashService {
     });
 
     if (!membership || membership.workspace.deletedAt) {
-      throw new NotFoundException('Workspace not found');
+      throw new NotFoundException('Рабочее пространство не найдено');
     }
 
     return membership;

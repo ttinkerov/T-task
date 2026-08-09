@@ -100,7 +100,10 @@ export function ActivityPage({ workspaceId }: { workspaceId: string }) {
       action,
       from,
       to,
-      actionKeys: ACTION_KEYS,
+      actionOptions: ACTION_KEYS.map((key) => ({
+        value: key,
+        label: ACTION_LABELS[key] ?? key,
+      })),
       onUpdateAction,
       onUpdateFrom,
       onUpdateTo,

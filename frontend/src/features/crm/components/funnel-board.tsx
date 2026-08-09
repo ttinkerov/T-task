@@ -47,9 +47,21 @@ import { formatDealAmount, type FunnelDeal, type FunnelStage, type FunnelView } 
 import { DealDetailDrawer } from './deal-detail-drawer';
 
 export function FunnelBoard({ workspaceId }: { workspaceId: string }) {
-  const { data: funnels = [], isLoading: funnelsLoading } = useFunnelsQuery(workspaceId);
+  const {
+    data: funnels = [],
+    isLoading: funnelsLoading,
+    isError: funnelsError,
+    error: funnelsErr,
+    refetch: refetchFunnels,
+  } = useFunnelsQuery(workspaceId);
   const [funnelId, setFunnelId] = useState<string | null>(null);
-  const { data: funnel, isLoading: funnelLoading } = useFunnelQuery(workspaceId, funnelId);
+  const {
+    data: funnel,
+    isLoading: funnelLoading,
+    isError: funnelError,
+    error: funnelErr,
+    refetch: refetchFunnel,
+  } = useFunnelQuery(workspaceId, funnelId);
   const createFunnelMutation = useCreateFunnelMutation(workspaceId);
 
   useEffect(() => {
@@ -93,6 +105,19 @@ export function FunnelBoard({ workspaceId }: { workspaceId: string }) {
     return <p className="text-sm text-muted-foreground">Загрузка воронок...</p>;
   }
 
+  if (funnelsError) {
+    return (
+      <div className="crm-page" role="alert">
+        <p className="text-sm text-red-600">
+          {funnelsErr instanceof Error ? funnelsErr.message : 'Не удалось загрузить воронки'}
+        </p>
+        <button type="button" className="btn-ghost" onClick={() => void refetchFunnels()}>
+          Повторить
+        </button>
+      </div>
+    );
+  }
+
   if (funnels.length === 0) {
     return (
       <div className="crm-page">
@@ -117,7 +142,16 @@ export function FunnelBoard({ workspaceId }: { workspaceId: string }) {
     <div className="crm-page">
       <VueIsland component={FunnelToolbarView} componentProps={toolbarProps} />
 
-      {funnelLoading || !funnel || !funnelId ? (
+      {funnelError ? (
+        <div role="alert">
+          <p className="text-sm text-red-600">
+            {funnelErr instanceof Error ? funnelErr.message : 'Не удалось загрузить воронку'}
+          </p>
+          <button type="button" className="btn-ghost" onClick={() => void refetchFunnel()}>
+            Повторить
+          </button>
+        </div>
+      ) : funnelLoading || !funnel || !funnelId ? (
         <p className="text-sm text-muted-foreground">Загрузка воронки...</p>
       ) : (
         <FunnelBoardView workspaceId={workspaceId} funnel={funnel} />
@@ -134,6 +168,7 @@ function FunnelBoardView({ workspaceId, funnel }: { workspaceId: string; funnel:
   const [activeDeal, setActiveDeal] = useState<FunnelDeal | null>(null);
   const [activeStage, setActiveStage] = useState<FunnelStage | null>(null);
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
+  const [moveError, setMoveError] = useState('');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -141,6 +176,7 @@ function FunnelBoardView({ workspaceId, funnel }: { workspaceId: string; funnel:
   );
 
   const handleDragStart = (event: DragStartEvent) => {
+    setMoveError('');
     const type = event.active.data.current?.type as DragType | undefined;
 
     if (type === 'stage') {
@@ -162,35 +198,41 @@ function FunnelBoardView({ workspaceId, funnel }: { workspaceId: string; funnel:
     const { active, over } = event;
     if (!over) return;
 
-    if (type === 'stage') {
-      const stageId = String(active.id);
-      const overStageId = String(over.id);
-      if (stageId === overStageId) return;
+    try {
+      if (type === 'stage') {
+        const stageId = String(active.id);
+        const overStageId = String(over.id);
+        if (stageId === overStageId) return;
 
-      const fromIndex = funnel.stages.findIndex((stage) => stage.id === stageId);
-      const toIndex = funnel.stages.findIndex((stage) => stage.id === overStageId);
-      if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+        const fromIndex = funnel.stages.findIndex((stage) => stage.id === stageId);
+        const toIndex = funnel.stages.findIndex((stage) => stage.id === overStageId);
+        if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
 
-      await moveStageMutation.mutateAsync({ stageId, position: toIndex });
-      return;
+        await moveStageMutation.mutateAsync({ stageId, position: toIndex });
+        return;
+      }
+
+      const dealId = String(active.id);
+      const destination = resolveDropTarget(funnel, String(over.id), dealId);
+      if (!destination) return;
+
+      const deal = findDeal(funnel, dealId);
+      if (!deal) return;
+
+      if (deal.stageId === destination.stageId && deal.position === destination.position) {
+        return;
+      }
+
+      await moveDealMutation.mutateAsync({
+        dealId,
+        stageId: destination.stageId,
+        position: destination.position,
+      });
+    } catch (error) {
+      setMoveError(
+        error instanceof Error ? error.message : 'Не удалось переместить. Попробуйте ещё раз.',
+      );
     }
-
-    const dealId = String(active.id);
-    const destination = resolveDropTarget(funnel, String(over.id), dealId);
-    if (!destination) return;
-
-    const deal = findDeal(funnel, dealId);
-    if (!deal) return;
-
-    if (deal.stageId === destination.stageId && deal.position === destination.position) {
-      return;
-    }
-
-    await moveDealMutation.mutateAsync({
-      dealId,
-      stageId: destination.stageId,
-      position: destination.position,
-    });
   };
 
   const stageIds = funnel.stages.map((stage) => stage.id);
@@ -210,6 +252,11 @@ function FunnelBoardView({ workspaceId, funnel }: { workspaceId: string; funnel:
 
   return (
     <>
+      {moveError ? (
+        <p className="text-sm text-red-600" role="alert">
+          {moveError}
+        </p>
+      ) : null}
       {funnel.stages.some((stage) => stage.truncated) ? (
         <p className="text-sm text-muted-foreground" role="status">
           В некоторых этапах загружена только часть сделок — нажмите «Загрузить ещё» внизу этапа.

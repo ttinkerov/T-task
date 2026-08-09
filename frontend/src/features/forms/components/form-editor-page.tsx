@@ -13,7 +13,7 @@ import {
 import { FORM_FIELD_TYPE_LABELS, FORM_FIELD_TYPE_OPTIONS, type FormFieldType } from '../types';
 
 export function FormEditorPage({ workspaceId, formId }: { workspaceId: string; formId: string }) {
-  const { data: form, isLoading } = useFormQuery(workspaceId, formId);
+  const { data: form, isLoading, isError, error, refetch } = useFormQuery(workspaceId, formId);
   const { data: responsesData } = useFormResponsesQuery(workspaceId, formId);
   const updateFormMutation = useUpdateFormMutation(workspaceId, formId);
   const addFieldMutation = useAddFormFieldMutation(workspaceId, formId);
@@ -77,6 +77,19 @@ export function FormEditorPage({ workspaceId, formId }: { workspaceId: string; f
       onDeleteField,
     ],
   );
+
+  if (isError) {
+    return (
+      <div role="alert">
+        <p className="text-sm text-red-600">
+          {error instanceof Error ? error.message : 'Не удалось загрузить форму'}
+        </p>
+        <button type="button" className="btn-ghost" onClick={() => void refetch()}>
+          Повторить
+        </button>
+      </div>
+    );
+  }
 
   if (isLoading || !form) {
     return <p className="text-sm text-muted-foreground">Загрузка формы...</p>;

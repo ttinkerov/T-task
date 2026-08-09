@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Roles } from '../../common/auth/decorators/roles.decorator';
 import { Scopes } from '../../common/auth/decorators/scopes.decorator';
@@ -6,6 +16,8 @@ import { WorkspaceScope } from '../../common/auth/scopes';
 import { ALL_WORKSPACE_ROLES } from '../../common/auth/workspace-roles';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
+import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
+import { FORM_MUTATE_RATE_LIMIT, RateLimit } from '../../common/security/rate-limit.decorator';
 import { CreateFormFieldDto } from './dto/create-form-field.dto';
 import { CreateFormDto } from './dto/create-form.dto';
 import { ListFormResponsesQueryDto } from './dto/list-form-responses-query.dto';
@@ -25,6 +37,8 @@ export class FormsController {
   }
 
   @Post()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FORM_MUTATE_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.FORMS_WRITE)
   async create(
@@ -48,6 +62,8 @@ export class FormsController {
   }
 
   @Patch(':formId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FORM_MUTATE_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.FORMS_WRITE)
   async update(
@@ -61,6 +77,8 @@ export class FormsController {
   }
 
   @Delete(':formId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FORM_MUTATE_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.FORMS_WRITE)
   async remove(
@@ -73,6 +91,8 @@ export class FormsController {
   }
 
   @Post(':formId/fields')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FORM_MUTATE_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.FORMS_WRITE)
   async addField(
@@ -86,6 +106,8 @@ export class FormsController {
   }
 
   @Patch(':formId/fields/:fieldId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FORM_MUTATE_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.FORMS_WRITE)
   async updateField(
@@ -100,6 +122,8 @@ export class FormsController {
   }
 
   @Delete(':formId/fields/:fieldId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(FORM_MUTATE_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.FORMS_WRITE)
   async removeField(

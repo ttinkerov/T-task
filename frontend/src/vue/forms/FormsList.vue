@@ -22,7 +22,15 @@
       </button>
     </form>
 
+    <p v-if="createError" class="forms-page__error" role="alert">{{ createError }}</p>
+    <p v-if="deleteError" class="forms-page__error" role="alert">{{ deleteError }}</p>
+
     <p v-if="isLoading" class="text-sm text-muted-foreground">Загрузка форм...</p>
+
+    <div v-else-if="isError" role="alert">
+      <p class="forms-page__error">{{ loadError || 'Не удалось загрузить формы' }}</p>
+      <button type="button" class="btn-ghost" @click="onRetryLoad?.()">Повторить</button>
+    </div>
 
     <p v-else-if="forms.length === 0" class="forms-page__empty">
       Пока нет форм. Создайте первую опросную форму выше.
@@ -61,8 +69,13 @@ import { ref } from 'vue'
 const props = defineProps({
   forms: { type: Array, required: true },
   isLoading: { type: Boolean, default: false },
+  isError: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
+  createError: { type: String, default: '' },
+  deleteError: { type: String, default: '' },
   isCreating: { type: Boolean, default: false },
   isDeleting: { type: Boolean, default: false },
+  onRetryLoad: { type: Function, default: null },
   onCreate: { type: Function, required: true },
   onDelete: { type: Function, required: true },
 })
@@ -77,13 +90,13 @@ async function onSubmit() {
     await props.onCreate(trimmed)
     title.value = ''
   } catch {
-    /* ignore */
+    /* surfaced via createError */
   }
 }
 
 function onDeleteClick(form) {
   if (window.confirm('Удалить форму «' + form.title + '»?')) {
-    props.onDelete(form.id)
+    void props.onDelete(form.id)
   }
 }
 </script>

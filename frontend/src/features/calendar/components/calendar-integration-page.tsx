@@ -52,8 +52,13 @@ export function CalendarIntegrationPage({ workspaceId }: { workspaceId: string }
           : 'Ссылка создана. Скопируйте её сейчас — позже она будет скрыта.',
       );
       setPendingAction(null);
-    } catch {
-      setFeedUrl(null);
+    } catch (error) {
+      setPendingAction(null);
+      setCopyError(
+        error instanceof Error
+          ? error.message
+          : 'Не удалось изменить интеграцию. Попробуйте ещё раз.',
+      );
     }
   }, [createMutation, status?.enabled]);
 
@@ -72,14 +77,19 @@ export function CalendarIntegrationPage({ workspaceId }: { workspaceId: string }
   }, [feedUrl]);
 
   const handleRevoke = useCallback(async () => {
+    setCopyError('');
     try {
       await revokeMutation.mutateAsync();
       setFeedUrl(null);
-      setCopyError('');
       setNotice('Доступ по ссылке отключён.');
       setPendingAction(null);
-    } catch {
+    } catch (error) {
       setPendingAction(null);
+      setCopyError(
+        error instanceof Error
+          ? error.message
+          : 'Не удалось отключить интеграцию. Попробуйте ещё раз.',
+      );
     }
   }, [revokeMutation]);
 

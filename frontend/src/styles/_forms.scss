@@ -39,6 +39,12 @@
   color: $color-text-muted;
 }
 
+.forms-page__error {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--tt-danger);
+}
+
 .forms-create {
   display: flex;
   gap: 0.5rem;

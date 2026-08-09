@@ -73,7 +73,7 @@ export function KanbanBoard({
     },
     [workspaceId],
   );
-  const { data: board, isLoading } = useBoardQuery(workspaceId, boardId);
+  const { data: board, isLoading, isError, error, refetch } = useBoardQuery(workspaceId, boardId);
   const createColumnMutation = useCreateColumnMutation(workspaceId, boardId ?? '');
   const createTaskMutation = useCreateTaskMutation(workspaceId, boardId);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -176,6 +176,27 @@ export function KanbanBoard({
               });
           }}
         />
+      </>
+    );
+  }
+
+  if (isError) {
+    return (
+      <>
+        <BoardSwitcher
+          workspaceId={workspaceId}
+          boardId={boardId}
+          preferredBoardId={initialBoardId}
+          onBoardChange={handleBoardChange}
+        />
+        <div className="empty-state empty-state--board" role="alert">
+          <p className="text-sm text-red-600">
+            {error instanceof Error ? error.message : 'Не удалось загрузить доску'}
+          </p>
+          <button type="button" className="btn-ghost" onClick={() => void refetch()}>
+            Повторить
+          </button>
+        </div>
       </>
     );
   }

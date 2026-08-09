@@ -14,6 +14,11 @@
       Показаны первые 5000 задач доски для расчёта нагрузки.
     </p>
 
+    <div v-if="summaryError" class="analytics-page__error" role="alert">
+      <p>{{ summaryError }}</p>
+      <button type="button" class="btn-ghost" @click="onRetrySummary?.()">Повторить</button>
+    </div>
+
     <div class="analytics-summary-cards analytics-summary-cards--grid">
       <article v-for="card in summaryCards" :key="card.label" class="glass-card analytics-summary-card">
         <p class="text-sm text-muted-foreground">{{ card.label }}</p>
@@ -23,7 +28,12 @@
 
     <div ref="stuckHostEl" class="analytics-stuck-host" v-once />
 
-    <p v-if="workloadLoading" class="text-sm text-muted-foreground">
+    <div v-if="workloadError" class="analytics-page__error" role="alert">
+      <p>{{ workloadError }}</p>
+      <button type="button" class="btn-ghost" @click="onRetryWorkload?.()">Повторить</button>
+    </div>
+
+    <p v-else-if="workloadLoading" class="text-sm text-muted-foreground">
       Загрузка нагрузки по доске...
     </p>
 
@@ -198,6 +208,8 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const props = defineProps({
   summaryCards: { type: Array, default: () => [] },
+  summaryError: { type: String, default: '' },
+  workloadError: { type: String, default: '' },
   workloadTruncated: { type: Boolean, default: false },
   workloadLoading: { type: Boolean, default: false },
   period: { type: String, required: true },
@@ -217,6 +229,8 @@ const props = defineProps({
   onToggleDrilldown: { type: Function, default: null },
   onCloseDrilldown: { type: Function, default: null },
   onStuckHostReady: { type: Function, default: null },
+  onRetrySummary: { type: Function, default: null },
+  onRetryWorkload: { type: Function, default: null },
 })
 
 const periodOptions = [

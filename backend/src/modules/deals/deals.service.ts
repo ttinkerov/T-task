@@ -34,7 +34,7 @@ export class DealsService {
     });
 
     if (!stage) {
-      throw new NotFoundException('Stage not found');
+      throw new NotFoundException('Этап не найден');
     }
 
     const template = dto.templateId
@@ -77,7 +77,7 @@ export class DealsService {
       });
 
       if (!membership) {
-        throw new BadRequestException('Assignee must be a workspace member');
+        throw new BadRequestException('Исполнитель должен быть участником пространства');
       }
     }
 
@@ -108,7 +108,7 @@ export class DealsService {
     });
 
     if (!targetStage) {
-      throw new NotFoundException('Stage not found');
+      throw new NotFoundException('Этап не найден');
     }
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -177,7 +177,7 @@ export class DealsService {
     });
 
     if (!deal) {
-      throw new NotFoundException('Deal not found');
+      throw new NotFoundException('Сделка не найдена');
     }
 
     return deal;

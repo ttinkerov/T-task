@@ -20,7 +20,11 @@ import {
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
-import { BOARD_GET_RATE_LIMIT, RateLimit } from '../../common/security/rate-limit.decorator';
+import {
+  BOARD_GET_RATE_LIMIT,
+  BOARD_MUTATE_RATE_LIMIT,
+  RateLimit,
+} from '../../common/security/rate-limit.decorator';
 import { BoardsService } from './boards.service';
 import { CreateBoardDto } from './dto/create-board.dto';
 import { CreateColumnDto } from './dto/create-column.dto';
@@ -47,6 +51,8 @@ export class BoardsController {
   }
 
   @Post('columns')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(BOARD_MUTATE_RATE_LIMIT)
   @Roles(...MEMBER_PLUS_ROLES)
   async createColumn(
     @Param('workspaceId') workspaceId: string,
@@ -58,6 +64,8 @@ export class BoardsController {
   }
 
   @Patch('columns/:columnId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(BOARD_MUTATE_RATE_LIMIT)
   @Roles(...MEMBER_PLUS_ROLES)
   async updateColumn(
     @Param('workspaceId') workspaceId: string,
@@ -85,6 +93,8 @@ export class BoardsController {
   }
 
   @Put('columns/:columnId/automations')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(BOARD_MUTATE_RATE_LIMIT)
   @Roles(...ADMIN_PLUS_ROLES)
   async updateColumnAutomations(
     @Param('workspaceId') workspaceId: string,
@@ -102,6 +112,8 @@ export class BoardsController {
   }
 
   @Patch('columns/:columnId/move')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(BOARD_MUTATE_RATE_LIMIT)
   @Roles(...MEMBER_PLUS_ROLES)
   async moveColumn(
     @Param('workspaceId') workspaceId: string,
@@ -114,6 +126,8 @@ export class BoardsController {
   }
 
   @Delete('columns/:columnId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(BOARD_MUTATE_RATE_LIMIT)
   @Roles(...ADMIN_PLUS_ROLES)
   async deleteColumn(
     @Param('workspaceId') workspaceId: string,
@@ -147,6 +161,8 @@ export class WorkspaceBoardsController {
   }
 
   @Post()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(BOARD_MUTATE_RATE_LIMIT)
   @Roles(...MEMBER_PLUS_ROLES)
   async createBoard(
     @Param('workspaceId') workspaceId: string,
@@ -193,6 +209,8 @@ export class WorkspaceBoardsController {
   }
 
   @Patch(':boardId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(BOARD_MUTATE_RATE_LIMIT)
   @Roles(...MEMBER_PLUS_ROLES)
   async updateBoard(
     @Param('workspaceId') workspaceId: string,
@@ -205,6 +223,8 @@ export class WorkspaceBoardsController {
   }
 
   @Delete(':boardId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(BOARD_MUTATE_RATE_LIMIT)
   @Roles(...ADMIN_PLUS_ROLES)
   async deleteBoard(
     @Param('workspaceId') workspaceId: string,

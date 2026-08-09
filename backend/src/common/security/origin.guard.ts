@@ -20,7 +20,7 @@ export class OriginGuard implements CanActivate {
 
     if (!origin) {
       if (isProduction) {
-        throw new ForbiddenException('Origin header is required');
+        throw new ForbiddenException('Заголовок Origin обязателен');
       }
       return true;
     }
@@ -32,7 +32,7 @@ export class OriginGuard implements CanActivate {
       .filter(Boolean);
 
     if (!allowedOrigins.includes(origin)) {
-      throw new ForbiddenException('Invalid request origin');
+      throw new ForbiddenException('Недопустимый origin запроса');
     }
 
     return true;

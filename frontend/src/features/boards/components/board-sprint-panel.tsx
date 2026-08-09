@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import { AiSummaryPanel } from '@/features/ai/components/ai-summary-panel';
 import {
@@ -20,6 +20,7 @@ export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
   const active =
     sprints.find((sprint) => sprint.active) ?? sprints.find((s) => !s.closedAt) ?? null;
   const { data: burndown } = useSprintBurndownQuery(workspaceId, active?.id ?? null);
+  const [actionError, setActionError] = useState('');
 
   const activePoints = useMemo(() => {
     if (!active || !velocity) return null;
@@ -67,18 +68,29 @@ export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
 
   const onCreate = useCallback(
     async (payload: { name: string; startDate: string; endDate: string }) => {
-      await createMutation.mutateAsync({
-        name: payload.name,
-        startDate: new Date(`${payload.startDate}T00:00:00`).toISOString(),
-        endDate: new Date(`${payload.endDate}T23:59:59`).toISOString(),
-      });
+      setActionError('');
+      try {
+        await createMutation.mutateAsync({
+          name: payload.name,
+          startDate: new Date(`${payload.startDate}T00:00:00`).toISOString(),
+          endDate: new Date(`${payload.endDate}T23:59:59`).toISOString(),
+        });
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Не удалось создать спринт');
+        throw err;
+      }
     },
     [createMutation],
   );
 
   const onCloseSprint = useCallback(async () => {
     if (!active) return;
-    await closeMutation.mutateAsync(active.id);
+    setActionError('');
+    try {
+      await closeMutation.mutateAsync(active.id);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Не удалось закрыть спринт');
+    }
   }, [active, closeMutation]);
 
   const viewProps = useMemo(
@@ -90,6 +102,7 @@ export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
       averageVelocity: velocity?.averageVelocity ?? 0,
       createPending: createMutation.isPending,
       closePending: closeMutation.isPending,
+      actionError,
       onCreate,
       onCloseSprint,
     }),
@@ -101,6 +114,7 @@ export function BoardSprintPanel({ workspaceId }: { workspaceId: string }) {
       velocity?.averageVelocity,
       createMutation.isPending,
       closeMutation.isPending,
+      actionError,
       onCreate,
       onCloseSprint,
     ],

@@ -42,7 +42,7 @@ export class ScopesGuard implements CanActivate {
     >();
 
     if (!request.user) {
-      throw new UnauthorizedException('Authentication required');
+      throw new UnauthorizedException('Требуется аутентификация');
     }
 
     let membership = request.workspaceMembership;
@@ -53,7 +53,7 @@ export class ScopesGuard implements CanActivate {
         (request.headers['x-workspace-id'] as string | undefined);
 
       if (!workspaceId) {
-        throw new ForbiddenException('Workspace context is required');
+        throw new ForbiddenException('Требуется контекст рабочего пространства');
       }
 
       const resolved = await this.workspacesService.resolveGuardMembership(
@@ -62,7 +62,7 @@ export class ScopesGuard implements CanActivate {
       );
 
       if (!resolved) {
-        throw new ForbiddenException('You are not a member of this workspace');
+        throw new ForbiddenException('Вы не участник этого пространства');
       }
 
       membership = resolved;
@@ -73,7 +73,7 @@ export class ScopesGuard implements CanActivate {
     const missing = required.filter((scope) => !hasEffectiveScope(membership!.role, scopes, scope));
 
     if (missing.length > 0) {
-      throw new ForbiddenException('Insufficient workspace scopes');
+      throw new ForbiddenException('Недостаточно прав в пространстве');
     }
 
     return true;

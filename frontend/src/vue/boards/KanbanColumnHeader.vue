@@ -67,8 +67,12 @@ function startRename() {
 }
 
 async function submitRename() {
-  await props.onRename?.(columnName.value)
-  editingName.value = false
+  try {
+    await props.onRename?.(columnName.value)
+    editingName.value = false
+  } catch {
+    /* keep editing open; error shown by parent */
+  }
 }
 
 function onRenameKeydown(event) {

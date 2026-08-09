@@ -1,6 +1,11 @@
 <template>
   <p v-if="isLoading" class="text-sm text-muted-foreground">Загрузка участников...</p>
 
+  <div v-else-if="isError" role="alert">
+    <p class="settings-inline-error">{{ loadError || 'Не удалось загрузить участников' }}</p>
+    <button type="button" class="btn-ghost" @click="onRetryLoad?.()">Повторить</button>
+  </div>
+
   <div v-else class="overflow-x-auto">
     <table class="settings-table">
       <thead>
@@ -23,14 +28,16 @@
               class="glass-input py-1.5"
               :value="member.role"
               @change="
-                emit('update-role', { memberId: member.id, role: $event.target.value })
+                onUpdateRole?.({ memberId: member.id, role: $event.target.value })
               "
             >
-              <option v-for="role in assignableRoles" :key="role" :value="role">
-                {{ role }}
+              <option v-for="role in assignableRoles" :key="role.value" :value="role.value">
+                {{ role.label }}
               </option>
             </select>
-            <span v-else class="settings-badge">{{ member.role }}</span>
+            <span v-else class="settings-badge">{{
+              roleLabels[member.role] || member.role
+            }}</span>
           </td>
           <td v-if="canManage">
             <div
@@ -58,7 +65,7 @@
               v-if="member.userId !== currentUserId"
               type="button"
               class="text-sm text-red-400 hover:text-red-300"
-              @click="emit('remove', member.id)"
+              @click="onRemove?.(member.id)"
             >
               Удалить
             </button>
@@ -67,25 +74,33 @@
         </tr>
       </tbody>
     </table>
+
+    <p v-if="actionError" class="settings-inline-error" role="alert">{{ actionError }}</p>
   </div>
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   members: { type: Array, required: true },
   isLoading: { type: Boolean, default: false },
+  isError: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
+  actionError: { type: String, default: '' },
   currentUserId: { type: String, required: true },
   canManage: { type: Boolean, default: false },
   assignableRoles: { type: Array, required: true },
+  roleLabels: { type: Object, default: () => ({}) },
   extraScopes: { type: Array, required: true },
+  onRetryLoad: { type: Function, default: null },
+  onUpdateRole: { type: Function, default: null },
+  onUpdateScopes: { type: Function, default: null },
+  onRemove: { type: Function, default: null },
 })
-
-const emit = defineEmits(['update-role', 'update-scopes', 'remove'])
 
 function onScopeToggle(member, scopeId) {
   const scopes = member.scopes || []
   const checked = scopes.includes(scopeId)
   const next = checked ? scopes.filter((item) => item !== scopeId) : [...scopes, scopeId]
-  emit('update-scopes', { memberId: member.id, scopes: next })
+  props.onUpdateScopes?.({ memberId: member.id, scopes: next })
 }
 </script>

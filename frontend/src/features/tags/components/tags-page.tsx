@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import TagList from '@/vue/tags/TagList.vue';
 import {
@@ -12,31 +12,48 @@ import {
 import { TAG_COLOR_OPTIONS } from '../types';
 
 export function TagsPage({ workspaceId }: { workspaceId: string }) {
-  const { data: tags = [], isLoading } = useTagsQuery(workspaceId);
+  const { data: tags = [], isLoading, isError, error, refetch } = useTagsQuery(workspaceId);
   const createMutation = useCreateTagMutation(workspaceId);
   const updateMutation = useUpdateTagMutation(workspaceId);
   const deleteMutation = useDeleteTagMutation(workspaceId);
+  const [actionError, setActionError] = useState('');
 
   const onCreate = useCallback(
-    (payload: { name: string; color: string }) => {
-      createMutation.mutate(payload);
+    async (payload: { name: string; color: string }) => {
+      setActionError('');
+      try {
+        await createMutation.mutateAsync(payload);
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Не удалось создать тег');
+        throw err;
+      }
     },
     [createMutation],
   );
 
   const onRename = useCallback(
-    (payload: { tagId: string; name: string }) => {
-      updateMutation.mutate({
-        tagId: payload.tagId,
-        data: { name: payload.name },
-      });
+    async (payload: { tagId: string; name: string }) => {
+      setActionError('');
+      try {
+        await updateMutation.mutateAsync({
+          tagId: payload.tagId,
+          data: { name: payload.name },
+        });
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Не удалось переименовать тег');
+      }
     },
     [updateMutation],
   );
 
   const onDelete = useCallback(
-    (tagId: string) => {
-      deleteMutation.mutate(tagId);
+    async (tagId: string) => {
+      setActionError('');
+      try {
+        await deleteMutation.mutateAsync(tagId);
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Не удалось удалить тег');
+      }
     },
     [deleteMutation],
   );
@@ -45,13 +62,34 @@ export function TagsPage({ workspaceId }: { workspaceId: string }) {
     () => ({
       tags,
       isLoading,
+      isError,
+      loadError: isError
+        ? error instanceof Error
+          ? error.message
+          : 'Не удалось загрузить теги'
+        : '',
+      actionError,
       isCreating: createMutation.isPending,
       colorOptions: [...TAG_COLOR_OPTIONS],
+      onRetryLoad: () => {
+        void refetch();
+      },
       onRename,
       onDelete,
       onCreate,
     }),
-    [tags, isLoading, createMutation.isPending, onRename, onDelete, onCreate],
+    [
+      tags,
+      isLoading,
+      isError,
+      error,
+      actionError,
+      createMutation.isPending,
+      refetch,
+      onRename,
+      onDelete,
+      onCreate,
+    ],
   );
 
   return (

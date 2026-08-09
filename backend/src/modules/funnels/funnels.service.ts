@@ -100,7 +100,7 @@ export class FunnelsService {
     });
 
     if (!funnel) {
-      throw new NotFoundException('Funnel not found');
+      throw new NotFoundException('Воронка не найдена');
     }
 
     return {
@@ -138,7 +138,7 @@ export class FunnelsService {
     });
 
     if (!stage) {
-      throw new NotFoundException('Stage not found');
+      throw new NotFoundException('Этап не найден');
     }
 
     const take = Math.min(Math.max(limit, 1), FUNNEL_STAGE_DEAL_LIMIT);
@@ -189,7 +189,7 @@ export class FunnelsService {
     });
 
     if (!funnel) {
-      throw new NotFoundException('Funnel not found');
+      throw new NotFoundException('Воронка не найдена');
     }
 
     return funnel;
@@ -246,7 +246,7 @@ export class FunnelsService {
     });
 
     if (!stage) {
-      throw new NotFoundException('Stage not found');
+      throw new NotFoundException('Этап не найден');
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
@@ -282,12 +282,12 @@ export class FunnelsService {
     });
 
     if (!stage) {
-      throw new NotFoundException('Stage not found');
+      throw new NotFoundException('Этап не найден');
     }
 
     const stageCount = await this.prisma.funnelStage.count({ where: { funnelId } });
     if (stageCount <= 1) {
-      throw new BadRequestException('Cannot delete the last stage');
+      throw new BadRequestException('Нельзя удалить последний этап');
     }
 
     const trashedDeals = await this.prisma.deal.count({
@@ -344,7 +344,7 @@ export class FunnelsService {
     });
 
     if (!stage) {
-      throw new NotFoundException('Stage not found');
+      throw new NotFoundException('Этап не найден');
     }
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {

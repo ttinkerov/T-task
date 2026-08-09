@@ -4,7 +4,7 @@
 
 Канбан и CRM для небольших команд. Workspaces, доски, сделки, формы, уведомления.
 
-**Стек:** Next.js, NestJS, Vue, Prisma, PostgreSQL, Redis
+**Стек:** Next.js (App Router) + Vue islands, NestJS, Prisma, PostgreSQL, Redis
 
 ## Возможности
 
@@ -16,7 +16,7 @@
 - **Forms** — публичные формы → задачи / сделки
 - **DoD / Templates** — чеклисты и шаблоны карточек
 - **Analytics** — throughput, cycle time, workload
-- **Apps** — календарь iCal, импорт, AI-помощник, корзина
+- **Apps** — календарь iCal, импорт, AI-помощник с RAG, корзина
 - **Whiteboard** — рисование (tldraw), автосохранение на workspace
 
 ## Запуск
@@ -56,11 +56,13 @@ npm run dev:frontend  # :3000
 
 ```text
 T-task/
-├── frontend/                 # Next.js App Router
-├── backend/                  # NestJS API + Prisma
+├── frontend/                 # Next.js shell + Vue islands (UI)
+├── backend/                  # NestJS API + Prisma + jobs
 ├── docker-compose.yml        # локальный стек (dev)
 └── docker-compose.prod.yml   # production overlay
 ```
+
+Next.js — каркас приложения, Vue — интерактивные экраны (`VueIsland`).
 
 ## Скрипты
 
@@ -69,6 +71,9 @@ npm run dev:backend
 npm run dev:frontend
 npm run build
 npm run lint
+npm run typecheck
+npm run test
+npm run test:e2e:smoke
 npm run prisma:migrate -w backend
 ```
 

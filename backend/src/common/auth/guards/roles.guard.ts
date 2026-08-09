@@ -37,20 +37,20 @@ export class RolesGuard implements CanActivate {
     >();
 
     if (!request.user) {
-      throw new UnauthorizedException('Authentication required');
+      throw new UnauthorizedException('Требуется аутентификация');
     }
 
     const pathWorkspaceId = request.params.workspaceId as string | undefined;
     const headerWorkspaceId = request.headers[WORKSPACE_ID_HEADER] as string | undefined;
 
     if (pathWorkspaceId && headerWorkspaceId && pathWorkspaceId !== headerWorkspaceId) {
-      throw new ForbiddenException('Workspace ID mismatch');
+      throw new ForbiddenException('Несовпадение ID рабочего пространства');
     }
 
     const workspaceId = pathWorkspaceId ?? headerWorkspaceId;
 
     if (!workspaceId) {
-      throw new ForbiddenException('Workspace context is required');
+      throw new ForbiddenException('Требуется контекст рабочего пространства');
     }
 
     const membership = await this.workspacesService.resolveGuardMembership(
@@ -59,11 +59,11 @@ export class RolesGuard implements CanActivate {
     );
 
     if (!membership) {
-      throw new ForbiddenException('You are not a member of this workspace');
+      throw new ForbiddenException('Вы не участник этого пространства');
     }
 
     if (!requiredRoles.includes(membership.role)) {
-      throw new ForbiddenException('Insufficient permissions');
+      throw new ForbiddenException('Недостаточно прав');
     }
 
     request.workspaceMembership = membership;

@@ -134,6 +134,12 @@
     color: $color-text-muted;
     font-size: 0.8rem;
   }
+
+  &__error {
+    margin: 0.5rem 0;
+    color: var(--tt-danger);
+    font-size: 0.8rem;
+  }
 }
 
 .task-tags,

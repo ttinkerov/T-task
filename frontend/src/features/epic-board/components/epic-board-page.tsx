@@ -174,13 +174,17 @@ export function EpicBoardPage({
     [epicId, epicOptions, epicsQuery.isLoading, epics.length, onEpicChange],
   );
 
-  const boardStatus = epicsQuery.isLoading
-    ? 'loading-epics'
-    : epics.length === 0
-      ? 'no-epics'
-      : childrenQuery.isLoading
-        ? 'loading-children'
-        : 'ready';
+  const boardStatus = epicsQuery.isError
+    ? 'load-error'
+    : epicsQuery.isLoading
+      ? 'loading-epics'
+      : epics.length === 0
+        ? 'no-epics'
+        : childrenQuery.isError
+          ? 'load-error'
+          : childrenQuery.isLoading
+            ? 'loading-children'
+            : 'ready';
 
   const statusProps = useMemo(
     () => ({
@@ -188,8 +192,27 @@ export function EpicBoardPage({
       boardName: selectedEpic?.board.name ?? '',
       foreignCount,
       moveError,
+      loadError:
+        (epicsQuery.error instanceof Error
+          ? epicsQuery.error.message
+          : childrenQuery.error instanceof Error
+            ? childrenQuery.error.message
+            : '') || 'Не удалось загрузить доску эпиков',
+      onRetryLoad: () => {
+        void epicsQuery.refetch();
+        void childrenQuery.refetch();
+      },
     }),
-    [boardStatus, selectedEpic?.board.name, foreignCount, moveError],
+    [
+      boardStatus,
+      selectedEpic?.board.name,
+      foreignCount,
+      moveError,
+      epicsQuery.error,
+      epicsQuery.refetch,
+      childrenQuery.error,
+      childrenQuery.refetch,
+    ],
   );
 
   const overlayProps = useMemo(

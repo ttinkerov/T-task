@@ -7,7 +7,7 @@
     </p>
 
     <p v-else-if="isError" class="custom-fields-page__error" role="alert">
-      Не удалось загрузить поля.
+      {{ loadError || 'Не удалось загрузить поля.' }}
     </p>
 
     <p v-else-if="fields.length === 0" class="text-sm text-muted-foreground">
@@ -48,6 +48,8 @@
         </div>
       </li>
     </ul>
+
+    <p v-if="actionError" class="custom-fields-page__error" role="alert">{{ actionError }}</p>
   </section>
 </template>
 
@@ -56,6 +58,8 @@ defineProps({
   fields: { type: Array, required: true },
   isLoading: { type: Boolean, default: false },
   isError: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
+  actionError: { type: String, default: '' },
   canManage: { type: Boolean, default: false },
   pendingId: { type: String, default: null },
   typeLabels: { type: Object, required: true },

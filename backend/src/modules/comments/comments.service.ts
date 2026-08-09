@@ -97,7 +97,7 @@ export class CommentsService {
     });
 
     if (!comment) {
-      throw new NotFoundException('Comment not found');
+      throw new NotFoundException('Комментарий не найден');
     }
 
     if (comment.authorId !== userId) {
@@ -106,7 +106,7 @@ export class CommentsService {
       });
       const canModerate = membership?.role === 'OWNER' || membership?.role === 'ADMIN';
       if (!canModerate) {
-        throw new NotFoundException('Comment not found');
+        throw new NotFoundException('Комментарий не найден');
       }
     }
 
@@ -136,7 +136,7 @@ export class CommentsService {
     });
 
     if (!task) {
-      throw new NotFoundException('Task not found');
+      throw new NotFoundException('Задача не найдена');
     }
 
     return task;

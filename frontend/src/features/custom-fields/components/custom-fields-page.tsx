@@ -30,6 +30,7 @@ export function CustomFieldsPage({ workspaceId }: CustomFieldsPageProps) {
   const deleteMutation = useDeleteCustomFieldMutation(workspaceId);
 
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
 
   const role = session?.workspaces.find((workspace) => workspace.id === workspaceId)?.role;
   const canManage = role === 'OWNER' || role === 'ADMIN' || role === 'MEMBER';
@@ -51,13 +52,14 @@ export function CustomFieldsPage({ workspaceId }: CustomFieldsPageProps) {
   const onToggleCard = useCallback(
     async (payload: { fieldId: string; showOnCard: boolean }) => {
       setPendingId(payload.fieldId);
+      setActionError('');
       try {
         await updateMutation.mutateAsync({
           fieldId: payload.fieldId,
           data: { showOnCard: payload.showOnCard },
         });
-      } catch {
-        /* ignore */
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Не удалось обновить поле');
       } finally {
         setPendingId(null);
       }
@@ -68,10 +70,11 @@ export function CustomFieldsPage({ workspaceId }: CustomFieldsPageProps) {
   const onDelete = useCallback(
     async (fieldId: string) => {
       setPendingId(fieldId);
+      setActionError('');
       try {
         await deleteMutation.mutateAsync(fieldId);
-      } catch {
-        /* ignore */
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Не удалось удалить поле');
       } finally {
         setPendingId(null);
       }
@@ -84,6 +87,13 @@ export function CustomFieldsPage({ workspaceId }: CustomFieldsPageProps) {
       fields,
       isLoading: fieldsQuery.isLoading,
       isError: Boolean(fieldsQuery.error),
+      loadError:
+        fieldsQuery.error instanceof Error
+          ? fieldsQuery.error.message
+          : fieldsQuery.error
+            ? 'Не удалось загрузить поля'
+            : '',
+      actionError,
       canManage,
       pendingId,
       typeLabels: CUSTOM_FIELD_TYPE_LABELS,
@@ -94,6 +104,7 @@ export function CustomFieldsPage({ workspaceId }: CustomFieldsPageProps) {
       fields,
       fieldsQuery.isLoading,
       fieldsQuery.error,
+      actionError,
       canManage,
       pendingId,
       onToggleCard,

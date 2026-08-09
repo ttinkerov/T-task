@@ -11,6 +11,7 @@ import {
   BULK_TASK_MUTATE_RATE_LIMIT,
   MENTION_SOURCE_MUTATE_RATE_LIMIT,
   RateLimit,
+  TASK_MUTATE_RATE_LIMIT,
 } from '../../common/security/rate-limit.decorator';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
@@ -35,6 +36,8 @@ export class TasksController {
   }
 
   @Post()
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(TASK_MUTATE_RATE_LIMIT)
   @Roles(...MEMBER_PLUS_ROLES)
   async create(
     @Param('workspaceId') workspaceId: string,
@@ -73,6 +76,8 @@ export class TasksController {
   }
 
   @Patch(':taskId/move')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(TASK_MUTATE_RATE_LIMIT)
   @Roles(...MEMBER_PLUS_ROLES)
   async move(
     @Param('workspaceId') workspaceId: string,
@@ -85,6 +90,8 @@ export class TasksController {
   }
 
   @Delete(':taskId')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(TASK_MUTATE_RATE_LIMIT)
   @Roles(...ALL_WORKSPACE_ROLES)
   @Scopes(WorkspaceScope.TASK_DELETE)
   async remove(
@@ -97,6 +104,8 @@ export class TasksController {
   }
 
   @Post(':taskId/duplicate')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(TASK_MUTATE_RATE_LIMIT)
   @Roles(...MEMBER_PLUS_ROLES)
   async duplicate(
     @Param('workspaceId') workspaceId: string,
@@ -108,6 +117,8 @@ export class TasksController {
   }
 
   @Post(':taskId/apply-template')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(TASK_MUTATE_RATE_LIMIT)
   @Roles(...MEMBER_PLUS_ROLES)
   async applyTemplate(
     @Param('workspaceId') workspaceId: string,

@@ -73,7 +73,7 @@ export class TasksService {
     });
 
     if (!task) {
-      throw new NotFoundException('Task not found');
+      throw new NotFoundException('Задача не найдена');
     }
 
     return this.boardsService.serializeTask(task);
@@ -97,7 +97,7 @@ export class TasksService {
     });
 
     if (!column) {
-      throw new NotFoundException('Column not found');
+      throw new NotFoundException('Колонка не найдена');
     }
 
     let epicId: string | null = null;
@@ -244,7 +244,7 @@ export class TasksService {
       });
 
       if (!membership) {
-        throw new BadRequestException('Assignee must be a workspace member');
+        throw new BadRequestException('Исполнитель должен быть участником пространства');
       }
     }
 
@@ -406,7 +406,7 @@ export class TasksService {
         },
       });
       if (!membership) {
-        throw new BadRequestException('Assignee must be a workspace member');
+        throw new BadRequestException('Исполнитель должен быть участником пространства');
       }
     }
 
@@ -432,7 +432,7 @@ export class TasksService {
         where: { id: dto.columnId!, board: { workspaceId } },
         select: { id: true, boardId: true, name: true, position: true },
       });
-      if (!column) throw new NotFoundException('Column not found');
+      if (!column) throw new NotFoundException('Колонка не найдена');
 
       const boardId = column.boardId;
       if (tasks.some((task) => task.column.boardId !== boardId)) {
@@ -602,7 +602,7 @@ export class TasksService {
     });
 
     if (!targetColumn) {
-      throw new NotFoundException('Column not found');
+      throw new NotFoundException('Колонка не найдена');
     }
 
     const sourceColumn = await this.prisma.boardColumn.findFirst({
@@ -611,7 +611,7 @@ export class TasksService {
     });
 
     if (!sourceColumn) {
-      throw new NotFoundException('Column not found');
+      throw new NotFoundException('Колонка не найдена');
     }
 
     if (sourceColumn.boardId !== targetColumn.boardId) {
@@ -1082,7 +1082,7 @@ export class TasksService {
     });
 
     if (!created) {
-      throw new NotFoundException('Task not found');
+      throw new NotFoundException('Задача не найдена');
     }
 
     this.eventEmitter.emit(DomainEvents.TASK_CHANGED, {
@@ -1105,7 +1105,7 @@ export class TasksService {
     });
 
     if (!task) {
-      throw new NotFoundException('Task not found');
+      throw new NotFoundException('Задача не найдена');
     }
 
     return task;
@@ -1121,7 +1121,7 @@ export class TasksService {
     });
 
     if (!column) {
-      throw new BadRequestException('Column must belong to this workspace');
+      throw new BadRequestException('Колонка должна принадлежать этому пространству');
     }
 
     return column;
