@@ -1,4 +1,4 @@
-name: E2E Smoke
+name: E2E
 
 on:
   push:
@@ -6,13 +6,13 @@ on:
   pull_request:
 
 concurrency:
-  group: e2e-smoke-${{ github.workflow }}-${{ github.ref }}
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  smoke:
+  e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     services:
       postgres:
@@ -88,14 +88,14 @@ jobs:
         run: npx playwright install --with-deps chromium
         working-directory: frontend
 
-      - name: Run smoke E2E
-        run: npm run test:e2e:smoke -w frontend
+      - name: Run Playwright suite
+        run: npm run test:e2e -w frontend
 
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v5
         with:
-          name: playwright-smoke-report
+          name: playwright-e2e-report
           path: |
             frontend/test-results
             frontend/playwright-report

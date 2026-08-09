@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
 import { json, urlencoded } from 'express';
@@ -92,6 +93,23 @@ async function bootstrap(): Promise<void> {
   );
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new ResponseEnvelopeInterceptor());
+
+  if (!isProduction) {
+    const openApi = new DocumentBuilder()
+      .setTitle('T-task API')
+      .setDescription('REST API v1 — workspaces, boards, CRM, forms, AI/RAG')
+      .setVersion('1.0')
+      .addCookieAuth('access_token')
+      .addApiKey(
+        { type: 'apiKey', name: 'x-workspace-id', in: 'header', description: 'Active workspace' },
+        'workspace',
+      )
+      .build();
+    const document = SwaggerModule.createDocument(app, openApi);
+    SwaggerModule.setup('docs', app, document, {
+      jsonDocumentUrl: 'docs-json',
+    });
+  }
 
   await app.listen(port);
 }

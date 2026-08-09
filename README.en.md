@@ -65,6 +65,8 @@ T-task/
 
 Next.js is the app shell; Vue powers the interactive screens (`VueIsland`).
 
+OpenAPI (dev): `http://localhost:3001/api/v1/docs`
+
 ## Scripts
 
 ```bash
@@ -74,6 +76,7 @@ npm run build
 npm run lint
 npm run typecheck
 npm run test
+npm run test:e2e
 npm run test:e2e:smoke
 npm run prisma:migrate -w backend
 ```
