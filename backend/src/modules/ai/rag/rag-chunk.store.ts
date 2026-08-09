@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma, RagSourceType } from '@prisma/client';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
+import type { RagChunkMetadata } from './rag-chunk.types';
 import { formatVectorLiteral } from './rag.constants';
 
 export type RagChunkRow = {
@@ -72,7 +73,7 @@ export class RagChunkStore {
     content: string;
     contentHash: string;
     embedding: number[];
-    metadata: Record<string, unknown>;
+    metadata: RagChunkMetadata;
   }) {
     const vector = formatVectorLiteral(input.embedding);
     const vectorSql = Prisma.raw(`'${vector}'::float8[]`);

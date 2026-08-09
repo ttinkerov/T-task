@@ -29,7 +29,7 @@
           <p>{{ message.content }}</p>
           <ul
             v-if="message.role === 'assistant' && message.citations?.length"
-            class="ai-chat__citations"
+            class="task-ai__citations"
             data-testid="ai-citations"
           >
             <li
@@ -41,10 +41,10 @@
             </li>
           </ul>
         </div>
-        <p v-if="isPending" class="settings-card__hint">Думаю…</p>
+        <p v-if="isPending" class="task-ai__pending">Думаю…</p>
       </div>
 
-      <p v-if="error" class="ai-chat__error">{{ error }}</p>
+      <p v-if="error" class="task-ai__error" role="alert">{{ error }}</p>
 
       <form class="task-ai__composer" @submit.prevent="submit">
         <input
@@ -85,9 +85,9 @@ async function ask(prompt) {
 
   try {
     const result = await props.onAsk?.(nextMessages.slice(-20));
-    const reply = typeof result === 'string' ? result : result?.reply;
-    const citations = typeof result === 'string' ? [] : (result?.citations ?? []);
-    messages.value = [...nextMessages, { role: 'assistant', content: reply || '', citations }];
+    const reply = result?.reply ?? '';
+    const citations = result?.citations ?? [];
+    messages.value = [...nextMessages, { role: 'assistant', content: reply, citations }];
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Ошибка ИИ';
   }
@@ -95,7 +95,7 @@ async function ask(prompt) {
 
 async function submit() {
   const content = input.value.trim();
-  if (!content) return;
+  if (!content || props.isPending) return;
   input.value = '';
   await ask(content);
 }

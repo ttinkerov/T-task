@@ -4,6 +4,7 @@ import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { AiCredentialsService } from '../ai-credentials.service';
 import { AiProviderClient } from '../ai-provider.client';
 import { RagChunkRow, RagChunkStore } from './rag-chunk.store';
+import { parseRagChunkMetadata } from './rag-chunk.types';
 import {
   maxMarginalRelevance,
   RAG_CANDIDATE_LIMIT,
@@ -195,18 +196,10 @@ export class RagRetrieverService {
   }
 
   private rowToSnippet(row: RagChunkRow): RagSnippet {
-    const meta = (row.metadata ?? {}) as Record<string, unknown>;
-    const title =
-      typeof meta.title === 'string' && meta.title.trim()
-        ? meta.title.trim()
-        : `${row.sourceType} ${row.sourceId}`;
-    const boardId = typeof meta.boardId === 'string' ? meta.boardId : null;
-    const taskId =
-      typeof meta.taskId === 'string'
-        ? meta.taskId
-        : row.sourceType === RagSourceType.TASK
-          ? row.sourceId
-          : null;
+    const meta = parseRagChunkMetadata(row.metadata);
+    const title = meta?.title ?? `${row.sourceType} ${row.sourceId}`;
+    const boardId = meta?.boardId ?? null;
+    const taskId = meta?.taskId ?? (row.sourceType === RagSourceType.TASK ? row.sourceId : null);
     return {
       key: chunkKey(row.sourceType, row.sourceId, row.chunkIndex),
       sourceType: row.sourceType,
@@ -244,7 +237,7 @@ export class RagRetrieverService {
       );
       return rows.map((row) => this.rowToSnippet(row));
     } catch (error) {
-      this.logger.debug(
+      this.logger.warn(
         `Vector search skipped: ${error instanceof Error ? error.message : 'unknown'}`,
       );
       return [];
@@ -262,7 +255,7 @@ export class RagRetrieverService {
         return rows.map((row) => this.rowToSnippet(row));
       }
     } catch (error) {
-      this.logger.debug(
+      this.logger.warn(
         `Chunk lexical search skipped: ${error instanceof Error ? error.message : 'unknown'}`,
       );
     }

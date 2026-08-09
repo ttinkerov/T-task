@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common';
 import { resolveSafeAiEndpoint, sanitizeProviderErrorMessage } from './utils/base-url-guard.util';
 import { pinnedHttpsRequest } from './utils/pinned-https-request.util';
 import { RAG_DEFAULT_EMBEDDING_MODEL, RAG_EMBEDDING_DIMENSIONS } from './rag/rag.constants';
@@ -26,6 +27,7 @@ const MAX_COMPLETION_TOKENS = 2048;
 const MAX_RESPONSE_BYTES = 256_000;
 const MAX_EMBEDDING_RESPONSE_BYTES = 2_000_000;
 
+@Injectable()
 export class AiProviderClient {
   async chatCompletion(params: {
     baseUrl: string;

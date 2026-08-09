@@ -1,10 +1,11 @@
+import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { RagSourceType } from '@prisma/client';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { AiCredentialsService } from '../ai-credentials.service';
 import { AiProviderClient } from '../ai-provider.client';
-import { createId } from './create-id';
 import { RagChunkStore } from './rag-chunk.store';
+import type { RagChunkMetadata } from './rag-chunk.types';
 import { RAG_EMBED_BATCH_SIZE, sha256Hex } from './rag.constants';
 import {
   chunkText,
@@ -36,8 +37,8 @@ export class RagIndexerService {
     this.defer(() => this.deleteSource(workspaceId, sourceType, sourceId));
   }
 
-  scheduleSoftDeleteTask(workspaceId: string, taskId: string) {
-    this.defer(() => this.softDeleteTask(workspaceId, taskId));
+  scheduleDeleteTaskIndex(workspaceId: string, taskId: string) {
+    this.defer(() => this.deleteTaskIndex(workspaceId, taskId));
   }
 
   async upsertTask(workspaceId: string, taskId: string): Promise<void> {
@@ -57,7 +58,7 @@ export class RagIndexerService {
     });
 
     if (!task || task.deletedAt) {
-      await this.softDeleteTask(workspaceId, taskId);
+      await this.deleteTaskIndex(workspaceId, taskId);
       return;
     }
 
@@ -67,17 +68,19 @@ export class RagIndexerService {
       descriptionDoc: task.descriptionDoc,
     });
 
+    const metadata: RagChunkMetadata = {
+      taskId: task.id,
+      boardId: task.column.boardId,
+      title: task.title,
+    };
+
     await this.replaceSourceChunks({
       workspaceId,
       sourceType: RagSourceType.TASK,
       sourceId: task.id,
       plain,
       title: task.title,
-      metadata: {
-        taskId: task.id,
-        boardId: task.column.boardId,
-        title: task.title,
-      },
+      metadata,
     });
   }
 
@@ -111,18 +114,20 @@ export class RagIndexerService {
       taskTitle: comment.task.title,
     });
 
+    const metadata: RagChunkMetadata = {
+      commentId: comment.id,
+      taskId: comment.taskId,
+      boardId: comment.task.column.boardId,
+      title: comment.task.title,
+    };
+
     await this.replaceSourceChunks({
       workspaceId,
       sourceType: RagSourceType.COMMENT,
       sourceId: comment.id,
       plain,
       title: comment.task.title,
-      metadata: {
-        commentId: comment.id,
-        taskId: comment.taskId,
-        boardId: comment.task.column.boardId,
-        title: comment.task.title,
-      },
+      metadata,
     });
   }
 
@@ -130,7 +135,7 @@ export class RagIndexerService {
     await this.store.deleteSource(workspaceId, sourceType, sourceId);
   }
 
-  async softDeleteTask(workspaceId: string, taskId: string) {
+  async deleteTaskIndex(workspaceId: string, taskId: string) {
     await this.store.deleteSource(workspaceId, RagSourceType.TASK, taskId);
     await this.store.deleteCommentsForTask(workspaceId, taskId);
   }
@@ -165,12 +170,12 @@ export class RagIndexerService {
     sourceId: string;
     plain: string;
     title: string;
-    metadata: Record<string, unknown>;
+    metadata: RagChunkMetadata;
   }) {
     const rawChunks = chunkText(input.plain);
     const chunks = rawChunks.map((chunk) =>
       contextualizeChunk({
-        sourceType: input.sourceType === RagSourceType.TASK ? 'TASK' : 'COMMENT',
+        sourceType: input.sourceType,
         title: input.title,
         chunk,
       }),
@@ -182,7 +187,9 @@ export class RagIndexerService {
 
     const credentials = await this.tryLoadCredentials(input.workspaceId);
     if (!credentials) {
-      this.logger.debug(`Skip RAG index: AI not configured for ${input.workspaceId}`);
+      this.logger.warn(
+        `Skip RAG index (embeddings unavailable) for ${input.sourceType}:${input.sourceId} in ${input.workspaceId}`,
+      );
       return;
     }
 
@@ -201,11 +208,6 @@ export class RagIndexerService {
       if (!prev || prev.contentHash !== contentHash) {
         toEmbed.push({ chunkIndex: i, content, contentHash });
       }
-    }
-
-    const staleIds = existing.filter((row) => row.chunkIndex >= chunks.length).map((row) => row.id);
-    if (staleIds.length > 0) {
-      await this.store.deleteByIds(staleIds);
     }
 
     for (let offset = 0; offset < toEmbed.length; offset += RAG_EMBED_BATCH_SIZE) {
@@ -234,7 +236,7 @@ export class RagIndexerService {
         if (!embedding) continue;
         const prev = existingByIndex.get(item.chunkIndex);
         await this.store.upsertChunk({
-          id: prev?.id ?? createId(),
+          id: prev?.id ?? randomUUID(),
           workspaceId: input.workspaceId,
           sourceType: input.sourceType,
           sourceId: input.sourceId,
@@ -245,6 +247,11 @@ export class RagIndexerService {
           metadata: input.metadata,
         });
       }
+    }
+
+    const staleIds = existing.filter((row) => row.chunkIndex >= chunks.length).map((row) => row.id);
+    if (staleIds.length > 0) {
+      await this.store.deleteByIds(staleIds);
     }
   }
 

@@ -4,7 +4,7 @@ import { useCallback, useMemo } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import TaskAiAssistantView from '@/vue/ai/TaskAiAssistant.vue';
 import { useAiChatMutation, useAiSettingsQuery } from '../hooks';
-import type { AiChatMessage, AiCitation } from '../types';
+import type { AiChatMessage } from '../types';
 
 const QUICK_PROMPTS = [
   'Разбей на подзадачи',
@@ -39,7 +39,7 @@ export function TaskAiAssistant({
       });
       return {
         reply: result.reply,
-        citations: (result.citations ?? []) as AiCitation[],
+        citations: result.citations ?? [],
       };
     },
     [chatMutation, taskId, taskTitle, taskDescription],

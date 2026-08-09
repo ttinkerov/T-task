@@ -24,7 +24,7 @@ export function AiSettingsCard({
   workspaceId: string;
   canManage: boolean;
 }) {
-  const { data: settings, isLoading } = useAiSettingsQuery(workspaceId);
+  const { data: settings, isLoading, isError, error, refetch } = useAiSettingsQuery(workspaceId);
   const { data: ragStatus, isLoading: ragLoading } = useAiRagStatusQuery(workspaceId);
   const upsertMutation = useUpsertAiSettingsMutation(workspaceId);
   const deleteMutation = useDeleteAiSettingsMutation(workspaceId);
@@ -46,6 +46,15 @@ export function AiSettingsCard({
     () => ({
       settings: settings ?? null,
       isLoading,
+      isError,
+      loadError: isError
+        ? error instanceof Error
+          ? error.message
+          : 'Не удалось загрузить настройки ИИ'
+        : '',
+      onRetryLoad: () => {
+        void refetch();
+      },
       canManage,
       providerOptions: AI_PROVIDER_OPTIONS,
       embeddingProviderOptions: AI_EMBEDDING_PROVIDER_OPTIONS,
@@ -63,6 +72,9 @@ export function AiSettingsCard({
     [
       settings,
       isLoading,
+      isError,
+      error,
+      refetch,
       canManage,
       upsertMutation.isPending,
       testMutation.isPending,

@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AiProvider } from '@prisma/client';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
@@ -21,6 +26,8 @@ const CHAT_PROVIDERS_WITH_EMBEDDINGS: ReadonlySet<AiProvider> = new Set([
 
 @Injectable()
 export class AiCredentialsService {
+  private readonly logger = new Logger(AiCredentialsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
@@ -81,7 +88,12 @@ export class AiCredentialsService {
           tokenIv: setting.embeddingTokenIv,
           tokenAuthTag: setting.embeddingTokenAuthTag,
         });
-      } catch {
+      } catch (error) {
+        this.logger.warn(
+          `Dedicated embedding credentials unusable for ${workspaceId}: ${
+            error instanceof Error ? error.message : 'unknown'
+          }`,
+        );
         return null;
       }
     }
@@ -101,7 +113,12 @@ export class AiCredentialsService {
         tokenIv: setting.tokenIv,
         tokenAuthTag: setting.tokenAuthTag,
       });
-    } catch {
+    } catch (error) {
+      this.logger.warn(
+        `Inherited embedding credentials unusable for ${workspaceId}: ${
+          error instanceof Error ? error.message : 'unknown'
+        }`,
+      );
       return null;
     }
   }

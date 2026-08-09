@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AiProvider } from '@prisma/client';
-import { AiCredentialsService } from './ai-credentials.service';
+import { AiCredentialsService, type AiRuntimeCredentials } from './ai-credentials.service';
 
 describe('AiCredentialsService.loadEmbeddingCredentials', () => {
   it('uses dedicated embedding credentials when set', async () => {
@@ -30,15 +30,22 @@ describe('AiCredentialsService.loadEmbeddingCredentials', () => {
       } as never,
     );
 
-    vi.spyOn(service as never, 'toRuntime' as never).mockImplementation(((input: {
+    type RuntimeSource = {
       provider: AiProvider;
       model: string;
-    }) => ({
+    };
+
+    vi.spyOn(
+      service as unknown as {
+        toRuntime: (input: RuntimeSource) => AiRuntimeCredentials;
+      },
+      'toRuntime',
+    ).mockImplementation((input) => ({
       provider: input.provider,
       model: input.model,
       baseUrl: 'https://api.openai.com/v1',
       apiToken: 'sk-emb',
-    })) as never);
+    }));
 
     const creds = await service.loadEmbeddingCredentials('ws-1');
     expect(creds?.provider).toBe(AiProvider.OPENAI);

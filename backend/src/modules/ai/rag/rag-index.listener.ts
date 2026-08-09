@@ -21,7 +21,7 @@ export class RagIndexListener {
 
   @OnEvent(DomainEvents.TASK_SOFT_DELETED)
   handleTaskSoftDeleted(payload: TaskSoftDeletedPayload) {
-    this.indexer.scheduleSoftDeleteTask(payload.workspaceId, payload.taskId);
+    this.indexer.scheduleDeleteTaskIndex(payload.workspaceId, payload.taskId);
   }
 
   @OnEvent(DomainEvents.COMMENT_CREATED)

@@ -1,5 +1,11 @@
 <template>
-  <p v-if="isLoading" class="text-sm text-muted-foreground">Загрузка…</p>
+  <p v-if="isLoading" class="ai-chat__placeholder">Загрузка…</p>
+
+  <div v-else-if="isError" class="ai-chat ai-chat--empty" data-testid="ai-chat-load-error">
+    <h1 class="ai-chat__title">ИИ-чат</h1>
+    <p class="ai-chat__error" role="alert">{{ loadError || 'Не удалось загрузить настройки ИИ' }}</p>
+    <button type="button" class="btn-ghost" @click="onRetryLoad?.()">Повторить</button>
+  </div>
 
   <div v-else-if="!configured" class="ai-chat ai-chat--empty">
     <h1 class="ai-chat__title">ИИ-чат</h1>
@@ -44,7 +50,7 @@
       <p v-if="isPending" class="ai-chat__placeholder">Думаю…</p>
     </div>
 
-    <p v-if="error" class="ai-chat__error">{{ error }}</p>
+    <p v-if="error" class="ai-chat__error" role="alert">{{ error }}</p>
 
     <form class="ai-chat__composer" @submit.prevent="submit">
       <textarea
@@ -67,6 +73,9 @@ import { nextTick, ref, watch } from 'vue';
 
 const props = defineProps({
   isLoading: { type: Boolean, default: false },
+  isError: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
+  onRetryLoad: { type: Function, default: null },
   configured: { type: Boolean, default: false },
   provider: { type: String, default: '' },
   model: { type: String, default: '' },
@@ -105,9 +114,9 @@ async function submit() {
 
   try {
     const result = await props.onSend?.(nextMessages.slice(-20));
-    const reply = typeof result === 'string' ? result : result?.reply;
-    const citations = typeof result === 'string' ? [] : (result?.citations ?? []);
-    messages.value = [...nextMessages, { role: 'assistant', content: reply || '', citations }];
+    const reply = result?.reply ?? '';
+    const citations = result?.citations ?? [];
+    messages.value = [...nextMessages, { role: 'assistant', content: reply, citations }];
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Не удалось получить ответ';
   }

@@ -1,7 +1,15 @@
 <template>
-  <p v-if="isLoading || !settings" class="text-sm text-muted-foreground">Загрузка настроек ИИ…</p>
+  <p v-if="isLoading" class="settings-card__hint">Загрузка настроек ИИ…</p>
 
-  <div v-else class="settings-card" data-testid="ai-settings-card">
+  <div v-else-if="isError" class="settings-card" data-testid="ai-settings-load-error">
+    <h2 class="settings-card__title">ИИ</h2>
+    <p class="ai-settings-form__error" role="alert">
+      {{ loadError || 'Не удалось загрузить настройки ИИ' }}
+    </p>
+    <button type="button" class="btn-ghost" @click="onRetryLoad?.()">Повторить</button>
+  </div>
+
+  <div v-else-if="settings" class="settings-card" data-testid="ai-settings-card">
     <h2 class="settings-card__title">ИИ</h2>
     <p class="settings-card__text">
       Чат может быть любым OpenAI-совместимым API (в т.ч. DeepSeek). Для RAG нужен провайдер с
@@ -50,7 +58,7 @@
     </p>
 
     <form v-else class="ai-settings-form" @submit.prevent="submit">
-      <h3 class="settings-card__hint">Чат</h3>
+      <h3 class="ai-settings-form__section">Чат</h3>
       <label class="task-drawer__field">
         <span>Провайдер</span>
         <select v-model="provider" class="glass-input">
@@ -90,7 +98,7 @@
         />
       </label>
 
-      <h3 class="settings-card__hint">RAG embeddings (опционально)</h3>
+      <h3 class="ai-settings-form__section">RAG embeddings (опционально)</h3>
       <p class="settings-card__hint">
         Если чат — DeepSeek/Groq/CUSTOM без embeddings, укажите здесь OpenAI или OpenRouter.
       </p>
@@ -171,7 +179,14 @@
       </div>
     </form>
 
-    <p v-if="message" class="settings-card__hint">{{ message }}</p>
+    <p
+      v-if="message"
+      class="ai-settings-form__feedback"
+      :class="messageTone === 'error' ? 'ai-settings-form__feedback--error' : 'ai-settings-form__feedback--ok'"
+      :role="messageTone === 'error' ? 'alert' : undefined"
+    >
+      {{ message }}
+    </p>
   </div>
 </template>
 
@@ -181,6 +196,9 @@ import { ref, watch } from 'vue';
 const props = defineProps({
   settings: { type: Object, default: null },
   isLoading: { type: Boolean, default: false },
+  isError: { type: Boolean, default: false },
+  loadError: { type: String, default: '' },
+  onRetryLoad: { type: Function, default: null },
   canManage: { type: Boolean, default: false },
   providerOptions: { type: Array, default: () => [] },
   embeddingProviderOptions: { type: Array, default: () => [] },
@@ -206,6 +224,7 @@ const embeddingBaseUrl = ref('');
 const embeddingApiToken = ref('');
 const clearEmbedding = ref(false);
 const message = ref('');
+const messageTone = ref('ok');
 
 watch(
   () => props.settings,
@@ -226,12 +245,18 @@ function formatDate(value) {
   try {
     return new Date(value).toLocaleString('ru-RU');
   } catch {
+    /* ignore */
     return value;
   }
 }
 
+function setMessage(text, tone = 'ok') {
+  message.value = text;
+  messageTone.value = tone;
+}
+
 async function submit() {
-  message.value = '';
+  setMessage('');
   try {
     const payload = {
       provider: provider.value,
@@ -259,46 +284,47 @@ async function submit() {
     apiToken.value = '';
     embeddingApiToken.value = '';
     clearEmbedding.value = false;
-    message.value = 'Сохранено.';
+    setMessage('Сохранено.');
   } catch (error) {
-    message.value = error instanceof Error ? error.message : 'Не удалось сохранить';
+    setMessage(error instanceof Error ? error.message : 'Не удалось сохранить', 'error');
   }
 }
 
 async function test() {
-  message.value = '';
+  setMessage('');
   try {
     const result = await props.onTest?.();
-    message.value = 'Чат ок · модель ' + (result?.model || '');
+    setMessage('Чат ок · модель ' + (result?.model || ''));
   } catch (error) {
-    message.value = error instanceof Error ? error.message : 'Проверка не удалась';
+    setMessage(error instanceof Error ? error.message : 'Проверка не удалась', 'error');
   }
 }
 
 async function remove() {
   if (!window.confirm('Удалить настройки ИИ для этой команды?')) return;
-  message.value = '';
+  setMessage('');
   try {
     await props.onDelete?.();
     apiToken.value = '';
     embeddingApiToken.value = '';
-    message.value = 'Удалено.';
+    setMessage('Удалено.');
   } catch (error) {
-    message.value = error instanceof Error ? error.message : 'Не удалось удалить';
+    setMessage(error instanceof Error ? error.message : 'Не удалось удалить', 'error');
   }
 }
 
 async function reindex() {
-  message.value = '';
+  setMessage('');
   try {
     const result = await props.onReindex?.();
-    message.value =
+    setMessage(
       'RAG переиндексирован · задач ' +
-      (result?.tasks ?? 0) +
-      ', комментариев ' +
-      (result?.comments ?? 0);
+        (result?.tasks ?? 0) +
+        ', комментариев ' +
+        (result?.comments ?? 0),
+    );
   } catch (error) {
-    message.value = error instanceof Error ? error.message : 'Не удалось переиндексировать';
+    setMessage(error instanceof Error ? error.message : 'Не удалось переиндексировать', 'error');
   }
 }
 </script>

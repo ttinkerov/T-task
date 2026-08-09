@@ -4,10 +4,10 @@ import { useCallback, useMemo } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import AiChatPanelView from '@/vue/ai/AiChatPanel.vue';
 import { useAiChatMutation, useAiSettingsQuery } from '../hooks';
-import type { AiChatMessage, AiCitation } from '../types';
+import type { AiChatMessage } from '../types';
 
 export function AiChatPanel({ workspaceId }: { workspaceId: string }) {
-  const { data: settings, isLoading } = useAiSettingsQuery(workspaceId);
+  const { data: settings, isLoading, isError, error, refetch } = useAiSettingsQuery(workspaceId);
   const chatMutation = useAiChatMutation(workspaceId);
 
   const onSend = useCallback(
@@ -19,7 +19,7 @@ export function AiChatPanel({ workspaceId }: { workspaceId: string }) {
       });
       return {
         reply: result.reply,
-        citations: (result.citations ?? []) as AiCitation[],
+        citations: result.citations ?? [],
       };
     },
     [chatMutation],
@@ -28,6 +28,15 @@ export function AiChatPanel({ workspaceId }: { workspaceId: string }) {
   const viewProps = useMemo(
     () => ({
       isLoading,
+      isError,
+      loadError: isError
+        ? error instanceof Error
+          ? error.message
+          : 'Не удалось загрузить настройки ИИ'
+        : '',
+      onRetryLoad: () => {
+        void refetch();
+      },
       configured: Boolean(settings?.configured),
       provider: settings?.provider ?? '',
       model: settings?.model ?? '',
@@ -37,6 +46,9 @@ export function AiChatPanel({ workspaceId }: { workspaceId: string }) {
     }),
     [
       isLoading,
+      isError,
+      error,
+      refetch,
       settings?.configured,
       settings?.provider,
       settings?.model,

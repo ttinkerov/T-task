@@ -238,7 +238,7 @@ export class AiService {
 
   async testConnection(workspaceId: string, userId: string) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
-    const credentials = await this.loadCredentials(workspaceId);
+    const credentials = await this.credentials.loadChatCredentials(workspaceId);
 
     try {
       const result = await this.providerClient.chatCompletion({
@@ -268,7 +268,7 @@ export class AiService {
 
   async chat(workspaceId: string, userId: string, dto: AiChatDto) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
-    const credentials = await this.loadCredentials(workspaceId);
+    const credentials = await this.credentials.loadChatCredentials(workspaceId);
 
     const useRag = dto.useRag !== false;
     let citations: RagCitation[] = [];
@@ -304,7 +304,7 @@ export class AiService {
           `RAG chat ws=${workspaceId} focus=${focus.snippets.length} retrieved=${retrieved.length} citations=${citations.length}`,
         );
       } catch (error) {
-        this.logger.debug(
+        this.logger.warn(
           `RAG retrieve skipped: ${error instanceof Error ? error.message : 'unknown'}`,
         );
       }
@@ -424,7 +424,7 @@ export class AiService {
       throw new BadRequestException('Для саммари спринта укажите sprintId');
     }
 
-    const credentials = await this.loadCredentials(workspaceId);
+    const credentials = await this.credentials.loadChatCredentials(workspaceId);
     const context =
       dto.scope === 'sprint'
         ? await this.loadSprintSummaryContext(workspaceId, dto.sprintId!)
@@ -489,7 +489,7 @@ export class AiService {
   ) {
     await this.workspacesService.getWorkspaceForMember(workspaceId, userId);
     const epic = await this.requireEpic(workspaceId, epicId);
-    const credentials = await this.loadCredentials(workspaceId);
+    const credentials = await this.credentials.loadChatCredentials(workspaceId);
 
     const userPrompt = [
       `Эпик: ${epic.title}`,
@@ -624,7 +624,7 @@ export class AiService {
       boardId: dto.boardId,
       assigneeId: dto.assigneeId,
     });
-    const credentials = await this.loadCredentials(workspaceId);
+    const credentials = await this.credentials.loadChatCredentials(workspaceId);
 
     const sample = stuck.tasks.slice(0, STUCK_INSIGHT_TASK_LIMIT);
     const lines = [
@@ -963,10 +963,6 @@ export class AiService {
     }
 
     return lines.join('\n');
-  }
-
-  private async loadCredentials(workspaceId: string) {
-    return this.credentials.loadChatCredentials(workspaceId);
   }
 
   private requireEncKey(): string {

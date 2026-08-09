@@ -24,36 +24,39 @@ function makePrisma() {
   return prisma;
 }
 
+function makeCredentials() {
+  return {
+    loadChatCredentials: vi.fn().mockResolvedValue({
+      provider: 'OPENAI',
+      model: 'gpt-4o-mini',
+      baseUrl: 'https://api.openai.com/v1',
+      apiToken: 'sk-test',
+    }),
+  };
+}
+
 function createService(
   prisma: ReturnType<typeof makePrisma>,
   providerClient: { chatCompletion: ReturnType<typeof vi.fn> },
   activityService: { record: ReturnType<typeof vi.fn> },
   analyticsService: { stuckTasks: ReturnType<typeof vi.fn> } = { stuckTasks: vi.fn() },
 ) {
-  const service = new AiService(
+  return new AiService(
     prisma as never,
     { getWorkspaceForMember: vi.fn().mockResolvedValue({ id: 'workspace-1' }) } as never,
     activityService as never,
     {
       get: vi.fn((key: string) =>
-        key === 'AI_TOKEN_ENC_KEY' ? '0123456789abcdef0123456789abcdef' : undefined,
+        key === 'AI_TOKEN_ENC_KEY' ? Buffer.alloc(32).toString('base64') : undefined,
       ),
     } as never,
     providerClient as never,
     analyticsService as never,
+    {} as never,
+    {} as never,
+    {} as never,
+    makeCredentials() as never,
   );
-
-  vi.spyOn(
-    service as unknown as { loadCredentials: (id: string) => Promise<unknown> },
-    'loadCredentials',
-  ).mockResolvedValue({
-    provider: 'OPENAI',
-    model: 'gpt-4o-mini',
-    baseUrl: 'https://api.openai.com/v1',
-    apiToken: 'sk-test',
-  });
-
-  return service;
 }
 
 describe('AiService.summarize', () => {

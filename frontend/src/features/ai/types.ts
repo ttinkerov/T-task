@@ -31,6 +31,17 @@ export type AiChatMessage = {
   content: string;
 };
 
+export type AiCitation = {
+  sourceType: 'TASK' | 'COMMENT';
+  sourceId: string;
+  title: string;
+  href: string | null;
+};
+
+export type AiUiMessage = AiChatMessage & {
+  citations?: AiCitation[];
+};
+
 export type AiChatPayload = {
   messages: AiChatMessage[];
   mode?: 'chat' | 'task';
@@ -38,13 +49,6 @@ export type AiChatPayload = {
   taskDescription?: string;
   taskId?: string;
   useRag?: boolean;
-};
-
-export type AiCitation = {
-  sourceType: 'TASK' | 'COMMENT';
-  sourceId: string;
-  title: string;
-  href: string | null;
 };
 
 export type AiChatResult = {

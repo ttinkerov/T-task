@@ -36,6 +36,14 @@ describe('AiService.chat RAG wiring', () => {
         ],
       }),
     };
+    const credentials = {
+      loadChatCredentials: vi.fn().mockResolvedValue({
+        provider: 'OPENAI',
+        model: 'gpt-4o-mini',
+        baseUrl: 'https://api.openai.com/v1',
+        apiToken: 'sk-test',
+      }),
+    };
 
     const service = new AiService(
       {
@@ -62,19 +70,8 @@ describe('AiService.chat RAG wiring', () => {
       ragRetriever as never,
       {} as never,
       {} as never,
-      {} as never,
+      credentials as never,
     );
-
-    vi.spyOn(
-      // @ts-expect-error private for test
-      service,
-      'loadCredentials',
-    ).mockResolvedValue({
-      provider: 'OPENAI',
-      model: 'gpt-4o-mini',
-      baseUrl: 'https://api.openai.com/v1',
-      apiToken: 'sk-test',
-    });
 
     const dto: AiChatDto = {
       mode: 'chat',
@@ -84,6 +81,7 @@ describe('AiService.chat RAG wiring', () => {
 
     const result = await service.chat('ws-1', 'user-1', dto);
 
+    expect(credentials.loadChatCredentials).toHaveBeenCalledWith('ws-1');
     expect(ragRetriever.retrieve).toHaveBeenCalled();
     expect(providerClient.chatCompletion).toHaveBeenCalledWith(
       expect.objectContaining({
