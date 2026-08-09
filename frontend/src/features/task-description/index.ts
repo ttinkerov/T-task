@@ -8,4 +8,3 @@ export {
   isDescriptionDocEmpty,
   plainTextFromDescriptionDoc,
 } from './types';
-export { TaskDescriptionEditor } from './components/task-description-editor';
