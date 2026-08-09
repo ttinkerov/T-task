@@ -2,7 +2,8 @@
 
 import { FormEvent, useState } from 'react';
 import { useMeQuery } from '@/features/auth/hooks';
-import { MentionText, MentionTextarea } from '@/features/mentions';
+import { MentionText } from '@/features/mentions/components/mention-text';
+import { MentionTextarea } from '@/features/mentions/components/mention-textarea';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import { useCommentsQuery, useCreateCommentMutation, useDeleteCommentMutation } from '../../hooks';
 import { FieldHint } from '../field-hint';

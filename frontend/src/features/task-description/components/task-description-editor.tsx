@@ -1,6 +1,9 @@
 'use client';
 
-import { MentionTextarea, type WikiLinkTaskOption } from '@/features/mentions';
+import {
+  MentionTextarea,
+  type WikiLinkTaskOption,
+} from '@/features/mentions/components/mention-textarea';
 import type { WorkspaceMember } from '@/features/workspaces/types';
 import { useCallback } from 'react';
 import {

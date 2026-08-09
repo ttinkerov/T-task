@@ -1,6 +1,6 @@
 'use client';
 
-import { EpicBoardPage } from '@/features/epic-board';
+import { EpicBoardPage } from '@/features/epic-board/components/epic-board-page';
 import { useWorkspaceStore } from '@/stores/workspace.store';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
