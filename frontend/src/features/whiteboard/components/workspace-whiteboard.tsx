@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  DefaultSpinner,
   Tldraw,
   createTLStore,
   getSnapshot,
@@ -13,10 +12,12 @@ import {
 } from 'tldraw';
 import 'tldraw/tldraw.css';
 import '../styles/tldraw-theme.css';
-import { PenLine } from 'lucide-react';
-import { EmptyState } from '@/components/ui/empty-state';
+import { VueIsland } from '@/components/vue/VueIsland';
+import { BoardEmptyState } from '@/features/boards/components/board-empty-state';
 import { ApiError } from '@/shared/api/client';
 import { useThemeStore, type ThemeMode } from '@/stores/theme.store';
+import WhiteboardHeaderView from '@/vue/whiteboard/WhiteboardHeader.vue';
+import WhiteboardLoadingView from '@/vue/whiteboard/WhiteboardLoading.vue';
 import { fetchWhiteboard, saveWhiteboard } from '../api';
 import { tldrawAssetUrls } from '../lib/tldraw-asset-urls';
 
@@ -244,11 +245,11 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
     };
   }, [flushPendingSave, persistSnapshot, storeWithStatus]);
 
-  const dismissWelcome = () => {
+  const dismissWelcome = useCallback(() => {
     writeWelcomeDismissed(workspaceId);
     setShowWelcome(false);
     setFocusCanvas(true);
-  };
+  }, [workspaceId]);
 
   const statusText = useMemo(() => {
     if (saveStatus === 'saving') return 'Сохранение…';
@@ -257,20 +258,23 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
     return updatedLabel ? `Обновлено: ${updatedLabel}` : 'Пустая доска';
   }, [saveError, saveStatus, updatedLabel]);
 
+  const headerProps = useMemo(
+    () => ({
+      statusText,
+      statusError: saveStatus === 'error',
+    }),
+    [statusText, saveStatus],
+  );
+
   if (storeWithStatus.status === 'loading') {
-    return (
-      <div className="flex h-full min-h-[480px] items-center justify-center gap-3 text-sm text-muted-foreground">
-        <DefaultSpinner />
-        Загрузка доски…
-      </div>
-    );
+    return <VueIsland component={WhiteboardLoadingView} componentProps={{}} />;
   }
 
   if (storeWithStatus.status === 'error') {
     return (
-      <EmptyState
+      <BoardEmptyState
         className="empty-state--board"
-        icon={PenLine}
+        icon="pen"
         title="Не удалось открыть доску"
         description={storeWithStatus.error.message}
         actionLabel="Повторить"
@@ -281,30 +285,16 @@ export function WorkspaceWhiteboard({ workspaceId }: WorkspaceWhiteboardProps) {
 
   return (
     <div className="relative flex h-full min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-4 py-2">
-        <div>
-          <h1 className="text-sm font-medium text-foreground">Доска</h1>
-          <p className="text-xs text-muted-foreground">
-            Рисование и схемы для команды · без realtime
-          </p>
-        </div>
-        <p
-          className={`text-xs ${saveStatus === 'error' ? 'text-destructive' : 'text-muted-foreground'}`}
-          role="status"
-          aria-live="polite"
-        >
-          {statusText}
-        </p>
-      </div>
+      <VueIsland component={WhiteboardHeaderView} componentProps={headerProps} />
       <div className="relative min-h-0 flex-1">
         <Tldraw store={storeWithStatus.store} assetUrls={tldrawAssetUrls} colorScheme={theme}>
           <SyncTldrawTheme theme={theme} />
           <FocusCanvasOnStart shouldFocus={focusCanvas} />
         </Tldraw>
         {showWelcome && isBlankBoard ? (
-          <EmptyState
+          <BoardEmptyState
             className="empty-state--overlay"
-            icon={PenLine}
+            icon="pen"
             title="Начните рисовать"
             description="Одна доска на команду: схемы, наброски и заметки. Всё сохраняется автоматически."
             actionLabel="Начать рисовать"

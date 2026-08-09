@@ -5,7 +5,7 @@ import { useWorkspaceStore } from '@/stores/workspace.store';
 
 const WorkspaceWhiteboard = dynamic(
   () =>
-    import('@/features/whiteboard').then((mod) => ({
+    import('@/features/whiteboard/components/workspace-whiteboard').then((mod) => ({
       default: mod.WorkspaceWhiteboard,
     })),
   {

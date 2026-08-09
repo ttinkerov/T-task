@@ -71,6 +71,23 @@
         <path d="M8 11h.01" />
         <path d="M8 16h.01" />
       </svg>
+      <svg
+        v-else-if="icon === 'pen'"
+        xmlns="http://www.w3.org/2000/svg"
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M12 20h9" />
+        <path
+          d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"
+        />
+      </svg>
     </span>
     <h2 class="empty-state__title">{{ title }}</h2>
     <p class="empty-state__description">{{ description }}</p>
