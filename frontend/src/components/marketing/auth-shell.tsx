@@ -1,45 +1,65 @@
-import Link from 'next/link';
-import type { ReactNode } from 'react';
-import { BrandLogo } from './brand-logo';
+'use client';
+
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { VueIsland } from '@/components/vue/VueIsland';
+import { useThemeStore } from '@/stores/theme.store';
+import AuthShellView from '@/vue/auth/AuthShellView.vue';
 import { LandingBackground } from './landing-background';
-import { ThemeToggle } from '@/components/theme/theme-toggle';
 
 interface AuthShellProps {
   title: string;
   subtitle: string;
   children: ReactNode;
-  footer: ReactNode;
+  footerPrefix: string;
+  footerHref: string;
+  footerLinkLabel: string;
 }
 
-export function AuthShell({ title, subtitle, children, footer }: AuthShellProps) {
+export function AuthShell({
+  title,
+  subtitle,
+  children,
+  footerPrefix,
+  footerHref,
+  footerLinkLabel,
+}: AuthShellProps) {
+  const theme = useThemeStore((state) => state.theme);
+  const toggleTheme = useThemeStore((state) => state.toggleTheme);
+  const [formHost, setFormHost] = useState<HTMLElement | null>(null);
+
+  const onFormHostReady = useCallback((host: HTMLElement | null) => {
+    setFormHost(host);
+  }, []);
+
+  const viewProps = useMemo(
+    () => ({
+      title,
+      subtitle,
+      footerPrefix,
+      footerHref,
+      footerLinkLabel,
+      isLight: theme === 'light',
+      onToggleTheme: toggleTheme,
+      onFormHostReady,
+    }),
+    [
+      title,
+      subtitle,
+      footerPrefix,
+      footerHref,
+      footerLinkLabel,
+      theme,
+      toggleTheme,
+      onFormHostReady,
+    ],
+  );
+
   return (
     <div className="tt-landing">
       <LandingBackground />
-
-      <div className="tt-landing__content tt-auth">
-        <header className="tt-nav-wrap">
-          <nav className="tt-nav tt-auth__nav">
-            <BrandLogo />
-            <div className="tt-nav__actions">
-              <ThemeToggle />
-              <Link href="/register" className="tt-btn tt-btn--primary tt-btn--pill tt-nav__cta">
-                Регистрация
-              </Link>
-            </div>
-          </nav>
-        </header>
-
-        <section className="tt-auth__main">
-          <div className="tt-auth__card">
-            <div className="tt-auth__head">
-              <h1 className="tt-auth__title">{title}</h1>
-              <p className="tt-auth__subtitle">{subtitle}</p>
-            </div>
-            {children}
-          </div>
-          <div className="tt-auth__footer">{footer}</div>
-        </section>
-      </div>
+      <VueIsland component={AuthShellView} componentProps={viewProps} displayContents />
+      {formHost ? createPortal(children, formHost) : null}
     </div>
   );
 }

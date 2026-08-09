@@ -1,11 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
-import { LogOut, Search, Settings } from 'lucide-react';
-import { BrandLogo } from '@/components/marketing/brand-logo';
-import { ThemeToggle } from '@/components/theme/theme-toggle';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { BoardSkeleton } from '@/components/ui/skeleton';
 import { useCanViewActivity } from '@/features/activity/hooks';
 import { useLogoutMutation, useMeQuery } from '@/features/auth/hooks';
@@ -24,7 +22,9 @@ import {
 import { useCanManageTrash } from '@/features/trash/hooks';
 import { WorkspaceSwitcher } from '@/features/workspaces/components/workspace-switcher';
 import { useWorkspaceStore } from '@/stores/workspace.store';
+import { useThemeStore } from '@/stores/theme.store';
 import { useWorkspaceRealtime } from '@/shared/realtime';
+import AppTopbarView from '@/vue/shell/AppTopbar.vue';
 
 const COLLAPSE_KEY = 'ttask:sidebar-collapsed';
 const FOCUS_CREATE_KEY = 'ttask:focus-create';
@@ -42,6 +42,8 @@ export function DashboardShell({
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   useWorkspaceRealtime(workspaceId);
   const logoutMutation = useLogoutMutation();
+  const theme = useThemeStore((state) => state.theme);
+  const toggleTheme = useThemeStore((state) => state.toggleTheme);
   const { canView: canViewActivity, isLoading: activityAccessLoading } = useCanViewActivity();
   const { canManage: canManageTrash, isLoading: trashAccessLoading } = useCanManageTrash();
   const { data: pinnedViews = [] } = usePinnedSavedFiltersQuery(workspaceId);
@@ -49,6 +51,10 @@ export function DashboardShell({
   const [cmdOpen, setCmdOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [topbarHosts, setTopbarHosts] = useState<{
+    bell: HTMLElement | null;
+    switcher: HTMLElement | null;
+  }>({ bell: null, switcher: null });
 
   useEffect(() => {
     try {
@@ -111,11 +117,42 @@ export function DashboardShell({
     });
   };
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await logoutMutation.mutateAsync();
     router.replace('/login');
     router.refresh();
-  };
+  }, [logoutMutation, router]);
+
+  const onHostsReady = useCallback(
+    (hosts: { bell: HTMLElement | null; switcher: HTMLElement | null }) => {
+      setTopbarHosts(hosts);
+    },
+    [],
+  );
+
+  const settingsHref = workspaceId ? `/dashboard/workspaces/${workspaceId}/settings` : '/dashboard';
+
+  const topbarProps = useMemo(
+    () => ({
+      userName: session?.user.name ?? '',
+      settingsHref,
+      logoutPending: logoutMutation.isPending,
+      isLight: theme === 'light',
+      onOpenSearch: () => setCmdOpen(true),
+      onToggleTheme: toggleTheme,
+      onLogout: () => void handleLogout(),
+      onHostsReady,
+    }),
+    [
+      session?.user.name,
+      settingsHref,
+      logoutMutation.isPending,
+      theme,
+      toggleTheme,
+      handleLogout,
+      onHostsReady,
+    ],
+  );
 
   const navGroups: NavGroup[] = useMemo(
     () => [
@@ -298,8 +335,6 @@ export function DashboardShell({
     { href: '/dashboard/crm', label: 'CRM', iconKey: 'clipboard' },
   ];
 
-  const settingsHref = workspaceId ? `/dashboard/workspaces/${workspaceId}/settings` : '/dashboard';
-
   return (
     <div
       className={`app-frame${collapsed ? ' app-frame--collapsed' : ''}${boardMode ? ' app-frame--board' : ''}`}
@@ -310,47 +345,11 @@ export function DashboardShell({
 
       <AppSidebar groups={navGroups} collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
 
-      <header className="app-topbar">
-        <div className="app-topbar__left">
-          <span className="lg:hidden">
-            <BrandLogo href="/dashboard" />
-          </span>
-          <button
-            type="button"
-            className="app-topbar__search"
-            onClick={() => setCmdOpen(true)}
-            aria-label="Открыть командную палитру"
-          >
-            <Search size={14} strokeWidth={1.75} aria-hidden="true" />
-            <span>Поиск и команды</span>
-            <kbd>⌘K</kbd>
-          </button>
-        </div>
-        <div className="app-topbar__right">
-          <NotificationBell workspaceId={workspaceId} />
-          <ThemeToggle />
-          <span className="app-topbar__user">{session.user.name}</span>
-          <WorkspaceSwitcher />
-          <Link
-            href={settingsHref}
-            className="dashboard-header__icon-btn"
-            aria-label="Настройки"
-            title="Настройки"
-          >
-            <Settings size={16} strokeWidth={1.75} />
-          </Link>
-          <button
-            type="button"
-            onClick={() => void handleLogout()}
-            disabled={logoutMutation.isPending}
-            className="dashboard-header__icon-btn"
-            title="Выйти"
-            aria-label="Выйти"
-          >
-            <LogOut size={16} strokeWidth={1.75} />
-          </button>
-        </div>
-      </header>
+      <VueIsland component={AppTopbarView} componentProps={topbarProps} displayContents />
+      {topbarHosts.bell
+        ? createPortal(<NotificationBell workspaceId={workspaceId} />, topbarHosts.bell)
+        : null}
+      {topbarHosts.switcher ? createPortal(<WorkspaceSwitcher />, topbarHosts.switcher) : null}
 
       <main
         id="dashboard-content"
