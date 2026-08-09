@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom';
 import { VueIsland } from '@/components/vue/VueIsland';
 import { useThemeStore } from '@/stores/theme.store';
 import AuthShellView from '@/vue/auth/AuthShellView.vue';
-import { LandingBackground } from './landing-background';
 
 interface AuthShellProps {
   title: string;
@@ -57,7 +56,6 @@ export function AuthShell({
 
   return (
     <div className="tt-landing">
-      <LandingBackground />
       <VueIsland component={AuthShellView} componentProps={viewProps} displayContents />
       {formHost ? createPortal(children, formHost) : null}
     </div>

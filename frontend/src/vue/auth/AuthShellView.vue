@@ -1,4 +1,6 @@
 <template>
+  <div class="tt-landing-glow" aria-hidden="true" />
+
   <div class="tt-landing__content tt-auth">
     <header class="tt-nav-wrap">
       <nav class="tt-nav tt-auth__nav">

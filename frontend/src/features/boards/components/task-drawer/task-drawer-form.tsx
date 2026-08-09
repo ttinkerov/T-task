@@ -9,6 +9,7 @@ import type { BoardTask, TaskRelationCandidate } from '../../types';
 import type { useTaskFormState } from './hooks/use-task-form-state';
 import { TaskAssigneeWatchFields } from './task-assignee-watch-fields';
 import { TaskDrawerActions } from './task-drawer-actions';
+import { TaskDrawerTitleField } from './task-drawer-title-field';
 import { TaskEstimationFields } from './task-estimation-fields';
 import { TaskPlanningFields } from './task-planning-fields';
 import { TaskRecurrenceFields } from './task-recurrence-fields';
@@ -47,17 +48,7 @@ export function TaskDrawerForm({
 
   return (
     <form onSubmit={onSubmit} className="task-drawer__form">
-      <label className="task-drawer__field">
-        <span className="task-drawer__label">Название</span>
-        <input
-          value={form.title}
-          onChange={(event) => form.setTitle(event.target.value)}
-          className="glass-input"
-          required
-          maxLength={200}
-          autoFocus
-        />
-      </label>
+      <TaskDrawerTitleField title={form.title} onTitleChange={form.setTitle} />
 
       <div className="task-drawer__field">
         <span className="task-drawer__label">Описание</span>
