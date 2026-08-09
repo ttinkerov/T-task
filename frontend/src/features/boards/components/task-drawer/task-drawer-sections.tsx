@@ -35,7 +35,6 @@ export function TaskDrawerSections({
     <>
       <ApplyTaskTemplateControl workspaceId={workspaceId} taskId={task.id} />
 
-      {/* All Vue islands stay behind LazyMount so drawer chrome (close) stays React-only. */}
       <LazyMount eagerMs={150}>
         <TaskTagsSection
           workspaceId={workspaceId}

@@ -1,5 +1,3 @@
-// Shell Vue islands: import components directly —
-// do not re-export here (pulls Vue into every barrel consumer).
 export {
   useCreateTaskShortcutListener,
   useShortcutHandlers,
