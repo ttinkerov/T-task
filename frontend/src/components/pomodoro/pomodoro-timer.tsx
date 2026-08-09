@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { formatTimer, playPhaseCompleteSound } from '@/shared/lib/pomodoro-sound';
 import { usePomodoroStore } from '@/stores/pomodoro.store';
+import PomodoroTimerView from '@/vue/focus/PomodoroTimerView.vue';
 
 type PomodoroPhase = 'focus' | 'break';
 type PomodoroStatus = 'idle' | 'running' | 'paused';
@@ -80,22 +82,22 @@ export function PomodoroTimer() {
     };
   }, [phase, secondsLeft, status]);
 
-  const handleStart = () => {
+  const onStart = useCallback(() => {
     if (status === 'idle') {
       setSecondsLeft(phase === 'focus' ? focusMinutes * 60 : breakMinutes * 60);
     }
     setStatus('running');
-  };
+  }, [breakMinutes, focusMinutes, phase, status]);
 
-  const handlePause = () => setStatus('paused');
+  const onPause = useCallback(() => setStatus('paused'), []);
 
-  const handleReset = () => {
+  const onReset = useCallback(() => {
     setStatus('idle');
     setPhase('focus');
     setSecondsLeft(focusMinutes * 60);
-  };
+  }, [focusMinutes]);
 
-  const handleSkip = () => {
+  const onSkip = useCallback(() => {
     if (phase === 'focus') {
       setPhase('break');
       setSecondsLeft(breakMinutes * 60);
@@ -104,146 +106,80 @@ export function PomodoroTimer() {
       setSecondsLeft(focusMinutes * 60);
     }
     setStatus('running');
-  };
+  }, [breakMinutes, focusMinutes, phase]);
 
-  const applyPreset = (focus: number, breakMins: number) => {
-    setFocusMinutes(focus);
-    setBreakMinutes(breakMins);
-    setStatus('idle');
-    setPhase('focus');
-    setSecondsLeft(focus * 60);
-  };
-
-  const handleFocusChange = (value: number) => {
-    const minutes = Math.min(90, Math.max(1, value));
-    setFocusMinutes(minutes);
-    if (status === 'idle' && phase === 'focus') {
-      setSecondsLeft(minutes * 60);
-    }
-  };
-
-  const handleBreakChange = (value: number) => {
-    const minutes = Math.min(30, Math.max(1, value));
-    setBreakMinutes(minutes);
-    if (status === 'idle' && phase === 'break') {
-      setSecondsLeft(minutes * 60);
-    }
-  };
-
-  return (
-    <div className="pomodoro-page">
-      <header className="pomodoro-page__header">
-        <div>
-          <h1 className="pomodoro-page__title">Pomodoro-таймер</h1>
-          <p className="pomodoro-page__subtitle">
-            Чередуйте периоды фокуса и отдыха. Настройте интервалы под себя — звуковой сигнал
-            напомнит о переключении.
-          </p>
-        </div>
-        <p className="pomodoro-page__stat">Сегодня: {completedToday} помодоро</p>
-      </header>
-
-      <div className="pomodoro-layout">
-        <section className="pomodoro-timer">
-          <p className={`pomodoro-timer__phase pomodoro-timer__phase--${phase}`}>
-            {phase === 'focus' ? 'Фокус' : 'Перерыв'}
-          </p>
-
-          <div
-            className="pomodoro-timer__ring"
-            style={{
-              background: `conic-gradient(var(--tt-brand) ${progress}%, var(--tt-hover) 0)`,
-            }}
-          >
-            <div className="pomodoro-timer__inner">
-              <span className="pomodoro-timer__time">{formatTimer(secondsLeft)}</span>
-              <span className="pomodoro-timer__hint">
-                {status === 'running' ? 'Идёт отсчёт' : status === 'paused' ? 'Пауза' : 'Готов'}
-              </span>
-            </div>
-          </div>
-
-          <div className="pomodoro-timer__actions">
-            {status === 'running' ? (
-              <button type="button" className="btn-primary" onClick={handlePause}>
-                Пауза
-              </button>
-            ) : (
-              <button type="button" className="btn-primary" onClick={handleStart}>
-                {status === 'paused' ? 'Продолжить' : 'Старт'}
-              </button>
-            )}
-            <button type="button" className="btn-ghost" onClick={handleSkip}>
-              Пропустить
-            </button>
-            <button type="button" className="btn-ghost" onClick={handleReset}>
-              Сброс
-            </button>
-          </div>
-        </section>
-
-        <aside className="pomodoro-settings">
-          <h2 className="pomodoro-settings__title">Настройки</h2>
-
-          <div className="pomodoro-settings__presets">
-            {PRESETS.map((preset) => (
-              <button
-                key={preset.label}
-                type="button"
-                className={
-                  focusMinutes === preset.focus && breakMinutes === preset.break
-                    ? 'board-workload__toggle-btn board-workload__toggle-btn--active'
-                    : 'board-workload__toggle-btn'
-                }
-                onClick={() => applyPreset(preset.focus, preset.break)}
-                disabled={status === 'running'}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-
-          <label className="task-drawer__field">
-            <span>Фокус, мин</span>
-            <input
-              type="number"
-              min={1}
-              max={90}
-              value={focusMinutes}
-              onChange={(event) => handleFocusChange(Number(event.target.value))}
-              className="glass-input"
-              disabled={status === 'running'}
-            />
-          </label>
-
-          <label className="task-drawer__field">
-            <span>Перерыв, мин</span>
-            <input
-              type="number"
-              min={1}
-              max={30}
-              value={breakMinutes}
-              onChange={(event) => handleBreakChange(Number(event.target.value))}
-              className="glass-input"
-              disabled={status === 'running'}
-            />
-          </label>
-
-          <label className="forms-editor__checkbox">
-            <input
-              type="checkbox"
-              checked={soundEnabled}
-              onChange={(event) => setSoundEnabled(event.target.checked)}
-            />
-            Звуковой сигнал при смене фазы
-          </label>
-
-          <p className="pomodoro-settings__tip">
-            Классический Pomodoro — 25 минут работы и 5 минут отдыха. После 4 циклов сделайте
-            длинный перерыв.
-          </p>
-        </aside>
-      </div>
-    </div>
+  const onApplyPreset = useCallback(
+    (focus: number, breakMins: number) => {
+      setFocusMinutes(focus);
+      setBreakMinutes(breakMins);
+      setStatus('idle');
+      setPhase('focus');
+      setSecondsLeft(focus * 60);
+    },
+    [setBreakMinutes, setFocusMinutes],
   );
+
+  const onFocusMinutesChange = useCallback(
+    (value: number) => {
+      const minutes = Math.min(90, Math.max(1, value));
+      setFocusMinutes(minutes);
+      if (status === 'idle' && phase === 'focus') {
+        setSecondsLeft(minutes * 60);
+      }
+    },
+    [phase, setFocusMinutes, status],
+  );
+
+  const onBreakMinutesChange = useCallback(
+    (value: number) => {
+      const minutes = Math.min(30, Math.max(1, value));
+      setBreakMinutes(minutes);
+      if (status === 'idle' && phase === 'break') {
+        setSecondsLeft(minutes * 60);
+      }
+    },
+    [phase, setBreakMinutes, status],
+  );
+
+  const viewProps = useMemo(
+    () => ({
+      phase,
+      status,
+      timeLabel: formatTimer(secondsLeft),
+      progress,
+      completedToday,
+      focusMinutes,
+      breakMinutes,
+      soundEnabled,
+      presets: PRESETS,
+      onStart,
+      onPause,
+      onSkip,
+      onReset,
+      onApplyPreset,
+      onFocusMinutesChange,
+      onBreakMinutesChange,
+      onSoundEnabledChange: setSoundEnabled,
+    }),
+    [
+      phase,
+      status,
+      secondsLeft,
+      progress,
+      completedToday,
+      focusMinutes,
+      breakMinutes,
+      soundEnabled,
+      onStart,
+      onPause,
+      onSkip,
+      onReset,
+      onApplyPreset,
+      onFocusMinutesChange,
+      onBreakMinutesChange,
+      setSoundEnabled,
+    ],
+  );
+
+  return <VueIsland component={PomodoroTimerView} componentProps={viewProps} />;
 }

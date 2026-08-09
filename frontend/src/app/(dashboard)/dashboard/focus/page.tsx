@@ -1,15 +1,19 @@
 'use client';
 
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { PomodoroTimer } from '@/components/pomodoro/pomodoro-timer';
 import { MeditationTimer } from '@/features/meditation/components/meditation-timer';
 import { useWorkspacesQuery } from '@/features/workspaces/hooks';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import FocusToolsTabsView from '@/vue/focus/FocusToolsTabs.vue';
+
+type FocusTool = 'pomodoro' | 'meditation';
 
 export default function FocusPage() {
   const router = useRouter();
   const { data: workspaces = [], isLoading } = useWorkspacesQuery();
-  const [activeTool, setActiveTool] = useState<'pomodoro' | 'meditation'>('pomodoro');
+  const [activeTool, setActiveTool] = useState<FocusTool>('pomodoro');
 
   useEffect(() => {
     if (!isLoading && workspaces.length === 0) {
@@ -17,32 +21,21 @@ export default function FocusPage() {
     }
   }, [isLoading, router, workspaces.length]);
 
+  const onSelect = useCallback((tool: FocusTool) => {
+    setActiveTool(tool);
+  }, []);
+
+  const tabsProps = useMemo(
+    () => ({
+      activeTool,
+      onSelect,
+    }),
+    [activeTool, onSelect],
+  );
+
   return (
     <div className="focus-tools">
-      <div className="focus-tools__tabs" role="tablist" aria-label="Инструменты фокуса">
-        <button
-          type="button"
-          role="tab"
-          id="focus-tab-pomodoro"
-          aria-selected={activeTool === 'pomodoro'}
-          aria-controls="focus-panel-pomodoro"
-          className={activeTool === 'pomodoro' ? 'focus-tools__tab--active' : undefined}
-          onClick={() => setActiveTool('pomodoro')}
-        >
-          Pomodoro
-        </button>
-        <button
-          type="button"
-          role="tab"
-          id="focus-tab-meditation"
-          aria-selected={activeTool === 'meditation'}
-          aria-controls="focus-panel-meditation"
-          className={activeTool === 'meditation' ? 'focus-tools__tab--active' : undefined}
-          onClick={() => setActiveTool('meditation')}
-        >
-          Медитации
-        </button>
-      </div>
+      <VueIsland component={FocusToolsTabsView} componentProps={tabsProps} />
 
       <div
         role="tabpanel"

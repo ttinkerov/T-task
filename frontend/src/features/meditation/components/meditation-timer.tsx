@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { formatTimer, playPhaseCompleteSound } from '@/shared/lib/pomodoro-sound';
+import MeditationTimerView from '@/vue/focus/MeditationTimerView.vue';
 import {
   clampMeditationMinutes,
   getBreathingPhase,
@@ -17,6 +19,13 @@ const PHASE_LABELS = {
   hold: 'Пауза',
   exhale: 'Выдох',
 } as const;
+
+const PRACTICE_OPTIONS = MEDITATION_PRACTICES.map((item) => ({
+  id: item.id,
+  title: item.title,
+  description: item.description,
+  minutes: item.minutes,
+}));
 
 export function MeditationTimer() {
   const [practiceId, setPracticeId] = useState<MeditationPracticeId>('calm');
@@ -67,170 +76,103 @@ export function MeditationTimer() {
     };
   }, [secondsLeft, status]);
 
-  const selectPractice = (nextId: MeditationPracticeId) => {
-    const nextPractice =
-      MEDITATION_PRACTICES.find((item) => item.id === nextId) ?? MEDITATION_PRACTICES[0];
-    const nextMinutes = nextPractice.id === 'silence' ? customMinutes : nextPractice.minutes;
+  const onSelectPractice = useCallback(
+    (nextId: MeditationPracticeId) => {
+      const nextPractice =
+        MEDITATION_PRACTICES.find((item) => item.id === nextId) ?? MEDITATION_PRACTICES[0];
+      const nextMinutes = nextPractice.id === 'silence' ? customMinutes : nextPractice.minutes;
 
-    endAtRef.current = null;
-    setPracticeId(nextId);
-    setStatus('idle');
-    setSecondsLeft(nextMinutes * 60);
-  };
+      endAtRef.current = null;
+      setPracticeId(nextId);
+      setStatus('idle');
+      setSecondsLeft(nextMinutes * 60);
+    },
+    [customMinutes],
+  );
 
-  const handleCustomMinutesChange = (value: number) => {
-    const minutes = clampMeditationMinutes(value);
-    setCustomMinutes(minutes);
-    if (practice.id === 'silence' && status === 'idle') {
-      setSecondsLeft(minutes * 60);
-    }
-  };
+  const onCustomMinutesChange = useCallback(
+    (value: number) => {
+      const minutes = clampMeditationMinutes(value);
+      setCustomMinutes(minutes);
+      if (practice.id === 'silence' && status === 'idle') {
+        setSecondsLeft(minutes * 60);
+      }
+    },
+    [practice.id, status],
+  );
 
-  const handleStart = () => {
+  const onStart = useCallback(() => {
     const nextSeconds = status === 'idle' || status === 'completed' ? totalSeconds : secondsLeft;
     setSecondsLeft(nextSeconds);
     endAtRef.current = Date.now() + nextSeconds * 1000;
     setStatus('running');
-  };
+  }, [secondsLeft, status, totalSeconds]);
 
-  const handlePause = () => {
+  const onPause = useCallback(() => {
     endAtRef.current = null;
     setStatus('paused');
-  };
+  }, []);
 
-  const handleReset = () => {
+  const onReset = useCallback(() => {
     endAtRef.current = null;
     setSecondsLeft(totalSeconds);
     setStatus('idle');
-  };
+  }, [totalSeconds]);
 
   const phaseText = breathingPhase
     ? `${PHASE_LABELS[breathingPhase.type]} · ${breathingPhase.secondsLeft}`
     : 'Оставайтесь в тишине';
 
-  return (
-    <div className="meditation-page">
-      <header className="meditation-page__header">
-        <span>Восстановление внимания</span>
-        <h1>Медитации</h1>
-        <p>Сделайте спокойный перерыв с дыхательной практикой или включите таймер тишины.</p>
-      </header>
+  const liveStatus =
+    status === 'completed'
+      ? 'Практика завершена'
+      : status === 'paused'
+        ? 'Практика на паузе'
+        : status === 'running' && breathingPhase
+          ? PHASE_LABELS[breathingPhase.type]
+          : '';
 
-      <div className="meditation-layout">
-        <section className="meditation-session" aria-labelledby="meditation-session-title">
-          <p className="meditation-session__eyebrow" id="meditation-session-title">
-            {practice.title}
-          </p>
-
-          <div
-            className="meditation-session__progress"
-            style={{ '--meditation-progress': `${progress}%` } as React.CSSProperties}
-          >
-            <div
-              className={`meditation-session__orb${
-                breathingPhase ? ` meditation-session__orb--${breathingPhase.type}` : ''
-              }`}
-              style={
-                breathingPhase
-                  ? ({
-                      '--breath-duration': `${breathingPhase.seconds}s`,
-                    } as React.CSSProperties)
-                  : undefined
-              }
-              aria-hidden="true"
-            />
-            <div className="meditation-session__readout">
-              <span
-                className="meditation-session__time"
-                role="timer"
-                aria-label={`Осталось ${Math.ceil(secondsLeft / 60)} минут`}
-              >
-                {formatTimer(secondsLeft)}
-              </span>
-              <span className="meditation-session__phase">{phaseText}</span>
-            </div>
-          </div>
-
-          <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
-            {status === 'completed'
-              ? 'Практика завершена'
-              : status === 'paused'
-                ? 'Практика на паузе'
-                : status === 'running' && breathingPhase
-                  ? PHASE_LABELS[breathingPhase.type]
-                  : ''}
-          </p>
-
-          <div className="meditation-session__actions">
-            {status === 'running' ? (
-              <button type="button" className="btn-primary" onClick={handlePause}>
-                Пауза
-              </button>
-            ) : (
-              <button type="button" className="btn-primary" onClick={handleStart}>
-                {status === 'paused' ? 'Продолжить' : status === 'completed' ? 'Ещё раз' : 'Начать'}
-              </button>
-            )}
-            <button type="button" className="btn-ghost" onClick={handleReset}>
-              Сбросить
-            </button>
-          </div>
-
-          {status === 'completed' ? (
-            <p className="meditation-session__complete">
-              Практика завершена. Возвращайтесь к работе в своём темпе.
-            </p>
-          ) : null}
-        </section>
-
-        <aside className="meditation-practices" aria-label="Выбор практики">
-          <h2>Выберите практику</h2>
-          <div className="meditation-practices__list">
-            {MEDITATION_PRACTICES.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`meditation-practice${
-                  practice.id === item.id ? ' meditation-practice--active' : ''
-                }`}
-                onClick={() => selectPractice(item.id)}
-                disabled={status === 'running'}
-                aria-pressed={practice.id === item.id}
-              >
-                <span>
-                  <strong>{item.title}</strong>
-                  <small>{item.description}</small>
-                </span>
-                <b>{item.id === 'silence' ? `${customMinutes} мин` : `${item.minutes} мин`}</b>
-              </button>
-            ))}
-          </div>
-
-          {practice.id === 'silence' ? (
-            <label className="task-drawer__field">
-              <span>Продолжительность, мин</span>
-              <input
-                type="number"
-                min={1}
-                max={60}
-                value={customMinutes}
-                onChange={(event) => handleCustomMinutesChange(Number(event.target.value))}
-                className="glass-input"
-                disabled={status === 'running'}
-              />
-            </label>
-          ) : null}
-
-          <label className="forms-editor__checkbox">
-            <input
-              type="checkbox"
-              checked={soundEnabled}
-              onChange={(event) => setSoundEnabled(event.target.checked)}
-            />
-            Сигнал в конце практики
-          </label>
-        </aside>
-      </div>
-    </div>
+  const viewProps = useMemo(
+    () => ({
+      practiceId,
+      practiceTitle: practice.title,
+      practices: PRACTICE_OPTIONS,
+      customMinutes,
+      status,
+      timeLabel: formatTimer(secondsLeft),
+      minutesLeftLabel: Math.ceil(secondsLeft / 60),
+      progress,
+      phaseText,
+      liveStatus,
+      breathType: breathingPhase?.type ?? '',
+      breathSeconds: breathingPhase?.seconds ?? 0,
+      soundEnabled,
+      onSelectPractice,
+      onCustomMinutesChange,
+      onSoundEnabledChange: setSoundEnabled,
+      onStart,
+      onPause,
+      onReset,
+    }),
+    [
+      practiceId,
+      practice.title,
+      customMinutes,
+      status,
+      secondsLeft,
+      progress,
+      phaseText,
+      liveStatus,
+      breathingPhase?.type,
+      breathingPhase?.seconds,
+      soundEnabled,
+      onSelectPractice,
+      onCustomMinutesChange,
+      onStart,
+      onPause,
+      onReset,
+    ],
   );
+
+  return <VueIsland component={MeditationTimerView} componentProps={viewProps} />;
 }
