@@ -79,7 +79,6 @@ async function onSubmit() {
     await props.onCreate?.({ name: trimmed, color: color.value })
     name.value = ''
   } catch {
-    /* surfaced via actionError */
   }
 }
 

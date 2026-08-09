@@ -149,8 +149,16 @@ export function useCreateInvitationMutation(workspaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ email, role }: { email: string; role?: WorkspaceRole }) => {
-      const response = await createInvitation(workspaceId, email, role);
+    mutationFn: async ({
+      email,
+      role,
+      sendEmail = true,
+    }: {
+      email: string;
+      role?: WorkspaceRole;
+      sendEmail?: boolean;
+    }) => {
+      const response = await createInvitation(workspaceId, email, role, sendEmail);
       return response.data;
     },
     onSuccess: () => {

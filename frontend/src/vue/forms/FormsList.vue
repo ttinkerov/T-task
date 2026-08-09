@@ -90,7 +90,6 @@ async function onSubmit() {
     await props.onCreate(trimmed)
     title.value = ''
   } catch {
-    /* surfaced via createError */
   }
 }
 

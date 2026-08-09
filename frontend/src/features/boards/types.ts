@@ -10,7 +10,20 @@ export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 export type TaskRecurrenceRule = 'NONE' | 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 
 export type TaskRecurrenceAction = 'DUPLICATE' | 'RESCHEDULE';
-export type ColumnAutomationAction = 'ASSIGN_USER' | 'START_TIMER' | 'COMPLETE_TASK';
+export type ColumnAutomationAction =
+  | 'ASSIGN_USER'
+  | 'START_TIMER'
+  | 'COMPLETE_TASK'
+  | 'NOTIFY_WATCHERS'
+  | 'SET_CUSTOM_FIELD'
+  | 'WEBHOOK';
+
+export interface ColumnAutomationConfig {
+  message?: string | null;
+  fieldId?: string;
+  value?: string | number | boolean | null;
+  url?: string;
+}
 export type TaskRelationType = 'BLOCKS' | 'WAITING_FOR' | 'RELATES_TO';
 
 export interface TaskAssignee {
@@ -73,6 +86,7 @@ export interface ColumnAutomation {
   id: string;
   action: ColumnAutomationAction;
   assigneeId: string | null;
+  config?: ColumnAutomationConfig | null;
   assignee: TaskAssignee | null;
 }
 
@@ -91,6 +105,11 @@ export interface UpdateColumnAutomationsPayload {
   assignUserId: string | null;
   startTimer: boolean;
   completeTask: boolean;
+  notifyWatchers?: boolean;
+  notifyMessage?: string | null;
+  customFieldId?: string | null;
+  customFieldValue?: string | number | boolean | null;
+  webhookUrl?: string | null;
 }
 
 export interface BoardView {

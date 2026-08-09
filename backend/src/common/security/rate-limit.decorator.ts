@@ -20,6 +20,12 @@ export const DEFAULT_AUTH_RATE_LIMIT: RateLimitConfig = {
   maxAttempts: 5,
 };
 
+export const AUTH_SESSION_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'auth:session',
+  windowSeconds: 60,
+  maxAttempts: 60,
+};
+
 export const AUTH_ME_RATE_LIMIT: RateLimitConfig = {
   keyPrefix: 'auth:me',
   windowSeconds: 60,

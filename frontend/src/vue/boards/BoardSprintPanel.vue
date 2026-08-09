@@ -143,7 +143,6 @@ async function submitCreate() {
     startDate.value = ''
     endDate.value = ''
   } catch {
-    /* surfaced via actionError */
   }
 }
 </script>

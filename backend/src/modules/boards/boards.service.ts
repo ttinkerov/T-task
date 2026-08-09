@@ -173,6 +173,7 @@ export class BoardsService {
         id: string;
         action: ColumnAutomationAction;
         assigneeId: string | null;
+        config?: Prisma.JsonValue | null;
         assignee: {
           id: string;
           name: string;
@@ -198,6 +199,7 @@ export class BoardsService {
           id: automation.id,
           action: automation.action,
           assigneeId: automation.assigneeId,
+          config: automation.config ?? null,
           assignee: automation.assignee,
         })),
         tasks: column.tasks.map((task) => this.serializeTask(task)),
@@ -445,6 +447,7 @@ export class BoardsService {
                 columnId,
                 action: ColumnAutomationAction.ASSIGN_USER,
                 assigneeId: dto.assignUserId,
+                config: Prisma.JsonNull,
                 position: 0,
               },
             ]
@@ -455,6 +458,7 @@ export class BoardsService {
                 columnId,
                 action: ColumnAutomationAction.START_TIMER,
                 assigneeId: null,
+                config: Prisma.JsonNull,
                 position: 1,
               },
             ]
@@ -465,11 +469,62 @@ export class BoardsService {
                 columnId,
                 action: ColumnAutomationAction.COMPLETE_TASK,
                 assigneeId: null,
+                config: Prisma.JsonNull,
                 position: 2,
               },
             ]
           : []),
+        ...(dto.notifyWatchers
+          ? [
+              {
+                columnId,
+                action: ColumnAutomationAction.NOTIFY_WATCHERS,
+                assigneeId: null,
+                config: {
+                  message: dto.notifyMessage?.trim() || null,
+                } as Prisma.InputJsonValue,
+                position: 3,
+              },
+            ]
+          : []),
+        ...(dto.customFieldId
+          ? [
+              {
+                columnId,
+                action: ColumnAutomationAction.SET_CUSTOM_FIELD,
+                assigneeId: null,
+                config: {
+                  fieldId: dto.customFieldId,
+                  value: dto.customFieldValue ?? null,
+                } as Prisma.InputJsonValue,
+                position: 4,
+              },
+            ]
+          : []),
+        ...(dto.webhookUrl?.trim()
+          ? [
+              {
+                columnId,
+                action: ColumnAutomationAction.WEBHOOK,
+                assigneeId: null,
+                config: {
+                  url: dto.webhookUrl.trim(),
+                } as Prisma.InputJsonValue,
+                position: 5,
+              },
+            ]
+          : []),
       ];
+
+      if (dto.customFieldId) {
+        const field = await tx.customFieldDefinition.findFirst({
+          where: { id: dto.customFieldId, workspaceId },
+          select: { id: true },
+        });
+        if (!field) {
+          throw new BadRequestException('Поле автоматизации не найдено в пространстве');
+        }
+      }
 
       await tx.columnAutomation.deleteMany({ where: { columnId } });
       if (automations.length > 0) {
@@ -517,6 +572,7 @@ export class BoardsService {
       id: automation.id,
       action: automation.action,
       assigneeId: automation.assigneeId,
+      config: automation.config ?? null,
       assignee: automation.assignee,
     }));
   }

@@ -32,7 +32,6 @@ async function submit() {
     await props.onCreate?.(next)
     name.value = ''
   } catch {
-    /* surfaced via actionError */
   }
 }
 </script>

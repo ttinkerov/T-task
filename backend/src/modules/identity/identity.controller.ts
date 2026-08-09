@@ -3,7 +3,11 @@ import { Request, Response } from 'express';
 import { CurrentUser } from '../../common/auth/decorators/current-user.decorator';
 import { Public } from '../../common/auth/decorators/public.decorator';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
-import { AUTH_ME_RATE_LIMIT, RateLimit } from '../../common/security/rate-limit.decorator';
+import {
+  AUTH_ME_RATE_LIMIT,
+  AUTH_SESSION_RATE_LIMIT,
+  RateLimit,
+} from '../../common/security/rate-limit.decorator';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
 import { LoginDto } from './dto/login.dto';
@@ -40,6 +44,7 @@ export class IdentityController {
 
   @Public()
   @UseGuards(AuthRateLimitGuard)
+  @RateLimit(AUTH_SESSION_RATE_LIMIT)
   @Post('refresh')
   async refresh(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
     const data = await this.identityService.refresh(request, response);
@@ -48,6 +53,7 @@ export class IdentityController {
 
   @Public()
   @UseGuards(AuthRateLimitGuard)
+  @RateLimit(AUTH_SESSION_RATE_LIMIT)
   @Post('logout')
   async logout(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
     const data = await this.identityService.logout(request, response);
@@ -55,6 +61,7 @@ export class IdentityController {
   }
 
   @UseGuards(AuthRateLimitGuard)
+  @RateLimit(AUTH_SESSION_RATE_LIMIT)
   @Post('logout-all')
   async logoutAll(
     @CurrentUser() user: AuthenticatedUser,

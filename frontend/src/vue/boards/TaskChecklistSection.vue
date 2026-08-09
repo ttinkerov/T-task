@@ -109,7 +109,6 @@ async function submit() {
     await props.onCreate?.(trimmed)
     text.value = ''
   } catch {
-    /* surfaced via actionError */
   }
 }
 
@@ -119,7 +118,6 @@ async function applyTemplate() {
     await props.onApplyTemplate?.(templateId.value)
     templateId.value = ''
   } catch {
-    /* surfaced via actionError */
   }
 }
 </script>

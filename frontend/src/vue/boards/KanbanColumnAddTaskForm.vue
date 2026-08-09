@@ -74,7 +74,6 @@ async function submit() {
     title.value = ''
     templateId.value = ''
   } catch {
-    /* surfaced via actionError */
   }
 }
 </script>

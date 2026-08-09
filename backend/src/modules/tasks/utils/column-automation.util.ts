@@ -1,8 +1,22 @@
-export type ColumnAutomationAction = 'ASSIGN_USER' | 'START_TIMER' | 'COMPLETE_TASK';
+export type ColumnAutomationAction =
+  | 'ASSIGN_USER'
+  | 'START_TIMER'
+  | 'COMPLETE_TASK'
+  | 'NOTIFY_WATCHERS'
+  | 'SET_CUSTOM_FIELD'
+  | 'WEBHOOK';
+
+export interface ColumnAutomationConfig {
+  message?: string | null;
+  fieldId?: string;
+  value?: string | number | boolean | null;
+  url?: string;
+}
 
 interface ColumnAutomation {
   action: ColumnAutomationAction;
   assigneeId: string | null;
+  config?: unknown;
 }
 
 interface AutomatableTask {
@@ -17,6 +31,23 @@ interface AutomationTaskUpdate {
   timerStartedAt?: Date | null;
   completedAt?: Date;
   overdueDays?: number;
+}
+
+const TASK_FIELD_ACTIONS = new Set<ColumnAutomationAction>([
+  'ASSIGN_USER',
+  'START_TIMER',
+  'COMPLETE_TASK',
+]);
+
+export function isTaskFieldAutomation(action: ColumnAutomationAction) {
+  return TASK_FIELD_ACTIONS.has(action);
+}
+
+export function parseAutomationConfig(config: unknown): ColumnAutomationConfig | null {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    return null;
+  }
+  return config as ColumnAutomationConfig;
 }
 
 export function buildAutomationTaskUpdate(

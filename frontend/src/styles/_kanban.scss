@@ -357,6 +357,8 @@
     font-size: 0.75rem;
   }
 }
+
+.automation-dialog {
   width: min(30rem, calc(100vw - 2rem));
   border: 1px solid var(--tt-border);
   border-radius: $radius-lg;

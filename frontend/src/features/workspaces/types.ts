@@ -34,6 +34,7 @@ export interface WorkspaceInvitation {
 
 export interface CreatedInvitation extends WorkspaceInvitation {
   token: string;
+  emailSent?: boolean;
 }
 
 export interface InvitationPreview {

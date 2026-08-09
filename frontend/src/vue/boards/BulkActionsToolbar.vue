@@ -90,7 +90,6 @@ async function applyAndReset(patch, resetRef) {
     await props.onApply?.(patch)
     resetRef.value = ''
   } catch {
-    /* keep select value; error shown via props.error */
   }
 }
 

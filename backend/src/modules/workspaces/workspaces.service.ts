@@ -21,6 +21,7 @@ import { createDefaultBoard } from '../boards/utils/create-default-board.util';
 import { createDefaultFunnel } from '../funnels/utils/create-default-funnel.util';
 import { ActivityService } from '../activity/activity.service';
 import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
+import { MailService } from '../../infrastructure/mail/mail.service';
 
 const INVITATION_TTL_DAYS = 7;
 const MEMBERSHIP_CACHE_TTL_SECONDS = 45;
@@ -34,6 +35,7 @@ export class WorkspacesService {
     private readonly activityService: ActivityService,
     private readonly eventEmitter: EventEmitter2,
     private readonly redis: RedisService,
+    private readonly mail: MailService,
   ) {}
 
   async listForUser(userId: string) {
@@ -633,6 +635,7 @@ export class WorkspacesService {
       role: invitation.role,
       token: rawToken,
       inviterName: inviter?.name ?? 'Коллега',
+      sendEmail: dto.sendEmail !== false,
     });
 
     return {
@@ -641,6 +644,7 @@ export class WorkspacesService {
       role: invitation.role,
       expiresAt: invitation.expiresAt,
       token: rawToken,
+      emailSent: dto.sendEmail !== false && this.mail.enabled,
     };
   }
 

@@ -12,6 +12,8 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { Server, Socket } from 'socket.io';
 import {
   CommentCreatedPayload,
+  DealCreatedPayload,
+  DealMovedPayload,
   DomainEvents,
   TaskAssignedPayload,
   TaskMovedPayload,
@@ -160,6 +162,16 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   @OnEvent(DomainEvents.COMMENT_CREATED)
   onCommentCreated(payload: CommentCreatedPayload) {
     this.server.to(roomName(payload.workspaceId)).emit(DomainEvents.COMMENT_CREATED, payload);
+  }
+
+  @OnEvent(DomainEvents.DEAL_CREATED)
+  onDealCreated(payload: DealCreatedPayload) {
+    this.server.to(roomName(payload.workspaceId)).emit(DomainEvents.DEAL_CREATED, payload);
+  }
+
+  @OnEvent(DomainEvents.DEAL_MOVED)
+  onDealMoved(payload: DealMovedPayload) {
+    this.server.to(roomName(payload.workspaceId)).emit(DomainEvents.DEAL_MOVED, payload);
   }
 
   private trackSocket(userId: string, socketId: string) {

@@ -49,6 +49,8 @@ describe('TasksService completion dependencies', () => {
       { notifyWatchers: vi.fn() } as never,
       checklistService as never,
       {} as never,
+      { setValue: vi.fn() } as never,
+      { dispatch: vi.fn() } as never,
       { emit: vi.fn() } as never,
     );
     prisma.task.findFirst.mockResolvedValue({
@@ -199,6 +201,8 @@ describe('TasksService description mentions', () => {
       { notifyWatchers: vi.fn() } as never,
       { assertDoDSatisfied: vi.fn().mockResolvedValue(undefined) } as never,
       {} as never,
+      { setValue: vi.fn() } as never,
+      { dispatch: vi.fn() } as never,
       { emit: vi.fn() } as never,
     );
 

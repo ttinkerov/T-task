@@ -22,7 +22,9 @@ import { MoveTaskDto } from './dto/move-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { BulkUpdateTasksDto } from './dto/bulk-update-tasks.dto';
 import { TaskRelationsService } from './task-relations.service';
-import { buildAutomationTaskUpdate } from './utils/column-automation.util';
+import { CustomFieldsService } from './custom-fields.service';
+import { OutboundWebhookService } from '../boards/outbound-webhook.service';
+import { buildAutomationTaskUpdate, parseAutomationConfig } from './utils/column-automation.util';
 import { computeNextRecurrenceDate, isDoneColumn } from './utils/recurrence.util';
 import {
   normalizeDescriptionDocInput,
@@ -35,6 +37,12 @@ const taskWithAssignee = {
   },
 } as const;
 
+type LoadedAutomation = {
+  action: ColumnAutomationAction;
+  assigneeId: string | null;
+  config: Prisma.JsonValue | null;
+};
+
 @Injectable()
 export class TasksService {
   constructor(
@@ -46,6 +54,8 @@ export class TasksService {
     private readonly watchersService: WatchersService,
     private readonly taskChecklistService: TaskChecklistService,
     private readonly taskTemplatesService: TaskTemplatesService,
+    private readonly customFieldsService: CustomFieldsService,
+    private readonly outboundWebhookService: OutboundWebhookService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -91,7 +101,7 @@ export class TasksService {
       include: {
         automations: {
           orderBy: { position: 'asc' },
-          select: { action: true, assigneeId: true },
+          select: { action: true, assigneeId: true, config: true },
         },
       },
     });
@@ -190,6 +200,15 @@ export class TasksService {
     this.eventEmitter.emit(DomainEvents.TASK_CHANGED, {
       workspaceId,
       taskId: task.id,
+    });
+
+    await this.runAutomationSideEffects({
+      workspaceId,
+      taskId: task.id,
+      actorId: userId,
+      columnName: column.name,
+      automations: executableAutomations,
+      boardId: column.boardId,
     });
 
     return this.toTask(task);
@@ -596,7 +615,7 @@ export class TasksService {
       include: {
         automations: {
           orderBy: { position: 'asc' },
-          select: { action: true, assigneeId: true },
+          select: { action: true, assigneeId: true, config: true },
         },
       },
     });
@@ -702,12 +721,24 @@ export class TasksService {
     });
 
     if (task.columnId !== dto.columnId) {
-      const columnName = targetColumn.name;
-      await this.watchersService.notifyWatchers({
+      const hasNotifyAutomation = executableAutomations.some(
+        (automation) => automation.action === ColumnAutomationAction.NOTIFY_WATCHERS,
+      );
+      if (!hasNotifyAutomation) {
+        await this.watchersService.notifyWatchers({
+          workspaceId,
+          taskId,
+          actorId: userId,
+          preview: `Статус → ${targetColumn.name}`,
+        });
+      }
+      await this.runAutomationSideEffects({
         workspaceId,
         taskId,
         actorId: userId,
-        preview: `Статус → ${columnName}`,
+        columnName: targetColumn.name,
+        automations: executableAutomations,
+        boardId: targetColumn.boardId,
       });
     }
 
@@ -734,13 +765,7 @@ export class TasksService {
     };
   }
 
-  private async filterExecutableAutomations(
-    workspaceId: string,
-    automations: Array<{
-      action: ColumnAutomationAction;
-      assigneeId: string | null;
-    }>,
-  ) {
+  private async filterExecutableAutomations(workspaceId: string, automations: LoadedAutomation[]) {
     const assignment = automations.find(
       (automation) => automation.action === ColumnAutomationAction.ASSIGN_USER,
     );
@@ -767,6 +792,57 @@ export class TasksService {
     return automations.filter(
       (automation) => automation.action !== ColumnAutomationAction.ASSIGN_USER,
     );
+  }
+
+  private async runAutomationSideEffects(params: {
+    workspaceId: string;
+    taskId: string;
+    actorId: string;
+    columnName: string;
+    boardId: string;
+    automations: LoadedAutomation[];
+  }) {
+    for (const automation of params.automations) {
+      const config = parseAutomationConfig(automation.config);
+
+      if (automation.action === ColumnAutomationAction.NOTIFY_WATCHERS) {
+        await this.watchersService.notifyWatchers({
+          workspaceId: params.workspaceId,
+          taskId: params.taskId,
+          actorId: params.actorId,
+          preview:
+            config?.message?.trim() || `Автоматизация: задача в колонке «${params.columnName}»`,
+        });
+      }
+
+      if (automation.action === ColumnAutomationAction.SET_CUSTOM_FIELD && config?.fieldId) {
+        try {
+          await this.customFieldsService.setValue(
+            params.workspaceId,
+            params.taskId,
+            config.fieldId,
+            params.actorId,
+            { value: config.value ?? null },
+          );
+        } catch {
+          // field/value may be invalid for the workspace; skip without failing the move
+        }
+      }
+
+      if (automation.action === ColumnAutomationAction.WEBHOOK && config?.url) {
+        void this.outboundWebhookService.dispatch({
+          url: config.url,
+          payload: {
+            event: 'column.automation',
+            workspaceId: params.workspaceId,
+            boardId: params.boardId,
+            taskId: params.taskId,
+            columnName: params.columnName,
+            actorId: params.actorId,
+          },
+        });
+      }
+    }
   }
 
   private async handleRecurrenceCompletion(

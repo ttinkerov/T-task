@@ -79,7 +79,6 @@ async function submit() {
     await props.onCreate?.(trimmed)
     title.value = ''
   } catch {
-    /* surfaced via actionError */
   }
 }
 </script>

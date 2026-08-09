@@ -18,6 +18,7 @@ export class MailNotificationsListener {
 
   @OnEvent(DomainEvents.INVITATION_CREATED)
   async onInvitation(payload: InvitationCreatedPayload) {
+    if (!payload.sendEmail) return;
     const appUrl = this.configService.get<string>('APP_URL') ?? 'http://localhost:3000';
     const link = `${appUrl.replace(/\/$/, '')}/invite/${payload.token}`;
     await this.mail.send({

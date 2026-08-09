@@ -77,6 +77,9 @@ enum ColumnAutomationAction {
   ASSIGN_USER
   START_TIMER
   COMPLETE_TASK
+  NOTIFY_WATCHERS
+  SET_CUSTOM_FIELD
+  WEBHOOK
 }
 
 enum ExternalAppProvider {
@@ -560,6 +563,7 @@ model ColumnAutomation {
   columnId   String                 @map("column_id")
   action     ColumnAutomationAction
   assigneeId String?                @map("assignee_id")
+  config     Json?
   position   Int                    @default(0)
   createdAt  DateTime               @default(now()) @map("created_at")
   updatedAt  DateTime               @updatedAt @map("updated_at")

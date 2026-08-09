@@ -5,7 +5,6 @@ import { useWorkspaceStore } from '@/stores/workspace.store';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
 
-/** Shared gate for dashboard routes that need a selected workspace. */
 export function useWorkspaceRouteGate(options?: { redirectOnEmpty?: boolean }) {
   const redirectOnEmpty = options?.redirectOnEmpty ?? true;
   const router = useRouter();

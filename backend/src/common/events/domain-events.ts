@@ -5,6 +5,8 @@ export const DomainEvents = {
   TASK_SOFT_DELETED: 'task.soft_deleted',
   COMMENT_CREATED: 'comment.created',
   COMMENT_DELETED: 'comment.deleted',
+  DEAL_CREATED: 'deal.created',
+  DEAL_MOVED: 'deal.moved',
   INVITATION_CREATED: 'invitation.created',
   MENTION_CREATED: 'mention.created',
   DUE_REMINDER: 'due.reminder',
@@ -63,6 +65,23 @@ export type CommentDeletedPayload = {
   commentId: string;
 };
 
+export type DealCreatedPayload = {
+  workspaceId: string;
+  funnelId: string;
+  dealId: string;
+  stageId: string;
+  actorId: string;
+};
+
+export type DealMovedPayload = {
+  workspaceId: string;
+  funnelId: string;
+  dealId: string;
+  stageId: string;
+  position: number;
+  actorId: string;
+};
+
 export type InvitationCreatedPayload = {
   workspaceId: string;
   workspaceName: string;
@@ -71,6 +90,7 @@ export type InvitationCreatedPayload = {
   role: string;
   token: string;
   inviterName: string;
+  sendEmail: boolean;
 };
 
 export type MentionCreatedPayload = {

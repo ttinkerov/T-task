@@ -1,5 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
+import { DomainEvents } from '../../common/events/domain-events';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { FunnelsService } from '../funnels/funnels.service';
 import { DealTemplatesService } from '../templates/deal-templates.service';
@@ -21,6 +23,7 @@ export class DealsService {
     private readonly workspacesService: WorkspacesService,
     private readonly funnelsService: FunnelsService,
     private readonly dealTemplatesService: DealTemplatesService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(workspaceId: string, userId: string, dto: CreateDealDto) {
@@ -61,6 +64,14 @@ export class DealsService {
         position,
       },
       include: dealWithAssignee,
+    });
+
+    this.eventEmitter.emit(DomainEvents.DEAL_CREATED, {
+      workspaceId,
+      funnelId: stage.funnelId,
+      dealId: deal.id,
+      stageId: stage.id,
+      actorId: userId,
     });
 
     return this.funnelsService.serializeDeal(deal);
@@ -131,6 +142,15 @@ export class DealsService {
     const updated = await this.prisma.deal.findUniqueOrThrow({
       where: { id: dealId },
       include: dealWithAssignee,
+    });
+
+    this.eventEmitter.emit(DomainEvents.DEAL_MOVED, {
+      workspaceId,
+      funnelId: targetStage.funnelId,
+      dealId,
+      stageId: dto.stageId,
+      position: dto.position,
+      actorId: userId,
     });
 
     return this.funnelsService.serializeDeal(updated);

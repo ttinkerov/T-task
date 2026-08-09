@@ -44,6 +44,7 @@ describe('WorkspacesService.updateMemberRole authz', () => {
       { record: vi.fn() } as never,
       {} as never,
       { getClient: () => ({ get: vi.fn(), setex: vi.fn(), del: vi.fn() }) } as never,
+      { enabled: false } as never,
     );
 
     stubMembership(service, async (_workspaceId, userId) => {
@@ -130,6 +131,7 @@ describe('WorkspacesService.createInvitation authz', () => {
       { record: vi.fn() } as never,
       { emit: vi.fn() } as never,
       { getClient: () => ({ get: vi.fn(), setex: vi.fn(), del: vi.fn() }) } as never,
+      { enabled: false } as never,
     );
 
     stubMembership(service, async (_workspaceId, userId) => {
@@ -175,6 +177,7 @@ describe('WorkspacesService invitation lifecycle', () => {
       { record: vi.fn() } as never,
       { emit: vi.fn() } as never,
       { getClient: () => ({ get: vi.fn(), setex: vi.fn(), del: vi.fn() }) } as never,
+      { enabled: false } as never,
     );
 
     await expect(service.acceptInvitation('tok', 'user-1')).rejects.toBeInstanceOf(

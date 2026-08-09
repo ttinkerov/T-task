@@ -37,7 +37,7 @@ export default function InviteAcceptPage() {
       router.push('/dashboard');
       router.refresh();
     } catch {
-      /* error shown via acceptMutation.error */
+      return;
     }
   };
 

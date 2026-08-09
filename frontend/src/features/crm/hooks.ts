@@ -353,7 +353,7 @@ function optimisticMoveStage(
   };
 }
 
-function optimisticMoveDeal(
+export function optimisticMoveDeal(
   funnel: FunnelView,
   dealId: string,
   targetStageId: string,

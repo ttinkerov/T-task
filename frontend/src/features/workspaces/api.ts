@@ -83,11 +83,12 @@ export async function createInvitation(
   workspaceId: string,
   email: string,
   role: WorkspaceRole = 'MEMBER',
+  sendEmail = true,
 ) {
   return apiFetch<CreatedInvitation>(`/api/v1/workspaces/${workspaceId}/invitations`, {
     method: 'POST',
     headers: withWorkspace(workspaceId),
-    body: JSON.stringify({ email, role }),
+    body: JSON.stringify({ email, role, sendEmail }),
   });
 }
 
