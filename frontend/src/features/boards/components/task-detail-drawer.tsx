@@ -1,6 +1,9 @@
 'use client';
 
-import { FormEvent } from 'react';
+import { useCallback, useMemo, useState, type FormEvent } from 'react';
+import { createPortal } from 'react-dom';
+import { VueIsland } from '@/components/vue/VueIsland';
+import TaskDetailDrawerView from '@/vue/boards/TaskDetailDrawerView.vue';
 import { useTaskDetailQuery, useUpdateTaskMutation } from '../hooks';
 import { buildTaskUpdatePayload } from '../lib/task-form-values';
 import type { BoardTask, TaskRelationCandidate } from '../types';
@@ -9,7 +12,6 @@ import { useTaskDrawerShortcuts } from './task-drawer/hooks/use-task-drawer-shor
 import { useTaskFormState } from './task-drawer/hooks/use-task-form-state';
 import { TaskDrawerComments } from './task-drawer/task-drawer-comments';
 import { TaskDrawerForm } from './task-drawer/task-drawer-form';
-import { TaskDrawerHeader } from './task-drawer/task-drawer-header';
 import { TaskDrawerSections } from './task-drawer/task-drawer-sections';
 
 interface TaskDetailDrawerProps {
@@ -38,6 +40,11 @@ export function TaskDetailDrawer({
   const { data: fullTask } = useTaskDetailQuery(workspaceId, task.id);
   const detailTask = fullTask ?? task;
   const form = useTaskFormState(detailTask);
+  const [hosts, setHosts] = useState<{
+    form: HTMLElement | null;
+    sections: HTMLElement | null;
+    comments: HTMLElement | null;
+  }>({ form: null, sections: null, comments: null });
 
   useDrawerEscapeClose(onClose);
   useTaskDrawerShortcuts({
@@ -48,6 +55,17 @@ export function TaskDetailDrawer({
         data: { assigneeId: userId },
       }),
   });
+
+  const onHostsReady = useCallback(
+    (next: {
+      form: HTMLElement | null;
+      sections: HTMLElement | null;
+      comments: HTMLElement | null;
+    }) => {
+      setHosts(next);
+    },
+    [],
+  );
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -60,45 +78,55 @@ export function TaskDetailDrawer({
     onClose();
   };
 
+  const viewProps = useMemo(
+    () => ({
+      columnName,
+      onClose,
+      onHostsReady,
+    }),
+    [columnName, onClose, onHostsReady],
+  );
+
   return (
-    <div className="task-drawer-overlay" onClick={onClose} role="presentation">
-      <aside
-        className="task-drawer"
-        onClick={(event) => event.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Редактирование задачи"
-        data-testid="task-detail-drawer"
-      >
-        <TaskDrawerHeader columnName={columnName} onClose={onClose} />
-
-        <div className="task-drawer__body">
-          <TaskDrawerForm
-            workspaceId={workspaceId}
-            task={task}
-            relationCandidates={relationCandidates}
-            linkSource={linkSource}
-            form={form}
-            isSaving={updateMutation.isPending}
-            saveError={updateMutation.error?.message}
-            onSubmit={handleSubmit}
-            onOpenTask={onOpenTask}
-            onClose={onClose}
-          />
-
-          <TaskDrawerSections
-            workspaceId={workspaceId}
-            boardId={resolvedBoardId}
-            task={task}
-            detailTask={detailTask}
-            relationCandidates={relationCandidates}
-            onOpenTask={onOpenTask}
-          />
-
-          <TaskDrawerComments workspaceId={workspaceId} taskId={task.id} />
-        </div>
-      </aside>
-    </div>
+    <>
+      <VueIsland component={TaskDetailDrawerView} componentProps={viewProps} />
+      {hosts.form
+        ? createPortal(
+            <TaskDrawerForm
+              workspaceId={workspaceId}
+              task={task}
+              relationCandidates={relationCandidates}
+              linkSource={linkSource}
+              form={form}
+              isSaving={updateMutation.isPending}
+              saveError={updateMutation.error?.message}
+              onSubmit={handleSubmit}
+              onOpenTask={onOpenTask}
+              onClose={onClose}
+            />,
+            hosts.form,
+          )
+        : null}
+      {hosts.sections
+        ? createPortal(
+            <TaskDrawerSections
+              workspaceId={workspaceId}
+              boardId={resolvedBoardId}
+              task={task}
+              detailTask={detailTask}
+              relationCandidates={relationCandidates}
+              onOpenTask={onOpenTask}
+            />,
+            hosts.sections,
+          )
+        : null}
+      {hosts.comments
+        ? createPortal(
+            <TaskDrawerComments workspaceId={workspaceId} taskId={task.id} />,
+            hosts.comments,
+          )
+        : null}
+    </>
   );
 }
 

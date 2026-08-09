@@ -386,6 +386,22 @@
     flex-direction: column;
     min-height: 0;
   }
+
+  &--animate {
+    animation: dashboard-page-enter 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  &__host {
+    display: contents;
+  }
+
+  &--fill &__host {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+  }
 }
 
 .view-mode-transition {
@@ -394,6 +410,40 @@
   flex-direction: column;
   min-height: 0;
   width: 100%;
+
+  &--animate {
+    animation: view-mode-enter 0.18s cubic-bezier(0.2, 0, 0.4, 0.9);
+  }
+
+  &__host {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+  }
+}
+
+@keyframes dashboard-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes view-mode-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .mobile-nav {

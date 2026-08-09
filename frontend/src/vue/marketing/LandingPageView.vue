@@ -8,12 +8,7 @@
           <BrandLogo mark-only class-name="tt-brand-logo--nav" />
 
           <div class="tt-nav__links">
-            <a
-              v-for="link in navLinks"
-              :key="link.href"
-              :href="link.href"
-              class="tt-nav__link"
-            >
+            <a v-for="link in navLinks" :key="link.href" :href="link.href" class="tt-nav__link">
               {{ link.label }}
             </a>
           </div>
@@ -86,11 +81,9 @@
         </div>
 
         <div id="demo" class="tt-hero__stage">
-          <div class="tt-hero__stage-chrome">
-            <span /><span /><span />
-          </div>
+          <div class="tt-hero__stage-chrome"><span /><span /><span /></div>
           <div class="tt-hero__stage-body">
-            <div ref="demoHostEl" class="tt-hero__demo-host" v-once />
+            <KanbanDemoBoard />
           </div>
         </div>
       </section>
@@ -150,11 +143,7 @@
         </div>
 
         <div class="tt-steps">
-          <article
-            v-for="step in copy.howto.steps"
-            :key="step.num"
-            class="tt-step-card"
-          >
+          <article v-for="step in copy.howto.steps" :key="step.num" class="tt-step-card">
             <span class="tt-step-card__num">{{ step.num }}</span>
             <h3>{{ step.title }}</h3>
             <p v-if="step.text">{{ step.text }}</p>
@@ -220,9 +209,10 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import BrandLogo from './BrandLogo.vue'
-import LandingIcon from './LandingIcon.vue'
+import { computed } from 'vue';
+import BrandLogo from './BrandLogo.vue';
+import KanbanDemoBoard from './KanbanDemoBoard.vue';
+import LandingIcon from './LandingIcon.vue';
 
 const props = defineProps({
   copy: { type: Object, required: true },
@@ -230,8 +220,7 @@ const props = defineProps({
   theme: { type: String, required: true },
   onSetLocale: { type: Function, default: null },
   onToggleTheme: { type: Function, default: null },
-  onDemoHostReady: { type: Function, default: null },
-})
+});
 
 const featureIcons = [
   'kanban',
@@ -244,39 +233,22 @@ const featureIcons = [
   'timer',
   'sparkles',
   'layers',
-]
+];
 
-const audienceIcons = ['rocket', 'building', 'globe']
-const aiIcons = ['message', 'sparkles', 'workflow']
+const audienceIcons = ['rocket', 'building', 'globe'];
+const aiIcons = ['message', 'sparkles', 'workflow'];
 
 const localeOptions = [
   { value: 'ru', label: 'RU' },
   { value: 'en', label: 'EN' },
-]
+];
 
-const demoHostEl = ref(null)
-const isLight = computed(() => props.theme === 'light')
+const isLight = computed(() => props.theme === 'light');
 
 const navLinks = computed(() => [
   { label: props.copy.nav.features, href: '#features' },
   { label: props.copy.nav.ai, href: '#ai' },
   { label: props.copy.nav.howto, href: '#howto' },
   { label: props.copy.nav.audiences, href: '#audiences' },
-])
-
-function notifyDemoHost(el) {
-  props.onDemoHostReady?.(el)
-}
-
-onMounted(() => {
-  notifyDemoHost(demoHostEl.value)
-})
-
-watch(demoHostEl, (el) => {
-  notifyDemoHost(el)
-})
-
-onBeforeUnmount(() => {
-  notifyDemoHost(null)
-})
+]);
 </script>

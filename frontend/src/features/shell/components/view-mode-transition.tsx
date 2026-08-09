@@ -1,8 +1,14 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
-import { motionTokens } from '@/shared/lib/motion-tokens';
-import { cn } from '@/shared/lib/cn';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { VueIsland } from '@/components/vue/VueIsland';
+import ViewModeTransitionView from '@/vue/shell/ViewModeTransition.vue';
+
+function prefersReducedMotion() {
+  if (typeof window === 'undefined' || !window.matchMedia) return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
 
 export function ViewModeTransition({
   modeKey,
@@ -10,23 +16,26 @@ export function ViewModeTransition({
   className,
 }: {
   modeKey: string;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }) {
-  const reduceMotion = useReducedMotion();
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  const onHostReady = useCallback((el: HTMLElement | null) => setHost(el), []);
+
+  const viewProps = useMemo(
+    () => ({
+      modeKey,
+      className: className ?? '',
+      reduceMotion: prefersReducedMotion(),
+      onHostReady,
+    }),
+    [modeKey, className, onHostReady],
+  );
 
   return (
-    <motion.div
-      key={modeKey}
-      className={cn('view-mode-transition', className)}
-      initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: reduceMotion ? 0 : motionTokens.duration.fast,
-        ease: motionTokens.easing.soft,
-      }}
-    >
-      {children}
-    </motion.div>
+    <>
+      <VueIsland component={ViewModeTransitionView} componentProps={viewProps} displayContents />
+      {host ? createPortal(children, host) : null}
+    </>
   );
 }
