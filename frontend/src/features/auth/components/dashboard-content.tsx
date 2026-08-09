@@ -1,21 +1,20 @@
 'use client';
 
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { useMeQuery } from '@/features/auth/hooks';
 import { EMPTY_ALL_TASKS_FILTERS, useAllTasksQuery, useMyTasksQuery } from '@/features/all-tasks';
-import { MyTasksSection } from '@/features/all-tasks/components/my-tasks-section';
 import {
   buildHomeDashboardSlices,
   HOME_SECTION_LIMIT,
 } from '@/features/all-tasks/lib/home-dashboard-slices';
 import { DUE_SOON_DAYS } from '@/features/all-tasks/lib/my-tasks-partition';
 import type { AllTask, AllTasksQuery } from '@/features/all-tasks/types';
-import { CreateWorkspaceForm } from '@/features/workspaces/components/create-workspace-form';
-import { WorkspaceSwitcher } from '@/features/workspaces/components/workspace-switcher';
-import { useWorkspacesQuery } from '@/features/workspaces/hooks';
+import { PRIORITY_LABELS } from '@/features/boards/types';
+import { useCreateWorkspaceMutation, useWorkspacesQuery } from '@/features/workspaces/hooks';
 import { useWorkspaceStore } from '@/stores/workspace.store';
-import dynamic from 'next/dynamic';
-import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import HomeDashboardView from '@/vue/auth/HomeDashboardView.vue';
 
 const TaskDetailDrawer = dynamic(
   () =>
@@ -38,6 +37,8 @@ export function DashboardContent() {
   const { data: session } = useMeQuery();
   const { data: workspaces = [] } = useWorkspacesQuery();
   const currentWorkspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
+  const setCurrentWorkspaceId = useWorkspaceStore((state) => state.setCurrentWorkspaceId);
+  const createMutation = useCreateWorkspaceMutation();
   const currentWorkspace = workspaces.find((workspace) => workspace.id === currentWorkspaceId);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
@@ -101,143 +102,98 @@ export function DashboardContent() {
     [tasksById],
   );
 
+  useEffect(() => {
+    if (!workspaces.length) return;
+    const exists = workspaces.some((workspace) => workspace.id === currentWorkspaceId);
+    if (!currentWorkspaceId || !exists) {
+      setCurrentWorkspaceId(workspaces[0].id);
+    }
+  }, [currentWorkspaceId, setCurrentWorkspaceId, workspaces]);
+
+  const onCreateWorkspace = useCallback(
+    async (payload: { name: string }) => {
+      await createMutation.mutateAsync(payload);
+    },
+    [createMutation],
+  );
+
+  const viewProps = useMemo(
+    () => ({
+      userName: session?.user.name ?? '',
+      hasWorkspace: Boolean(currentWorkspaceId),
+      isLoading: myTasksQuery.isLoading,
+      isError: myTasksQuery.isError,
+      dueSoonDays,
+      counts: slices.counts,
+      sections: [
+        {
+          id: 'home-overdue',
+          title: 'Просроченные',
+          hint: 'Дедлайн уже прошёл',
+          tasks: slices.overdue,
+          count: slices.counts.overdue,
+          tone: 'danger',
+          emptyLabel: 'Просрочек нет — отличная работа.',
+        },
+        {
+          id: 'home-next',
+          title: 'Дальше',
+          hint: 'Скоро дедлайн и назначенные вам',
+          tasks: slices.nextActions,
+          count: slices.counts.dueSoon + slices.counts.assigned,
+          tone: 'warn',
+          emptyLabel: 'Нет ближайших действий — возьмите задачу с доски.',
+        },
+        {
+          id: 'home-recent',
+          title: 'Недавние',
+          hint: 'Недавно обновлённые',
+          tasks: slices.recent,
+          emptyLabel: 'Пока нет недавних задач.',
+        },
+      ],
+      quickLinks: [...QUICK_LINKS],
+      workspaces: workspaces.map((workspace) => ({
+        id: workspace.id,
+        name: workspace.name,
+        slug: workspace.slug,
+        role: workspace.role,
+        settingsHref: `/dashboard/workspaces/${workspace.id}/settings`,
+      })),
+      switcherWorkspaces: workspaces.map((workspace) => ({
+        id: workspace.id,
+        name: workspace.name,
+      })),
+      currentWorkspaceId: currentWorkspaceId ?? '',
+      currentWorkspaceRole: currentWorkspace?.role ?? '',
+      createPending: createMutation.isPending,
+      priorityLabels: PRIORITY_LABELS,
+      onOpenTask: setSelectedTaskId,
+      onWorkspaceChange: setCurrentWorkspaceId,
+      onCreateWorkspace,
+    }),
+    [
+      session?.user.name,
+      currentWorkspaceId,
+      myTasksQuery.isLoading,
+      myTasksQuery.isError,
+      dueSoonDays,
+      slices,
+      workspaces,
+      currentWorkspace?.role,
+      createMutation.isPending,
+      onCreateWorkspace,
+      setCurrentWorkspaceId,
+    ],
+  );
+
   if (!session) {
     return null;
   }
 
-  const isLoading = myTasksQuery.isLoading;
-  const isError = myTasksQuery.isError;
-  const hasWorkspace = Boolean(currentWorkspaceId);
-
   return (
-    <section className="home-dashboard" aria-labelledby="home-dashboard-title">
-      <header className="home-dashboard__header">
-        <div>
-          <h1 id="home-dashboard-title" className="tt-logo" style={{ fontSize: '1.5rem' }}>
-            Добро пожаловать, {session.user.name}
-          </h1>
-          <p>Что сделать дальше — просрочки, ближайшие дедлайны и недавние задачи.</p>
-        </div>
-        <div className="home-dashboard__header-actions">
-          <Link href="/dashboard/my-tasks" className="btn-ghost text-sm">
-            Все мои задачи
-          </Link>
-          <Link href="/dashboard/board" className="btn-primary text-sm">
-            Открыть доску
-          </Link>
-        </div>
-      </header>
-
-      {!hasWorkspace ? (
-        <p className="home-dashboard__hint">Выберите или создайте команду, чтобы увидеть задачи.</p>
-      ) : null}
-
-      {hasWorkspace && isLoading ? <p role="status">Загрузка задач...</p> : null}
-      {hasWorkspace && isError ? (
-        <p className="all-tasks__error">Не удалось загрузить задачи.</p>
-      ) : null}
-
-      {hasWorkspace && !isLoading && !isError ? (
-        <>
-          <ul className="home-dashboard__stats" aria-label="Сводка по вашим задачам">
-            <li className="home-dashboard__stat home-dashboard__stat--danger">
-              <strong>{slices.counts.overdue}</strong>
-              <span>Просрочено</span>
-            </li>
-            <li className="home-dashboard__stat home-dashboard__stat--warn">
-              <strong>{slices.counts.dueSoon}</strong>
-              <span>Скоро · {dueSoonDays} дн.</span>
-            </li>
-            <li className="home-dashboard__stat">
-              <strong>{slices.counts.assigned}</strong>
-              <span>Назначено</span>
-            </li>
-            <li className="home-dashboard__stat">
-              <strong>{slices.counts.open}</strong>
-              <span>Открытых</span>
-            </li>
-          </ul>
-
-          <div className="home-dashboard__grid my-tasks">
-            <MyTasksSection
-              id="home-overdue"
-              title="Просроченные"
-              hint="Дедлайн уже прошёл"
-              tasks={slices.overdue}
-              count={slices.counts.overdue}
-              tone="danger"
-              emptyLabel="Просрочек нет — отличная работа."
-              onOpenTask={setSelectedTaskId}
-            />
-            <MyTasksSection
-              id="home-next"
-              title="Дальше"
-              hint={`Скоро дедлайн и назначенные вам`}
-              tasks={slices.nextActions}
-              count={slices.counts.dueSoon + slices.counts.assigned}
-              tone="warn"
-              emptyLabel="Нет ближайших действий — возьмите задачу с доски."
-              onOpenTask={setSelectedTaskId}
-            />
-            <MyTasksSection
-              id="home-recent"
-              title="Недавние"
-              hint="Недавно обновлённые"
-              tasks={slices.recent}
-              emptyLabel="Пока нет недавних задач."
-              onOpenTask={setSelectedTaskId}
-            />
-          </div>
-        </>
-      ) : null}
-
-      <nav className="home-dashboard__links" aria-label="Быстрые ссылки">
-        {QUICK_LINKS.map((link) => (
-          <Link key={link.href} href={link.href} className="home-dashboard__link">
-            {link.label}
-          </Link>
-        ))}
-      </nav>
-
-      <div className="glass-panel space-y-3 rounded-2xl p-5">
-        <h2 className="text-sm font-medium text-muted-foreground">Активная команда</h2>
-        <WorkspaceSwitcher />
-        {currentWorkspace ? (
-          <p className="text-sm text-muted-foreground">
-            Роль: <span className="font-medium text-foreground">{currentWorkspace.role}</span>
-          </p>
-        ) : null}
-        <CreateWorkspaceForm />
-      </div>
-
-      <div className="glass-panel rounded-2xl p-5">
-        <h2 className="text-sm font-medium text-muted-foreground">Все команды</h2>
-        <ul className="mt-3 space-y-2">
-          {workspaces.map((workspace) => (
-            <li
-              key={workspace.id}
-              className="flex items-center justify-between rounded-xl border border-border bg-secondary px-3 py-2"
-            >
-              <div>
-                <p className="font-medium">{workspace.name}</p>
-                <p className="text-xs text-muted-foreground">{workspace.slug}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
-                  {workspace.role}
-                </span>
-                <Link
-                  href={`/dashboard/workspaces/${workspace.id}/settings`}
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                >
-                  Настройки
-                </Link>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
+    <>
+      <VueIsland component={HomeDashboardView} componentProps={viewProps} />
       {selectedTask && currentWorkspaceId ? (
         <TaskDetailDrawer
           key={selectedTask.id}
@@ -250,6 +206,6 @@ export function DashboardContent() {
           onClose={() => setSelectedTaskId(null)}
         />
       ) : null}
-    </section>
+    </>
   );
 }

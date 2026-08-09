@@ -1,12 +1,17 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { useCallback, useId, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { useMeQuery } from '@/features/auth/hooks';
-import { MentionText } from '@/features/mentions/components/mention-text';
-import { MentionTextarea } from '@/features/mentions/components/mention-textarea';
+import { findWikiLinkTrigger, insertWikiLink } from '@/features/wiki-links/wiki-link-utils';
 import { useMembersQuery } from '@/features/workspaces/hooks';
+import TaskDrawerCommentsView from '@/vue/boards/TaskDrawerComments.vue';
 import { useCommentsQuery, useCreateCommentMutation, useDeleteCommentMutation } from '../../hooks';
-import { FieldHint } from '../field-hint';
+import {
+  findMentionTrigger,
+  insertMention,
+  tokenizeMentions,
+} from '@/features/mentions/mention-utils';
 
 export function TaskDrawerComments({
   workspaceId,
@@ -15,6 +20,7 @@ export function TaskDrawerComments({
   workspaceId: string;
   taskId: string;
 }) {
+  const listboxId = useId();
   const { data: session } = useMeQuery();
   const { data: members = [] } = useMembersQuery(workspaceId);
   const { data: comments = [], isLoading: commentsLoading } = useCommentsQuery(workspaceId, taskId);
@@ -22,79 +28,100 @@ export function TaskDrawerComments({
   const deleteCommentMutation = useDeleteCommentMutation(workspaceId, taskId);
   const [commentBody, setCommentBody] = useState('');
 
-  const handleAddComment = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const memberOptions = useMemo(
+    () =>
+      members.map((member) => ({
+        userId: member.userId,
+        name: member.user.name,
+        email: member.user.email,
+      })),
+    [members],
+  );
+
+  const namesById = useMemo(
+    () => new Map(members.map((member) => [member.userId, member.user.name])),
+    [members],
+  );
+
+  const currentMember = useMemo(
+    () => members.find((member) => member.userId === session?.user.id),
+    [members, session?.user.id],
+  );
+
+  const canModerate = currentMember?.role === 'OWNER' || currentMember?.role === 'ADMIN';
+
+  const commentItems = useMemo(
+    () =>
+      comments.map((comment) => ({
+        id: comment.id,
+        authorName: comment.author.name,
+        dateLabel: new Date(comment.createdAt).toLocaleString('ru-RU', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        canDelete: comment.authorId === session?.user.id || canModerate,
+        tokens: tokenizeMentions(comment.body).map((token, index) => {
+          if (token.type === 'text') {
+            return {
+              key: `t-${index}-${token.value.slice(0, 8)}`,
+              kind: 'text' as const,
+              value: token.value,
+            };
+          }
+          const currentName = namesById.get(token.userId);
+          return {
+            key: `m-${index}-${token.userId}`,
+            kind: currentName ? ('mention' as const) : ('text' as const),
+            value: currentName ? `@${currentName}` : token.value,
+          };
+        }),
+      })),
+    [canModerate, comments, namesById, session?.user.id],
+  );
+
+  const onSubmit = useCallback(async () => {
     if (!commentBody.trim()) return;
     await createCommentMutation.mutateAsync(commentBody.trim());
     setCommentBody('');
-  };
+  }, [commentBody, createCommentMutation]);
 
-  return (
-    <div className="task-drawer__comments">
-      <h3 className="task-drawer__comments-title task-drawer__section-title">
-        Комментарии
-        <FieldHint text="Обсуждение по задаче. Можно упоминать участников через @." />
-      </h3>
-
-      {commentsLoading ? (
-        <p className="text-sm text-muted-foreground">Загрузка...</p>
-      ) : comments.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Пока нет комментариев</p>
-      ) : (
-        <ul className="task-drawer__comments-list">
-          {comments.map((comment) => (
-            <li key={comment.id} className="task-drawer__comment">
-              <div className="task-drawer__comment-head">
-                <span className="task-drawer__comment-author">{comment.author.name}</span>
-                <span className="task-drawer__comment-date">
-                  {new Date(comment.createdAt).toLocaleString('ru-RU', {
-                    day: 'numeric',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
-                {(comment.authorId === session?.user.id ||
-                  members.find((m) => m.userId === session?.user.id)?.role === 'OWNER' ||
-                  members.find((m) => m.userId === session?.user.id)?.role === 'ADMIN') && (
-                  <button
-                    type="button"
-                    className="task-drawer__comment-delete"
-                    onClick={() => deleteCommentMutation.mutate(comment.id)}
-                    aria-label="Удалить комментарий"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
-              <p className="task-drawer__comment-body">
-                <MentionText text={comment.body} members={members} />
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <form onSubmit={handleAddComment} className="task-drawer__comment-form">
-        <MentionTextarea
-          id="task-comment-input"
-          value={commentBody}
-          onChange={setCommentBody}
-          members={members}
-          className="glass-input task-drawer__textarea"
-          rows={2}
-          maxLength={2000}
-          placeholder="Комментарий… Введите @ для упоминания"
-          aria-label="Новый комментарий"
-        />
-        <button
-          type="submit"
-          disabled={!commentBody.trim() || createCommentMutation.isPending}
-          className="btn-ghost"
-        >
-          Отправить
-        </button>
-      </form>
-    </div>
+  const onDelete = useCallback(
+    (commentId: string) => {
+      deleteCommentMutation.mutate(commentId);
+    },
+    [deleteCommentMutation],
   );
+
+  const viewProps = useMemo(
+    () => ({
+      loading: commentsLoading,
+      comments: commentItems,
+      members: memberOptions,
+      commentBody,
+      canSubmit: Boolean(commentBody.trim()),
+      submitPending: createCommentMutation.isPending,
+      listboxId,
+      findMentionTrigger,
+      findWikiLinkTrigger,
+      insertMention,
+      insertWikiLink,
+      onCommentBodyChange: setCommentBody,
+      onSubmit,
+      onDelete,
+    }),
+    [
+      commentsLoading,
+      commentItems,
+      memberOptions,
+      commentBody,
+      createCommentMutation.isPending,
+      listboxId,
+      onSubmit,
+      onDelete,
+    ],
+  );
+
+  return <VueIsland component={TaskDrawerCommentsView} componentProps={viewProps} />;
 }
