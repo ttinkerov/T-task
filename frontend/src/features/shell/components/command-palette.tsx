@@ -1,25 +1,17 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-  ArrowRight,
-  Handshake,
-  LayoutDashboard,
-  MessageSquareText,
-  Search,
-  SquareKanban,
-  type LucideIcon,
-} from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { searchWorkspace } from '@/features/workspace-tools/api';
+import CommandPaletteView from '@/vue/shell/CommandPalette.vue';
 
 export interface CommandItem {
   id: string;
   label: string;
   hint?: string;
   href?: string;
-  icon?: LucideIcon;
+  iconKey?: string;
   group: string;
   keywords?: string[];
   action?: () => void;
@@ -34,7 +26,6 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ open, onOpenChange, items, workspaceId }: CommandPaletteProps) {
   const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const [remoteItems, setRemoteItems] = useState<CommandItem[]>([]);
@@ -56,8 +47,6 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
     setQuery('');
     setRemoteItems([]);
     setActiveIndex(0);
-    const id = window.setTimeout(() => inputRef.current?.focus(), 30);
-    return () => window.clearTimeout(id);
   }, [open]);
 
   useEffect(() => {
@@ -83,14 +72,14 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
               hint: task.matchIn === 'description' && task.snippet ? task.snippet : task.columnName,
               group: 'Задачи',
               href: task.href,
-              icon: SquareKanban,
+              iconKey: 'kanban',
             })),
             ...response.data.deals.map((deal) => ({
               id: `deal-${deal.id}`,
               label: deal.title,
               group: 'Сделки',
               href: deal.href,
-              icon: Handshake,
+              iconKey: 'handshake',
             })),
             ...response.data.comments.map((comment) => ({
               id: `comment-${comment.id}`,
@@ -98,7 +87,7 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
               hint: comment.taskTitle,
               group: 'Комментарии',
               href: comment.href,
-              icon: MessageSquareText,
+              iconKey: 'message',
             })),
           ];
           setRemoteItems(next);
@@ -148,104 +137,49 @@ export function CommandPalette({ open, onOpenChange, items, workspaceId }: Comma
   }, [open, filtered, activeIndex, onOpenChange, runItem]);
 
   const groups = useMemo(() => {
-    const map = new Map<string, CommandItem[]>();
+    const map = new Map<string, Array<CommandItem & { index: number }>>();
+    let flatIndex = -1;
     for (const item of filtered) {
+      flatIndex += 1;
       const list = map.get(item.group) ?? [];
-      list.push(item);
+      list.push({ ...item, index: flatIndex });
       map.set(item.group, list);
     }
-    return [...map.entries()];
+    return [...map.entries()].map(([name, groupItems]) => ({
+      name,
+      items: groupItems.map((item) => ({
+        id: item.id,
+        label: item.label,
+        hint: item.hint,
+        iconKey: item.iconKey ?? 'layout',
+        index: item.index,
+      })),
+    }));
   }, [filtered]);
 
-  let flatIndex = -1;
-
-  return (
-    <AnimatePresence>
-      {open ? (
-        <motion.div
-          className="cmdk-overlay"
-          role="presentation"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.16 }}
-          onClick={() => onOpenChange(false)}
-        >
-          <motion.div
-            className="cmdk"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Быстрый переход"
-            initial={{ opacity: 0, y: 12, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="cmdk__search">
-              <Search size={16} strokeWidth={1.75} aria-hidden="true" />
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Найти задачу, сделку или страницу…"
-                aria-label="Быстрый переход"
-              />
-              <kbd>esc</kbd>
-            </div>
-
-            <div className="cmdk__list" role="listbox">
-              {filtered.length === 0 ? (
-                <p className="cmdk__empty">Ничего не найдено</p>
-              ) : (
-                groups.map(([group, groupItems]) => (
-                  <div key={group} className="cmdk__group">
-                    <p className="cmdk__group-label">{group}</p>
-                    {groupItems.map((item) => {
-                      flatIndex += 1;
-                      const index = flatIndex;
-                      const Icon = item.icon ?? LayoutDashboard;
-                      const active = index === activeIndex;
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          role="option"
-                          aria-selected={active}
-                          className={`cmdk__item${active ? ' cmdk__item--active' : ''}`}
-                          onMouseEnter={() => setActiveIndex(index)}
-                          onClick={() => runItem(item)}
-                        >
-                          <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
-                          <span className="cmdk__item-label">
-                            <span>{item.label}</span>
-                            {item.hint ? (
-                              <small className="cmdk__item-hint">{item.hint}</small>
-                            ) : null}
-                          </span>
-                          <ArrowRight size={14} className="cmdk__item-arrow" aria-hidden="true" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))
-              )}
-            </div>
-
-            <footer className="cmdk__footer">
-              <span>
-                <kbd>↑↓</kbd> навигация
-              </span>
-              <span>
-                <kbd>↵</kbd> открыть
-              </span>
-              <span>
-                <kbd>esc</kbd> закрыть
-              </span>
-            </footer>
-          </motion.div>
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
+  const onSelect = useCallback(
+    (itemId: string) => {
+      const item = filtered.find((entry) => entry.id === itemId);
+      if (item) runItem(item);
+    },
+    [filtered, runItem],
   );
+
+  const viewProps = useMemo(
+    () => ({
+      open,
+      query,
+      groups,
+      activeIndex,
+      onClose: () => onOpenChange(false),
+      onQueryChange: setQuery,
+      onActiveChange: setActiveIndex,
+      onSelect,
+    }),
+    [open, query, groups, activeIndex, onOpenChange, onSelect],
+  );
+
+  if (!open) return null;
+
+  return <VueIsland component={CommandPaletteView} componentProps={viewProps} />;
 }

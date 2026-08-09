@@ -1,8 +1,9 @@
 'use client';
 
-import { Bell } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { VueIsland } from '@/components/vue/VueIsland';
+import NotificationBellView from '@/vue/shell/NotificationBell.vue';
 import {
   useMarkAllNotificationsReadMutation,
   useMarkNotificationReadMutation,
@@ -36,97 +37,80 @@ export function NotificationBell({ workspaceId }: { workspaceId: string | null }
     };
   }, [open]);
 
-  const openNotification = async (notification: AppNotification) => {
-    if (!workspaceId) return;
-    if (!notification.read) {
-      await markReadMutation.mutateAsync(notification.id);
-    }
-    setOpen(false);
-    router.push(`/dashboard/board?task=${encodeURIComponent(notification.task.id)}`);
-  };
+  const onToggle = useCallback(() => setOpen((current) => !current), []);
+  const onMarkAll = useCallback(() => markAllMutation.mutate(), [markAllMutation]);
+
+  const onOpen = useCallback(
+    async (notificationId: string) => {
+      if (!workspaceId || !inbox) return;
+      const notification = inbox.items.find((item) => item.id === notificationId);
+      if (!notification) return;
+      if (!notification.read) {
+        await markReadMutation.mutateAsync(notification.id);
+      }
+      setOpen(false);
+      router.push(`/dashboard/board?task=${encodeURIComponent(notification.task.id)}`);
+    },
+    [inbox, markReadMutation, router, workspaceId],
+  );
+
+  const items = useMemo(
+    () =>
+      (inbox?.items ?? []).map((notification) => {
+        const copy = notificationCopy(notification);
+        return {
+          id: notification.id,
+          read: notification.read,
+          avatar: actorInitial(notification),
+          actorName: copy.actorName,
+          actionText: copy.actionText,
+          taskTitle: notification.task.title,
+          preview: notification.preview,
+          createdAt: notification.createdAt,
+          timeLabel: new Date(notification.createdAt).toLocaleString('ru-RU', {
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        };
+      }),
+    [inbox?.items],
+  );
+
+  const viewProps = useMemo(
+    () => ({
+      enabled: Boolean(workspaceId),
+      open,
+      unreadCount: inbox?.unreadCount ?? 0,
+      isLoading: notificationsQuery.isLoading,
+      error: Boolean(notificationsQuery.error),
+      markAllPending: markAllMutation.isPending,
+      items,
+      ariaLabel: inbox?.unreadCount
+        ? `Уведомления: ${inbox.unreadCount} непрочитанных`
+        : 'Уведомления',
+      onToggle,
+      onMarkAll,
+      onOpen,
+    }),
+    [
+      workspaceId,
+      open,
+      inbox?.unreadCount,
+      notificationsQuery.isLoading,
+      notificationsQuery.error,
+      markAllMutation.isPending,
+      items,
+      onToggle,
+      onMarkAll,
+      onOpen,
+    ],
+  );
 
   return (
-    <div className="notification-bell" ref={rootRef}>
-      <button
-        type="button"
-        className="dashboard-header__icon-btn notification-bell__trigger"
-        onClick={() => setOpen((current) => !current)}
-        disabled={!workspaceId}
-        aria-label={
-          inbox?.unreadCount ? `Уведомления: ${inbox.unreadCount} непрочитанных` : 'Уведомления'
-        }
-        aria-expanded={open}
-        aria-controls="notification-inbox"
-      >
-        <Bell size={16} strokeWidth={1.75} aria-hidden="true" />
-        {inbox?.unreadCount ? (
-          <span className="notification-bell__count" aria-hidden="true">
-            {inbox.unreadCount > 99 ? '99+' : inbox.unreadCount}
-          </span>
-        ) : null}
-      </button>
-
-      {open ? (
-        <section
-          id="notification-inbox"
-          className="notification-bell__panel"
-          aria-label="Уведомления"
-        >
-          <header>
-            <h2>Уведомления</h2>
-            {inbox?.unreadCount ? (
-              <button
-                type="button"
-                onClick={() => markAllMutation.mutate()}
-                disabled={markAllMutation.isPending}
-              >
-                Прочитать все
-              </button>
-            ) : null}
-          </header>
-
-          {notificationsQuery.isLoading ? (
-            <p className="notification-bell__empty" role="status">
-              Загрузка…
-            </p>
-          ) : notificationsQuery.error ? (
-            <p className="notification-bell__error" role="alert">
-              Не удалось загрузить уведомления.
-            </p>
-          ) : !inbox?.items.length ? (
-            <p className="notification-bell__empty">Здесь пока ничего нет</p>
-          ) : (
-            <ul className="notification-bell__list" role="list">
-              {inbox.items.map((notification) => (
-                <li key={notification.id}>
-                  <button
-                    type="button"
-                    className={notification.read ? undefined : 'notification-bell__item--unread'}
-                    onClick={() => void openNotification(notification)}
-                  >
-                    <span className="notification-bell__avatar" aria-hidden="true">
-                      {actorInitial(notification)}
-                    </span>
-                    <span>
-                      <NotificationCopy notification={notification} />
-                      <small>{notification.task.title}</small>
-                      <em>{notification.preview}</em>
-                      <time dateTime={notification.createdAt}>
-                        {new Date(notification.createdAt).toLocaleString('ru-RU', {
-                          day: 'numeric',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </time>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      ) : null}
+    <div ref={rootRef}>
+      <VueIsland component={NotificationBellView} componentProps={viewProps} />
     </div>
   );
 }
@@ -141,35 +125,27 @@ function actorInitial(notification: AppNotification) {
   return notification.actor.name.slice(0, 1).toUpperCase() || '?';
 }
 
-function NotificationCopy({ notification }: { notification: AppNotification }) {
+function notificationCopy(notification: AppNotification) {
   if (notification.type === 'DUE_REMINDER') {
-    return (
-      <>
-        <strong>Система</strong> напоминает о сроке
-      </>
-    );
+    return { actorName: 'Система', actionText: ' напоминает о сроке' };
   }
 
   if (notification.type === 'WATCH') {
-    const actorName = notification.actor?.name ?? 'Кто-то';
-    return (
-      <>
-        <strong>{actorName}</strong> · обновление по задаче, за которой вы следите
-      </>
-    );
+    return {
+      actorName: notification.actor?.name ?? 'Кто-то',
+      actionText: ' · обновление по задаче, за которой вы следите',
+    };
   }
 
-  const actorName = notification.actor?.name ?? 'Система';
   const sourceLabel =
     notification.sourceType === 'COMMENT'
-      ? 'в комментарии'
+      ? ' в комментарии'
       : notification.sourceType === 'TASK_DESCRIPTION'
-        ? 'в описании задачи'
+        ? ' в описании задачи'
         : '';
 
-  return (
-    <>
-      <strong>{actorName}</strong> упоминает вас{sourceLabel ? ` ${sourceLabel}` : ''}
-    </>
-  );
+  return {
+    actorName: notification.actor?.name ?? 'Система',
+    actionText: ` упоминает вас${sourceLabel}`,
+  };
 }

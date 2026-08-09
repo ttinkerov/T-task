@@ -1,24 +1,23 @@
 'use client';
 
-import type { LucideIcon } from 'lucide-react';
-import Link from 'next/link';
+import { useMemo } from 'react';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/shared/lib/cn';
-import type { NavItem } from './app-sidebar';
+import { VueIsland } from '@/components/vue/VueIsland';
+import MobileBottomNavView from '@/vue/shell/MobileBottomNav.vue';
+
+interface MobileNavItem {
+  href: string;
+  label: string;
+  iconKey: string;
+}
 
 interface MobileBottomNavProps {
-  items: Array<NavItem & { icon: LucideIcon }>;
+  items: MobileNavItem[];
   onMore?: () => void;
-  moreIcon: LucideIcon;
   moreActive?: boolean;
 }
 
-export function MobileBottomNav({
-  items,
-  onMore,
-  moreIcon: MoreIcon,
-  moreActive,
-}: MobileBottomNavProps) {
+export function MobileBottomNav({ items, onMore, moreActive }: MobileBottomNavProps) {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
@@ -26,33 +25,18 @@ export function MobileBottomNav({
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
-  return (
-    <nav className="mobile-nav" aria-label="Мобильная навигация">
-      {items.map((item) => {
-        const Icon = item.icon;
-        const active = isActive(item.href);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn('mobile-nav__item', active && 'mobile-nav__item--active')}
-            aria-current={active ? 'page' : undefined}
-          >
-            <Icon strokeWidth={1.75} aria-hidden="true" />
-            {item.label}
-          </Link>
-        );
-      })}
-      {onMore ? (
-        <button
-          type="button"
-          className={cn('mobile-nav__item', moreActive && 'mobile-nav__item--active')}
-          onClick={onMore}
-        >
-          <MoreIcon strokeWidth={1.75} aria-hidden="true" />
-          Ещё
-        </button>
-      ) : null}
-    </nav>
+  const viewProps = useMemo(
+    () => ({
+      items: items.map((item) => ({
+        ...item,
+        active: isActive(item.href),
+      })),
+      showMore: Boolean(onMore),
+      moreActive: Boolean(moreActive),
+      onMore,
+    }),
+    [items, onMore, moreActive, pathname],
   );
+
+  return <VueIsland component={MobileBottomNavView} componentProps={viewProps} />;
 }

@@ -1,7 +1,5 @@
-export { AppSidebar } from './components/app-sidebar';
-export { CommandPalette } from './components/command-palette';
-export { MobileBottomNav } from './components/mobile-bottom-nav';
-export { ShortcutsHelp } from './components/shortcuts-help';
+// Shell Vue islands: import components directly —
+// do not re-export here (pulls Vue into every barrel consumer).
 export {
   useCreateTaskShortcutListener,
   useShortcutHandlers,

@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useWorkspacesQuery } from '../hooks';
+import { useEffect, useMemo } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { useWorkspaceStore } from '@/stores/workspace.store';
+import WorkspaceSwitcherView from '@/vue/workspaces/WorkspaceSwitcher.vue';
+import { useWorkspacesQuery } from '../hooks';
 
 export function WorkspaceSwitcher() {
   const { data: workspaces = [], isLoading } = useWorkspacesQuery();
@@ -21,24 +23,18 @@ export function WorkspaceSwitcher() {
     }
   }, [currentWorkspaceId, setCurrentWorkspaceId, workspaces]);
 
+  const viewProps = useMemo(
+    () => ({
+      workspaces: workspaces.map((workspace) => ({ id: workspace.id, name: workspace.name })),
+      currentWorkspaceId: currentWorkspaceId ?? '',
+      onChange: setCurrentWorkspaceId,
+    }),
+    [workspaces, currentWorkspaceId, setCurrentWorkspaceId],
+  );
+
   if (isLoading || !workspaces.length) {
     return null;
   }
 
-  return (
-    <div className="workspace-switcher">
-      <select
-        value={currentWorkspaceId ?? ''}
-        onChange={(event) => setCurrentWorkspaceId(event.target.value)}
-        className="workspace-switcher__select"
-        aria-label="Выбор команды"
-      >
-        {workspaces.map((workspace) => (
-          <option key={workspace.id} value={workspace.id}>
-            {workspace.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
+  return <VueIsland component={WorkspaceSwitcherView} componentProps={viewProps} />;
 }

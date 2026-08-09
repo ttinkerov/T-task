@@ -3,49 +3,19 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Activity,
-  AppWindow,
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  ClipboardList,
-  Focus,
-  FormInput,
-  Home,
-  Kanban,
-  Keyboard,
-  LayoutDashboard,
-  LayoutTemplate,
-  ListChecks,
-  ListTodo,
-  LogOut,
-  Milestone,
-  MoreHorizontal,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Search,
-  Settings,
-  Sparkles,
-  StickyNote,
-  Tags,
-  Trash2,
-  Upload,
-  UserRound,
-  Bookmark,
-  PenLine,
-} from 'lucide-react';
+import { LogOut, Search, Settings } from 'lucide-react';
 import { BrandLogo } from '@/components/marketing/brand-logo';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { BoardSkeleton } from '@/components/ui/skeleton';
 import { useCanViewActivity } from '@/features/activity/hooks';
 import { useLogoutMutation, useMeQuery } from '@/features/auth/hooks';
-import { NotificationBell } from '@/features/notifications';
+import { NotificationBell } from '@/features/notifications/components/notification-bell';
 import { usePinnedSavedFiltersQuery } from '@/features/saved-filters/hooks';
 import { AppSidebar, type NavGroup } from '@/features/shell/components/app-sidebar';
 import { CommandPalette, type CommandItem } from '@/features/shell/components/command-palette';
 import { DashboardPageTransition } from '@/features/shell/components/dashboard-page-transition';
 import { MobileBottomNav } from '@/features/shell/components/mobile-bottom-nav';
+import { MobileMoreSheet } from '@/features/shell/components/mobile-more-sheet';
 import { ShortcutsHelp } from '@/features/shell/components/shortcuts-help';
 import {
   dispatchShortcut,
@@ -153,15 +123,15 @@ export function DashboardShell({
         id: 'work',
         label: 'Работа',
         items: [
-          { href: '/dashboard', label: 'Главная', icon: Home },
-          { href: '/dashboard/board', label: 'Задачи', icon: Kanban },
-          { href: '/dashboard/all-tasks', label: 'Все задачи', icon: ListTodo },
-          { href: '/dashboard/my-tasks', label: 'Мои задачи', icon: UserRound },
-          { href: '/dashboard/roadmap', label: 'Роадмап', icon: Milestone },
-          { href: '/dashboard/epic-board', label: 'Эпик-борд', icon: StickyNote },
-          { href: '/dashboard/whiteboard', label: 'Доска', icon: PenLine },
-          { href: '/dashboard/focus', label: 'Фокус', icon: Focus },
-          { href: '/dashboard/ai', label: 'ИИ', icon: Sparkles },
+          { href: '/dashboard', label: 'Главная', iconKey: 'home' },
+          { href: '/dashboard/board', label: 'Задачи', iconKey: 'kanban' },
+          { href: '/dashboard/all-tasks', label: 'Все задачи', iconKey: 'list-todo' },
+          { href: '/dashboard/my-tasks', label: 'Мои задачи', iconKey: 'user' },
+          { href: '/dashboard/roadmap', label: 'Роадмап', iconKey: 'milestone' },
+          { href: '/dashboard/epic-board', label: 'Эпик-борд', iconKey: 'sticky' },
+          { href: '/dashboard/whiteboard', label: 'Доска', iconKey: 'pen' },
+          { href: '/dashboard/focus', label: 'Фокус', iconKey: 'focus' },
+          { href: '/dashboard/ai', label: 'ИИ', iconKey: 'sparkles' },
         ],
       },
       ...(pinnedViews.length
@@ -177,7 +147,7 @@ export function DashboardShell({
                       ? `/dashboard/my-tasks?filter=${view.id}`
                       : `/dashboard/board?filter=${view.id}`,
                 label: view.name,
-                icon: Bookmark,
+                iconKey: 'bookmark',
               })),
             },
           ]
@@ -186,8 +156,8 @@ export function DashboardShell({
         id: 'growth',
         label: 'Рост',
         items: [
-          { href: '/dashboard/crm', label: 'CRM', icon: ClipboardList },
-          { href: '/dashboard/analytics', label: 'Аналитика', icon: LayoutDashboard },
+          { href: '/dashboard/crm', label: 'CRM', iconKey: 'clipboard' },
+          { href: '/dashboard/analytics', label: 'Аналитика', iconKey: 'layout' },
         ],
       },
       {
@@ -196,24 +166,24 @@ export function DashboardShell({
         collapsible: true,
         defaultOpen: false,
         items: [
-          { href: '/dashboard/forms', label: 'Формы', icon: FormInput },
-          { href: '/dashboard/apps', label: 'Приложения', icon: AppWindow },
-          { href: '/dashboard/calendar', label: 'iCal', icon: CalendarDays },
-          { href: '/dashboard/custom-fields', label: 'Поля', icon: Settings },
-          { href: '/dashboard/dod', label: 'DoD', icon: ListChecks },
-          { href: '/dashboard/templates', label: 'Шаблоны', icon: LayoutTemplate },
-          { href: '/dashboard/import', label: 'Импорт', icon: Upload },
-          { href: '/dashboard/tags', label: 'Теги', icon: Tags },
+          { href: '/dashboard/forms', label: 'Формы', iconKey: 'form' },
+          { href: '/dashboard/apps', label: 'Приложения', iconKey: 'apps' },
+          { href: '/dashboard/calendar', label: 'iCal', iconKey: 'calendar' },
+          { href: '/dashboard/custom-fields', label: 'Поля', iconKey: 'settings' },
+          { href: '/dashboard/dod', label: 'DoD', iconKey: 'checks' },
+          { href: '/dashboard/templates', label: 'Шаблоны', iconKey: 'template' },
+          { href: '/dashboard/import', label: 'Импорт', iconKey: 'upload' },
+          { href: '/dashboard/tags', label: 'Теги', iconKey: 'tags' },
           {
             href: '/dashboard/activity',
             label: 'Журнал',
-            icon: Activity,
+            iconKey: 'activity',
             hidden: activityAccessLoading || !canViewActivity,
           },
           {
             href: '/dashboard/trash',
             label: 'Корзина',
-            icon: Trash2,
+            iconKey: 'trash',
             hidden: trashAccessLoading || !canManageTrash,
           },
         ],
@@ -230,7 +200,7 @@ export function DashboardShell({
           id: item.href,
           label: item.label,
           href: item.href,
-          icon: item.icon,
+          iconKey: item.iconKey,
           group: 'Навигация',
           keywords: [group.label, item.label],
           hint: undefined as string | undefined,
@@ -242,14 +212,14 @@ export function DashboardShell({
         id: 'cmd-board',
         label: 'Открыть задачи',
         href: '/dashboard/board',
-        icon: Kanban,
+        iconKey: 'kanban',
         group: 'Быстрые действия',
         hint: 'B',
       },
       {
         id: 'cmd-create-task',
         label: 'Создать задачу',
-        icon: Kanban,
+        iconKey: 'kanban',
         group: 'Быстрые действия',
         hint: 'C',
         keywords: ['create', 'new', 'задача'],
@@ -269,7 +239,7 @@ export function DashboardShell({
       {
         id: 'cmd-shortcuts',
         label: 'Шорткаты',
-        icon: Keyboard,
+        iconKey: 'keyboard',
         group: 'Быстрые действия',
         hint: '?',
         keywords: ['keyboard', 'hotkeys', 'справка'],
@@ -278,7 +248,7 @@ export function DashboardShell({
       {
         id: 'cmd-theme',
         label: 'Переключить тему',
-        icon: Settings,
+        iconKey: 'settings',
         group: 'Быстрые действия',
         action: () => {
           const current = document.documentElement.getAttribute('data-theme');
@@ -294,7 +264,7 @@ export function DashboardShell({
       {
         id: 'cmd-logout',
         label: 'Выйти',
-        icon: LogOut,
+        iconKey: 'logout',
         group: 'Аккаунт',
         action: () => {
           void handleLogout();
@@ -322,10 +292,10 @@ export function DashboardShell({
   }
 
   const mobileItems = [
-    { href: '/dashboard/board', label: 'Задачи', icon: Kanban },
-    { href: '/dashboard/all-tasks', label: 'Все', icon: ListTodo },
-    { href: '/dashboard/my-tasks', label: 'Мои', icon: UserRound },
-    { href: '/dashboard/crm', label: 'CRM', icon: ClipboardList },
+    { href: '/dashboard/board', label: 'Задачи', iconKey: 'kanban' },
+    { href: '/dashboard/all-tasks', label: 'Все', iconKey: 'list-todo' },
+    { href: '/dashboard/my-tasks', label: 'Мои', iconKey: 'user' },
+    { href: '/dashboard/crm', label: 'CRM', iconKey: 'clipboard' },
   ];
 
   const settingsHref = workspaceId ? `/dashboard/workspaces/${workspaceId}/settings` : '/dashboard';
@@ -338,12 +308,7 @@ export function DashboardShell({
         Перейти к содержимому
       </a>
 
-      <AppSidebar
-        groups={navGroups}
-        collapsed={collapsed}
-        onToggleCollapse={toggleCollapsed}
-        CollapseIcon={collapsed ? PanelLeftOpen : PanelLeftClose}
-      />
+      <AppSidebar groups={navGroups} collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
 
       <header className="app-topbar">
         <div className="app-topbar__left">
@@ -397,53 +362,15 @@ export function DashboardShell({
 
       <MobileBottomNav
         items={mobileItems}
-        moreIcon={MoreHorizontal}
         moreActive={moreOpen}
         onMore={() => setMoreOpen((value) => !value)}
       />
 
-      {moreOpen ? (
-        <div className="mobile-more" role="dialog" aria-label="Ещё разделы">
-          <button
-            type="button"
-            className="mobile-more__backdrop"
-            onClick={() => setMoreOpen(false)}
-          />
-          <div className="mobile-more__sheet">
-            <div className="mobile-more__head">
-              <strong>Разделы</strong>
-              <button
-                type="button"
-                className="dashboard-header__icon-btn"
-                onClick={() => setMoreOpen(false)}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-            <div className="mobile-more__links">
-              {navGroups
-                .flatMap((group) => group.items)
-                .filter((item) => !item.hidden)
-                .map((item) => {
-                  const Icon = item.icon;
-                  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`mobile-more__link${active ? ' is-active' : ''}`}
-                      onClick={() => setMoreOpen(false)}
-                    >
-                      <Icon size={16} strokeWidth={1.75} />
-                      {item.label}
-                      <ChevronLeft size={14} className="opacity-0" />
-                    </Link>
-                  );
-                })}
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <MobileMoreSheet
+        open={moreOpen}
+        items={navGroups.flatMap((group) => group.items)}
+        onClose={() => setMoreOpen(false)}
+      />
 
       <CommandPalette
         open={cmdOpen}
