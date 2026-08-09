@@ -55,14 +55,23 @@ export async function logout(page: Page) {
 
 export async function closeTaskDrawerIfOpen(page: Page) {
   const drawer = page.getByTestId('task-detail-drawer');
-  if (!(await drawer.isVisible().catch(() => false))) {
-    return;
-  }
+
+  // Vue island + portals: drawer from ?task= / onboarding can appear after board paint.
+  const appeared = await expect
+    .poll(async () => drawer.isVisible().catch(() => false), { timeout: 5_000 })
+    .toBeTruthy()
+    .then(() => true)
+    .catch(() => false);
+
+  if (!appeared) return;
+
   await drawer.getByRole('button', { name: 'Закрыть', exact: true }).click();
-  await expect(drawer).toBeHidden();
+  await expect(drawer).toBeHidden({ timeout: 10_000 });
 }
 
 export async function ensureKanbanReady(page: Page) {
+  await closeTaskDrawerIfOpen(page);
+
   const columns = page.locator('[data-testid^="kanban-column-"]');
   const firstTaskCta = page.getByRole('button', { name: 'Добавить первую задачу' });
   const addColumnCta = page.getByRole('button', { name: 'Добавить колонку' });
@@ -88,10 +97,12 @@ export async function ensureKanbanReady(page: Page) {
   }
 
   await expect(columns.first()).toBeVisible({ timeout: 30_000 });
+  await closeTaskDrawerIfOpen(page);
 }
 
 export async function createTaskInFirstColumn(page: Page, title: string) {
   await ensureKanbanReady(page);
+  await closeTaskDrawerIfOpen(page);
 
   const firstTaskCta = page.getByRole('button', { name: 'Добавить первую задачу' });
   if (await firstTaskCta.isVisible().catch(() => false)) {

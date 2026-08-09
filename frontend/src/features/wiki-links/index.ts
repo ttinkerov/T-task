@@ -7,3 +7,4 @@ export {
   type WikiLinkToken,
   type WikiLinkTrigger,
 } from './wiki-link-utils';
+export type { WikiLinkTaskOption } from './types';

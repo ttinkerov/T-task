@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
-import type { WikiLinkTaskOption } from '@/features/mentions/components/mention-textarea';
+import type { WikiLinkTaskOption } from '@/features/wiki-links/types';
 import { findMentionTrigger, insertMention } from '@/features/mentions/mention-utils';
 import { findWikiLinkTrigger, insertWikiLink } from '@/features/wiki-links/wiki-link-utils';
 import type { WorkspaceMember } from '@/features/workspaces/types';
