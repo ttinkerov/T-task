@@ -1,8 +1,10 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { useMembersQuery } from '@/features/workspaces/hooks';
 import { ApplyDealTemplateControl } from '@/features/templates/components/apply-deal-template-control';
+import DealDrawerFormFieldsView from '@/vue/crm/DealDrawerFormFields.vue';
 import { useUpdateDealMutation } from '../hooks';
 import type { FunnelDeal } from '../types';
 import { DealDrawerActions } from './deal-drawer-actions';
@@ -52,6 +54,25 @@ export function DealDetailDrawer({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [onClose]);
 
+  const formFieldsProps = useMemo(
+    () => ({
+      title,
+      description,
+      amount,
+      contactName,
+      companyName,
+      assigneeId,
+      members,
+      onTitleChange: setTitle,
+      onDescriptionChange: setDescription,
+      onAmountChange: setAmount,
+      onContactNameChange: setContactName,
+      onCompanyNameChange: setCompanyName,
+      onAssigneeChange: setAssigneeId,
+    }),
+    [title, description, amount, contactName, companyName, assigneeId, members],
+  );
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!title.trim()) return;
@@ -84,83 +105,7 @@ export function DealDetailDrawer({
         <DealDrawerHeader stageName={stageName} onClose={onClose} />
 
         <form onSubmit={handleSubmit} className="task-drawer__form">
-          <label className="task-drawer__field">
-            <span>Название</span>
-            <input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              className="glass-input"
-              required
-              maxLength={200}
-              autoFocus
-            />
-          </label>
-
-          <label className="task-drawer__field">
-            <span>Описание</span>
-            <textarea
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              className="glass-input task-drawer__textarea"
-              rows={3}
-              maxLength={2000}
-              placeholder="Детали сделки..."
-            />
-          </label>
-
-          <div className="task-drawer__grid">
-            <label className="task-drawer__field">
-              <span>Сумма, ₽</span>
-              <input
-                type="number"
-                min={0}
-                value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-                className="glass-input"
-                placeholder="0"
-              />
-            </label>
-
-            <label className="task-drawer__field">
-              <span>Ответственный</span>
-              <select
-                value={assigneeId}
-                onChange={(event) => setAssigneeId(event.target.value)}
-                className="glass-input"
-              >
-                <option value="">Не назначен</option>
-                {members.map((member) => (
-                  <option key={member.userId} value={member.userId}>
-                    {member.user.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <div className="task-drawer__grid">
-            <label className="task-drawer__field">
-              <span>Контакт</span>
-              <input
-                value={contactName}
-                onChange={(event) => setContactName(event.target.value)}
-                className="glass-input"
-                maxLength={120}
-                placeholder="Имя клиента"
-              />
-            </label>
-
-            <label className="task-drawer__field">
-              <span>Компания</span>
-              <input
-                value={companyName}
-                onChange={(event) => setCompanyName(event.target.value)}
-                className="glass-input"
-                maxLength={120}
-                placeholder="Название компании"
-              />
-            </label>
-          </div>
+          <VueIsland component={DealDrawerFormFieldsView} componentProps={formFieldsProps} />
 
           <ApplyDealTemplateControl
             workspaceId={workspaceId}

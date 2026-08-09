@@ -1,12 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { VueIsland } from '@/components/vue/VueIsland';
 import { EpicAiBreakdown } from '@/features/ai/components/epic-ai-breakdown';
 import { useSprintsQuery } from '@/features/sprints';
+import TaskPlanningFieldsView from '@/vue/boards/TaskPlanningFields.vue';
 import { boardKeys, invalidateWorkspaceBoards } from '../../hooks';
 import type { BoardTask, BoardView, TaskRelationCandidate } from '../../types';
-import { FieldHint } from '../field-hint';
 
 export function TaskPlanningFields({
   workspaceId,
@@ -44,69 +45,45 @@ export function TaskPlanningFields({
       .map((item) => ({ id: item.id, title: item.title }));
   }, [cachedBoard, relationCandidates, task.id]);
 
-  return (
-    <div className="task-drawer__grid">
-      <label className="task-drawer__field">
-        <span className="task-drawer__label">
-          Спринт
-          <FieldHint text="Короткий рабочий цикл (обычно 1–2 недели), в который входит задача." />
-        </span>
-        <select
-          value={sprintId}
-          onChange={(event) => onSprintChange(event.target.value)}
-          className="glass-input"
-        >
-          <option value="">Без спринта</option>
-          {sprints
-            .filter((sprint) => !sprint.closedAt || sprint.id === sprintId)
-            .map((sprint) => (
-              <option key={sprint.id} value={sprint.id}>
-                {sprint.name}
-              </option>
-            ))}
-        </select>
-      </label>
+  const sprintOptions = useMemo(
+    () => sprints.filter((sprint) => !sprint.closedAt || sprint.id === sprintId),
+    [sprints, sprintId],
+  );
 
-      <label className="task-drawer__field">
-        <span className="task-drawer__label">
-          Эпик
-          <FieldHint text="Крупная цель. Задачу можно вложить в эпик или отметить саму как эпик." />
-        </span>
-        <select
-          value={isEpic ? '' : epicId}
-          onChange={(event) => onEpicChange(event.target.value)}
-          className="glass-input"
-          disabled={isEpic}
-        >
-          <option value="">Без эпика</option>
-          {epicOptions.map((epic) => (
-            <option key={epic.id} value={epic.id}>
-              {epic.title}
-            </option>
-          ))}
-        </select>
-        <label className="forms-editor__checkbox" style={{ marginTop: '0.5rem' }}>
-          <input
-            type="checkbox"
-            checked={isEpic}
-            onChange={(event) => {
-              onIsEpicChange(event.target.checked);
-              if (event.target.checked) onEpicChange('');
-            }}
-          />
-          Это эпик
-        </label>
-        {task.isEpic ? (
-          <EpicAiBreakdown
-            workspaceId={workspaceId}
-            epicId={task.id}
-            onApplied={() => {
-              invalidateWorkspaceBoards(queryClient, workspaceId);
-              void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
-            }}
-          />
-        ) : null}
-      </label>
-    </div>
+  const viewProps = useMemo(
+    () => ({
+      sprintId,
+      epicId,
+      isEpic,
+      sprints: sprintOptions,
+      epicOptions,
+      onSprintChange,
+      onEpicChange,
+      onIsEpicChange,
+    }),
+    [
+      sprintId,
+      epicId,
+      isEpic,
+      sprintOptions,
+      epicOptions,
+      onSprintChange,
+      onEpicChange,
+      onIsEpicChange,
+    ],
+  );
+
+  const onEpicApplied = useCallback(() => {
+    invalidateWorkspaceBoards(queryClient, workspaceId);
+    void queryClient.invalidateQueries({ queryKey: ['all-tasks', workspaceId] });
+  }, [queryClient, workspaceId]);
+
+  return (
+    <>
+      <VueIsland component={TaskPlanningFieldsView} componentProps={viewProps} />
+      {task.isEpic ? (
+        <EpicAiBreakdown workspaceId={workspaceId} epicId={task.id} onApplied={onEpicApplied} />
+      ) : null}
+    </>
   );
 }
