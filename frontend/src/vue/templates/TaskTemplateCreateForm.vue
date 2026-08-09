@@ -120,7 +120,7 @@ async function onSeedClick() {
   try {
     await props.onSeed()
   } catch {
-    /* errorMessage from React */
+    /* ignore */
   }
 }
 
@@ -148,7 +148,7 @@ async function onSubmit() {
     checklistText.value = ''
     checklistGates.value = true
   } catch {
-    /* errorMessage from React */
+    /* ignore */
   }
 }
 </script>

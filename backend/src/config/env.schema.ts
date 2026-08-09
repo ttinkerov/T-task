@@ -56,6 +56,7 @@ export const envSchema = z.object({
       },
       { message: 'AI_TOKEN_ENC_KEY must be base64-encoded 32 bytes' },
     ),
+  RAG_EMBEDDING_MODEL: z.string().min(1).default('text-embedding-3-small'),
 });
 
 export type Env = z.infer<typeof envSchema>;

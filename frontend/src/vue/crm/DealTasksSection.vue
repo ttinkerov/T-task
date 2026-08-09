@@ -62,7 +62,7 @@ async function submit() {
     await props.onLink?.(taskId.value)
     taskId.value = ''
   } catch {
-    /* handled by React */
+    /* ignore */
   }
 }
 </script>

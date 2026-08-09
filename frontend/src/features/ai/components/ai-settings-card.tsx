@@ -4,12 +4,18 @@ import { useCallback, useMemo } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import AiSettingsCardView from '@/vue/ai/AiSettingsCard.vue';
 import {
+  useAiRagStatusQuery,
   useAiSettingsQuery,
   useDeleteAiSettingsMutation,
+  useReindexAiRagMutation,
   useTestAiConnectionMutation,
   useUpsertAiSettingsMutation,
 } from '../hooks';
-import { AI_PROVIDER_OPTIONS, type UpsertAiSettingsPayload } from '../types';
+import {
+  AI_EMBEDDING_PROVIDER_OPTIONS,
+  AI_PROVIDER_OPTIONS,
+  type UpsertAiSettingsPayload,
+} from '../types';
 
 export function AiSettingsCard({
   workspaceId,
@@ -19,9 +25,11 @@ export function AiSettingsCard({
   canManage: boolean;
 }) {
   const { data: settings, isLoading } = useAiSettingsQuery(workspaceId);
+  const { data: ragStatus, isLoading: ragLoading } = useAiRagStatusQuery(workspaceId);
   const upsertMutation = useUpsertAiSettingsMutation(workspaceId);
   const deleteMutation = useDeleteAiSettingsMutation(workspaceId);
   const testMutation = useTestAiConnectionMutation(workspaceId);
+  const reindexMutation = useReindexAiRagMutation(workspaceId);
 
   const onSave = useCallback(
     (payload: UpsertAiSettingsPayload) => upsertMutation.mutateAsync(payload),
@@ -32,18 +40,25 @@ export function AiSettingsCard({
 
   const onDelete = useCallback(() => deleteMutation.mutateAsync(), [deleteMutation]);
 
+  const onReindex = useCallback(() => reindexMutation.mutateAsync(), [reindexMutation]);
+
   const viewProps = useMemo(
     () => ({
       settings: settings ?? null,
       isLoading,
       canManage,
       providerOptions: AI_PROVIDER_OPTIONS,
+      embeddingProviderOptions: AI_EMBEDDING_PROVIDER_OPTIONS,
       upsertPending: upsertMutation.isPending,
       testPending: testMutation.isPending,
       deletePending: deleteMutation.isPending,
+      ragStatus: ragStatus ?? null,
+      ragLoading,
+      reindexPending: reindexMutation.isPending,
       onSave,
       onTest,
       onDelete,
+      onReindex,
     }),
     [
       settings,
@@ -52,9 +67,13 @@ export function AiSettingsCard({
       upsertMutation.isPending,
       testMutation.isPending,
       deleteMutation.isPending,
+      ragStatus,
+      ragLoading,
+      reindexMutation.isPending,
       onSave,
       onTest,
       onDelete,
+      onReindex,
     ],
   );
 

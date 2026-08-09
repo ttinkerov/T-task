@@ -77,7 +77,7 @@ async function onSubmit() {
     await props.onCreate(trimmed)
     title.value = ''
   } catch {
-    /* mutation error handled by React */
+    /* ignore */
   }
 }
 

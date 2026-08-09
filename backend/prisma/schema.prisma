@@ -94,6 +94,11 @@ enum AiProvider {
   CUSTOM
 }
 
+enum RagSourceType {
+  TASK
+  COMMENT
+}
+
 enum FormFieldType {
   SHORT_TEXT
   LONG_TEXT
@@ -175,6 +180,7 @@ model Workspace {
   notifications Notification[]
   aiSetting     AiWorkspaceSetting?
   whiteboard    WorkspaceWhiteboard?
+  ragChunks     RagChunk[]
   sprints       Sprint[]
   dodTemplates  DodTemplate[]
   taskTemplates TaskTemplate[]
@@ -813,6 +819,13 @@ model AiWorkspaceSetting {
   tokenIv         String     @map("token_iv")
   tokenAuthTag    String     @map("token_auth_tag")
   tokenLast4      String     @map("token_last4")
+  embeddingProvider      AiProvider? @map("embedding_provider")
+  embeddingBaseUrl       String?     @map("embedding_base_url")
+  embeddingModel         String?     @map("embedding_model")
+  embeddingTokenCiphertext String?   @map("embedding_token_ciphertext")
+  embeddingTokenIv       String?     @map("embedding_token_iv")
+  embeddingTokenAuthTag  String?     @map("embedding_token_auth_tag")
+  embeddingTokenLast4    String?     @map("embedding_token_last4")
   createdById     String?    @map("created_by_id")
   createdAt       DateTime   @default(now()) @map("created_at")
   updatedAt       DateTime   @updatedAt @map("updated_at")
@@ -820,6 +833,27 @@ model AiWorkspaceSetting {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@map("ai_workspace_settings")
+}
+
+model RagChunk {
+  id          String        @id @default(cuid())
+  workspaceId String        @map("workspace_id")
+  sourceType  RagSourceType @map("source_type")
+  sourceId    String        @map("source_id")
+  chunkIndex  Int           @map("chunk_index")
+  content     String
+  contentHash String        @map("content_hash")
+  embedding   Unsupported("double precision[]")
+  metadata    Json          @default("{}")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceType, sourceId, chunkIndex])
+  @@index([workspaceId])
+  @@index([workspaceId, sourceType, sourceId])
+  @@map("rag_chunks")
 }
 
 model WorkspaceWhiteboard {

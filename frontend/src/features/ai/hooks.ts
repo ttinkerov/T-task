@@ -2,9 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   applyEpicBreakdown,
   deleteAiSettings,
+  fetchAiRagStatus,
   fetchAiSettings,
   fetchAiSummary,
   proposeEpicBreakdown,
+  reindexAiRag,
   sendAiChat,
   testAiConnection,
   upsertAiSettings,
@@ -20,6 +22,7 @@ import type {
 export const aiKeys = {
   all: ['ai'] as const,
   settings: (workspaceId: string) => [...aiKeys.all, 'settings', workspaceId] as const,
+  ragStatus: (workspaceId: string) => [...aiKeys.all, 'rag', workspaceId] as const,
 };
 
 export function useAiSettingsQuery(workspaceId: string | null) {
@@ -27,6 +30,17 @@ export function useAiSettingsQuery(workspaceId: string | null) {
     queryKey: aiKeys.settings(workspaceId ?? ''),
     queryFn: async () => {
       const response = await fetchAiSettings(workspaceId!);
+      return response.data!;
+    },
+    enabled: Boolean(workspaceId),
+  });
+}
+
+export function useAiRagStatusQuery(workspaceId: string | null) {
+  return useQuery({
+    queryKey: aiKeys.ragStatus(workspaceId ?? ''),
+    queryFn: async () => {
+      const response = await fetchAiRagStatus(workspaceId!);
       return response.data!;
     },
     enabled: Boolean(workspaceId),
@@ -42,6 +56,7 @@ export function useUpsertAiSettingsMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: aiKeys.settings(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: aiKeys.ragStatus(workspaceId) });
     },
   });
 }
@@ -54,6 +69,7 @@ export function useDeleteAiSettingsMutation(workspaceId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: aiKeys.settings(workspaceId) });
+      void queryClient.invalidateQueries({ queryKey: aiKeys.ragStatus(workspaceId) });
     },
   });
 }
@@ -63,6 +79,19 @@ export function useTestAiConnectionMutation(workspaceId: string) {
     mutationFn: async () => {
       const response = await testAiConnection(workspaceId);
       return response.data!;
+    },
+  });
+}
+
+export function useReindexAiRagMutation(workspaceId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await reindexAiRag(workspaceId);
+      return response.data!;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: aiKeys.ragStatus(workspaceId) });
     },
   });
 }

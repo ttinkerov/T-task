@@ -57,7 +57,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref } from 'vue';
 
 const props = defineProps({
   configured: { type: Boolean, default: false },
@@ -65,35 +65,35 @@ const props = defineProps({
   applyPending: { type: Boolean, default: false },
   onPropose: { type: Function, default: null },
   onApply: { type: Function, default: null },
-})
+});
 
-const open = ref(false)
-const instructions = ref('')
-const drafts = ref([])
-const model = ref('')
-const error = ref('')
-const successMessage = ref('')
+const open = ref(false);
+const instructions = ref('');
+const drafts = ref([]);
+const model = ref('');
+const error = ref('');
+const successMessage = ref('');
 
 function updateDraft(index, patch) {
   drafts.value = drafts.value.map((draft, draftIndex) =>
     draftIndex === index ? { ...draft, ...patch } : draft,
-  )
+  );
 }
 
 function removeDraft(index) {
-  drafts.value = drafts.value.filter((_, draftIndex) => draftIndex !== index)
+  drafts.value = drafts.value.filter((_, draftIndex) => draftIndex !== index);
 }
 
 async function propose() {
-  error.value = ''
-  successMessage.value = ''
+  error.value = '';
+  successMessage.value = '';
   try {
-    const result = await props.onPropose?.(instructions.value.trim() || undefined)
-    drafts.value = result?.tasks ?? []
-    model.value = result?.model ?? ''
-    open.value = true
+    const result = await props.onPropose?.(instructions.value.trim() || undefined);
+    drafts.value = result?.tasks ?? [];
+    model.value = result?.model ?? '';
+    open.value = true;
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Не удалось разбить эпик'
+    error.value = err instanceof Error ? err.message : 'Не удалось разбить эпик';
   }
 }
 
@@ -103,21 +103,21 @@ async function apply() {
       title: draft.title.trim(),
       description: draft.description.trim(),
     }))
-    .filter((draft) => draft.title.length > 0)
+    .filter((draft) => draft.title.length > 0);
 
   if (tasks.length === 0) {
-    error.value = 'Добавьте хотя бы одну задачу с названием'
-    return
+    error.value = 'Добавьте хотя бы одну задачу с названием';
+    return;
   }
 
-  error.value = ''
+  error.value = '';
   try {
-    const result = await props.onApply?.(tasks)
-    successMessage.value = 'Создано задач: ' + (result?.createdCount ?? 0)
-    drafts.value = []
-    open.value = false
+    const result = await props.onApply?.(tasks);
+    successMessage.value = 'Создано задач: ' + (result?.createdCount ?? 0);
+    drafts.value = [];
+    open.value = false;
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Не удалось создать задачи'
+    error.value = err instanceof Error ? err.message : 'Не удалось создать задачи';
   }
 }
 </script>

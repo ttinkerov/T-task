@@ -70,9 +70,6 @@ const nextConfig: NextConfig = {
   },
 
   transpilePackages: ['tldraw', '@tldraw/assets'],
-  // T-task frontend = Next (Webpack), не Vite. .vue нужен vue-loader.
-  // unshift: VueLoaderPlugin берёт ПЕРВОЕ правило, матчящее .vue —
-  // иначе ловит чужой Next-rule и падает с "No matching use".
   webpack(config) {
     config.module.rules.unshift({
       test: /\.vue$/,

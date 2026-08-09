@@ -4,7 +4,7 @@ import { useCallback, useMemo } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import TaskAiAssistantView from '@/vue/ai/TaskAiAssistant.vue';
 import { useAiChatMutation, useAiSettingsQuery } from '../hooks';
-import type { AiChatMessage } from '../types';
+import type { AiChatMessage, AiCitation } from '../types';
 
 const QUICK_PROMPTS = [
   'Разбей на подзадачи',
@@ -15,10 +15,12 @@ const QUICK_PROMPTS = [
 
 export function TaskAiAssistant({
   workspaceId,
+  taskId,
   taskTitle,
   taskDescription,
 }: {
   workspaceId: string;
+  taskId: string;
   taskTitle: string;
   taskDescription: string;
 }) {
@@ -29,13 +31,18 @@ export function TaskAiAssistant({
     async (messages: AiChatMessage[]) => {
       const result = await chatMutation.mutateAsync({
         mode: 'task',
+        taskId,
         taskTitle,
         taskDescription,
         messages,
+        useRag: true,
       });
-      return result.reply;
+      return {
+        reply: result.reply,
+        citations: (result.citations ?? []) as AiCitation[],
+      };
     },
-    [chatMutation, taskTitle, taskDescription],
+    [chatMutation, taskId, taskTitle, taskDescription],
   );
 
   const viewProps = useMemo(

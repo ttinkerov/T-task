@@ -66,7 +66,7 @@ async function onSeedClick() {
   try {
     await props.onSeed()
   } catch {
-    /* errorMessage from React */
+    /* ignore */
   }
 }
 
@@ -95,7 +95,7 @@ async function onSubmit() {
     contactName.value = ''
     companyName.value = ''
   } catch {
-    /* errorMessage from React */
+    /* ignore */
   }
 }
 </script>

@@ -111,6 +111,12 @@ export class CommentsService {
     }
 
     await this.prisma.comment.delete({ where: { id: commentId } });
+
+    this.eventEmitter.emit(DomainEvents.COMMENT_DELETED, {
+      workspaceId,
+      commentId,
+    });
+
     return { success: true };
   }
 

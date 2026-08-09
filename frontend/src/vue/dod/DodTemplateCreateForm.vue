@@ -63,7 +63,7 @@ async function onSubmit() {
     itemsText.value = ''
     gatesCompletion.value = true
   } catch {
-    /* errorMessage from React */
+    /* ignore */
   }
 }
 </script>

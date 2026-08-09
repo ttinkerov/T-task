@@ -6,6 +6,11 @@ export type AiSettings = {
   model: string;
   baseUrl: string | null;
   tokenLast4: string | null;
+  embeddingConfigured: boolean;
+  embeddingProvider: AiProvider | null;
+  embeddingModel: string | null;
+  embeddingBaseUrl: string | null;
+  embeddingTokenLast4: string | null;
   updatedAt: string | null;
 };
 
@@ -14,6 +19,11 @@ export type UpsertAiSettingsPayload = {
   baseUrl?: string;
   model?: string;
   apiToken: string;
+  embeddingProvider?: AiProvider;
+  embeddingBaseUrl?: string;
+  embeddingModel?: string;
+  embeddingApiToken?: string;
+  clearEmbedding?: boolean;
 };
 
 export type AiChatMessage = {
@@ -26,12 +36,32 @@ export type AiChatPayload = {
   mode?: 'chat' | 'task';
   taskTitle?: string;
   taskDescription?: string;
+  taskId?: string;
+  useRag?: boolean;
+};
+
+export type AiCitation = {
+  sourceType: 'TASK' | 'COMMENT';
+  sourceId: string;
+  title: string;
+  href: string | null;
 };
 
 export type AiChatResult = {
   reply: string;
   model: string;
   usage: { promptTokens?: number; completionTokens?: number } | null;
+  citations?: AiCitation[];
+};
+
+export type AiRagStatus = {
+  indexedChunks: number;
+  lastIndexedAt: string | null;
+  ragAvailable: boolean;
+  embeddingModel: string;
+  embeddingConfigured: boolean;
+  provider: AiProvider | null;
+  embeddingProvider: AiProvider | null;
 };
 
 export type AiTestResult = {
@@ -92,5 +122,11 @@ export const AI_PROVIDER_OPTIONS: Array<{ value: AiProvider; label: string }> = 
   { value: 'OPENAI', label: 'OpenAI' },
   { value: 'OPENROUTER', label: 'OpenRouter' },
   { value: 'GROQ', label: 'Groq' },
+  { value: 'CUSTOM', label: 'Custom (OpenAI-compatible)' },
+];
+
+export const AI_EMBEDDING_PROVIDER_OPTIONS: Array<{ value: AiProvider; label: string }> = [
+  { value: 'OPENAI', label: 'OpenAI' },
+  { value: 'OPENROUTER', label: 'OpenRouter' },
   { value: 'CUSTOM', label: 'Custom (OpenAI-compatible)' },
 ];

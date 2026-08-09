@@ -41,7 +41,7 @@ async function apply() {
     await props.onApply?.(localTemplateId.value)
     localTemplateId.value = ''
   } catch {
-    /* handled by React */
+    /* ignore */
   }
 }
 </script>

@@ -5,10 +5,6 @@ export type MountedVueApp = {
   unmount: () => void;
 };
 
-/**
- * Монтирует Vue-корень один раз.
- * update() подменяет props без unmount (нужно для React→Vue island).
- */
 export function mountVueApp(
   host: HTMLElement,
   root: Component,

@@ -4,7 +4,7 @@ import { useCallback, useMemo } from 'react';
 import { VueIsland } from '@/components/vue/VueIsland';
 import AiChatPanelView from '@/vue/ai/AiChatPanel.vue';
 import { useAiChatMutation, useAiSettingsQuery } from '../hooks';
-import type { AiChatMessage } from '../types';
+import type { AiChatMessage, AiCitation } from '../types';
 
 export function AiChatPanel({ workspaceId }: { workspaceId: string }) {
   const { data: settings, isLoading } = useAiSettingsQuery(workspaceId);
@@ -15,8 +15,12 @@ export function AiChatPanel({ workspaceId }: { workspaceId: string }) {
       const result = await chatMutation.mutateAsync({
         mode: 'chat',
         messages,
+        useRag: true,
       });
-      return result.reply;
+      return {
+        reply: result.reply,
+        citations: (result.citations ?? []) as AiCitation[],
+      };
     },
     [chatMutation],
   );

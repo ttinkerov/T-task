@@ -30,6 +30,16 @@
       >
         <span class="ai-chat__role">{{ message.role === 'user' ? 'Вы' : 'ИИ' }}</span>
         <p>{{ message.content }}</p>
+        <ul
+          v-if="message.role === 'assistant' && message.citations?.length"
+          class="ai-chat__citations"
+          data-testid="ai-citations"
+        >
+          <li v-for="citation in message.citations" :key="citation.sourceType + citation.sourceId">
+            <a v-if="citation.href" :href="citation.href">{{ citation.title }}</a>
+            <span v-else>{{ citation.title }}</span>
+          </li>
+        </ul>
       </div>
       <p v-if="isPending" class="ai-chat__placeholder">Думаю…</p>
     </div>
@@ -53,7 +63,7 @@
 </template>
 
 <script setup>
-import { nextTick, ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue';
 
 const props = defineProps({
   isLoading: { type: Boolean, default: false },
@@ -63,41 +73,43 @@ const props = defineProps({
   settingsHref: { type: String, default: '' },
   isPending: { type: Boolean, default: false },
   onSend: { type: Function, default: null },
-})
+});
 
-const messages = ref([])
-const input = ref('')
-const error = ref('')
-const listRef = ref(null)
+const messages = ref([]);
+const input = ref('');
+const error = ref('');
+const listRef = ref(null);
 
 watch(
   () => [messages.value.length, props.isPending],
   async () => {
-    await nextTick()
-    const el = listRef.value
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+    await nextTick();
+    const el = listRef.value;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   },
-)
+);
 
 function clear() {
-  messages.value = []
-  error.value = ''
+  messages.value = [];
+  error.value = '';
 }
 
 async function submit() {
-  const content = input.value.trim()
-  if (!content || props.isPending) return
+  const content = input.value.trim();
+  if (!content || props.isPending) return;
 
-  const nextMessages = [...messages.value, { role: 'user', content }]
-  messages.value = nextMessages
-  input.value = ''
-  error.value = ''
+  const nextMessages = [...messages.value, { role: 'user', content }];
+  messages.value = nextMessages;
+  input.value = '';
+  error.value = '';
 
   try {
-    const reply = await props.onSend?.(nextMessages.slice(-20))
-    messages.value = [...nextMessages, { role: 'assistant', content: reply }]
+    const result = await props.onSend?.(nextMessages.slice(-20));
+    const reply = typeof result === 'string' ? result : result?.reply;
+    const citations = typeof result === 'string' ? [] : (result?.citations ?? []);
+    messages.value = [...nextMessages, { role: 'assistant', content: reply || '', citations }];
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Не удалось получить ответ'
+    error.value = err instanceof Error ? err.message : 'Не удалось получить ответ';
   }
 }
 </script>

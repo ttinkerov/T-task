@@ -109,7 +109,7 @@ async function onSubmit() {
     showOnCard.value = false
     type.value = 'TEXT'
   } catch {
-    /* React показывает errorMessage */
+    /* ignore */
   }
 }
 </script>

@@ -30,7 +30,7 @@ async function onSubmit() {
     await props.onCreate({ name: trimmed })
     name.value = ''
   } catch {
-    /* mutation error handled by React */
+    /* ignore */
   }
 }
 </script>

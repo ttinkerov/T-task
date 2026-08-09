@@ -114,7 +114,7 @@ async function copyLink() {
       copied.value = false
     }, 1500)
   } catch {
-    /* clipboard may be unavailable */
+    /* ignore */
   }
 }
 </script>

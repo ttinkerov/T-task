@@ -99,6 +99,27 @@
   font-size: 0.875rem;
 }
 
+.ai-chat__citations {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  color: var(--tt-muted, #667085);
+}
+
+.ai-chat__citations a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ai-rag-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
 .ai-settings-form {
   display: flex;
   flex-direction: column;
@@ -315,5 +336,3 @@
   color: #f87171;
   font-size: 0.8rem;
 }
-
-

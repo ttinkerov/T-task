@@ -187,6 +187,11 @@ export class TasksService {
       return created;
     });
 
+    this.eventEmitter.emit(DomainEvents.TASK_CHANGED, {
+      workspaceId,
+      taskId: task.id,
+    });
+
     return this.toTask(task);
   }
 
@@ -353,6 +358,11 @@ export class TasksService {
         });
       }
     }
+
+    this.eventEmitter.emit(DomainEvents.TASK_CHANGED, {
+      workspaceId,
+      taskId,
+    });
 
     return this.toTask(updated);
   }
@@ -871,6 +881,11 @@ export class TasksService {
       await this.closeGap(tx, task.columnId, task.position);
     });
 
+    this.eventEmitter.emit(DomainEvents.TASK_SOFT_DELETED, {
+      workspaceId,
+      taskId,
+    });
+
     return { success: true };
   }
 
@@ -940,6 +955,11 @@ export class TasksService {
       }
 
       return next;
+    });
+
+    this.eventEmitter.emit(DomainEvents.TASK_CHANGED, {
+      workspaceId,
+      taskId,
     });
 
     return this.toTask(updated);
@@ -1064,6 +1084,11 @@ export class TasksService {
     if (!created) {
       throw new NotFoundException('Task not found');
     }
+
+    this.eventEmitter.emit(DomainEvents.TASK_CHANGED, {
+      workspaceId,
+      taskId: created.id,
+    });
 
     return this.boardsService.serializeTask(created);
   }

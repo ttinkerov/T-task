@@ -90,7 +90,7 @@ async function submit() {
     await props.onLink?.(dealId.value)
     dealId.value = ''
   } catch {
-    /* handled by React */
+    /* ignore */
   }
 }
 </script>

@@ -120,6 +120,13 @@ export const AI_EPIC_BREAKDOWN_APPLY_RATE_LIMIT: RateLimitConfig = {
   includeWorkspaceId: true,
 };
 
+export const AI_RAG_REINDEX_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'ai:rag-reindex',
+  windowSeconds: 60,
+  maxAttempts: 2,
+  includeWorkspaceId: true,
+};
+
 export const EXPORT_RATE_LIMIT: RateLimitConfig = {
   keyPrefix: 'export:csv',
   windowSeconds: 60,

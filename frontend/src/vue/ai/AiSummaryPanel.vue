@@ -16,12 +16,7 @@
           class="glass-input ai-summary__date"
           type="date"
         />
-        <button
-          type="button"
-          class="btn-primary"
-          :disabled="isPending"
-          @click="generate"
-        >
+        <button type="button" class="btn-primary" :disabled="isPending" @click="generate">
           {{ isPending ? 'Генерируем…' : 'Сгенерировать' }}
         </button>
       </div>
@@ -45,7 +40,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
   configured: { type: Boolean, default: false },
@@ -54,49 +49,49 @@ const props = defineProps({
   compact: { type: Boolean, default: false },
   isPending: { type: Boolean, default: false },
   onGenerate: { type: Function, default: null },
-})
+});
 
 function todayIsoDate() {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  return year + '-' + month + '-' + day
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return year + '-' + month + '-' + day;
 }
 
-const date = ref(todayIsoDate())
-const result = ref(null)
-const error = ref('')
+const date = ref(todayIsoDate());
+const result = ref(null);
+const error = ref('');
 
 watch(
   () => [props.scope, props.sprintId, date.value],
   () => {
-    result.value = null
-    error.value = ''
+    result.value = null;
+    error.value = '';
   },
-)
+);
 
 const statsLine = computed(() => {
-  if (!result.value) return ''
-  const stats = result.value.stats
-  let line = 'Закрыто: ' + stats.completedCount
-  if (stats.completedPoints > 0) line += ' · ' + stats.completedPoints + ' SP'
-  if (props.scope === 'sprint') line += ' · открыто: ' + stats.openCount
-  if (stats.topAssignees?.[0]) line += ' · топ: ' + stats.topAssignees[0].name
-  return line
-})
+  if (!result.value) return '';
+  const stats = result.value.stats;
+  let line = 'Закрыто: ' + stats.completedCount;
+  if (stats.completedPoints > 0) line += ' · ' + stats.completedPoints + ' SP';
+  if (props.scope === 'sprint') line += ' · открыто: ' + stats.openCount;
+  if (stats.topAssignees?.[0]) line += ' · топ: ' + stats.topAssignees[0].name;
+  return line;
+});
 
 async function generate() {
-  error.value = ''
+  error.value = '';
   try {
     const data = await props.onGenerate?.(
       props.scope === 'sprint'
         ? { scope: 'sprint', sprintId: props.sprintId }
         : { scope: 'day', date: date.value },
-    )
-    result.value = data
+    );
+    result.value = data;
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Не удалось получить саммари'
+    error.value = err instanceof Error ? err.message : 'Не удалось получить саммари';
   }
 }
 </script>

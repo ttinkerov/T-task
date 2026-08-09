@@ -128,7 +128,7 @@ async function onSubmit() {
     await props.onSubmit({ ...answers.value })
     submitted.value = true
   } catch {
-    /* errorMessage from React */
+    /* ignore */
   }
 }
 </script>

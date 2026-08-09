@@ -64,6 +64,7 @@ export function TaskDrawerForm({
 
       <TaskAiAssistant
         workspaceId={workspaceId}
+        taskId={task.id}
         taskTitle={form.title}
         taskDescription={form.description}
       />

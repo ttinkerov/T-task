@@ -12,6 +12,7 @@ import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard'
 import {
   AI_EPIC_BREAKDOWN_APPLY_RATE_LIMIT,
   AI_EPIC_BREAKDOWN_RATE_LIMIT,
+  AI_RAG_REINDEX_RATE_LIMIT,
   RateLimit,
 } from '../../common/security/rate-limit.decorator';
 import { AiService } from './ai.service';
@@ -32,6 +33,26 @@ export class AiController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return successResponse(await this.aiService.getSettings(workspaceId, user.id));
+  }
+
+  @Get('rag/status')
+  @Roles(...ALL_WORKSPACE_ROLES)
+  async getRagStatus(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(await this.aiService.getRagStatus(workspaceId, user.id));
+  }
+
+  @Post('rag/reindex')
+  @UseGuards(AuthRateLimitGuard)
+  @RateLimit(AI_RAG_REINDEX_RATE_LIMIT)
+  @Roles(...ADMIN_PLUS_ROLES)
+  async reindexRag(
+    @Param('workspaceId') workspaceId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return successResponse(await this.aiService.reindexRag(workspaceId, user.id));
   }
 
   @Put('settings')

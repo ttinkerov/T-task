@@ -56,7 +56,6 @@ export async function logout(page: Page) {
 export async function closeTaskDrawerIfOpen(page: Page) {
   const drawer = page.getByTestId('task-detail-drawer');
 
-  // Vue island + portals: drawer from ?task= / onboarding can appear after board paint.
   const appeared = await expect
     .poll(async () => drawer.isVisible().catch(() => false), { timeout: 5_000 })
     .toBeTruthy()

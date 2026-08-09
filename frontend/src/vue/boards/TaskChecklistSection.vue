@@ -103,7 +103,7 @@ async function submit() {
     await props.onCreate?.(trimmed)
     text.value = ''
   } catch {
-    /* handled by React */
+    /* ignore */
   }
 }
 
@@ -113,7 +113,7 @@ async function applyTemplate() {
     await props.onApplyTemplate?.(templateId.value)
     templateId.value = ''
   } catch {
-    /* handled by React */
+    /* ignore */
   }
 }
 </script>

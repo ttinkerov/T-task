@@ -2,6 +2,7 @@ import { apiFetch } from '@/shared/api/client';
 import type {
   AiChatPayload,
   AiChatResult,
+  AiRagStatus,
   AiSettings,
   AiSummaryPayload,
   AiSummaryResult,
@@ -43,6 +44,22 @@ export function testAiConnection(workspaceId: string) {
     method: 'POST',
     headers: withWorkspace(workspaceId),
   });
+}
+
+export function fetchAiRagStatus(workspaceId: string) {
+  return apiFetch<AiRagStatus>(`/api/v1/workspaces/${workspaceId}/ai/rag/status`, {
+    headers: withWorkspace(workspaceId),
+  });
+}
+
+export function reindexAiRag(workspaceId: string) {
+  return apiFetch<AiRagStatus & { tasks: number; comments: number }>(
+    `/api/v1/workspaces/${workspaceId}/ai/rag/reindex`,
+    {
+      method: 'POST',
+      headers: withWorkspace(workspaceId),
+    },
+  );
 }
 
 export function sendAiChat(workspaceId: string, data: AiChatPayload) {

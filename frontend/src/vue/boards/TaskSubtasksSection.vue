@@ -69,7 +69,7 @@ async function submit() {
     await props.onCreate?.(trimmed)
     title.value = ''
   } catch {
-    /* handled by React */
+    /* ignore */
   }
 }
 </script>

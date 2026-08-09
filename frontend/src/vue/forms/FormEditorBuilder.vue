@@ -142,7 +142,7 @@ async function onSubmit() {
     fieldOptions.value = ''
     fieldRequired.value = false
   } catch {
-    /* mutation error handled by React */
+    /* ignore */
   }
 }
 </script>

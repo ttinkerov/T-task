@@ -127,7 +127,7 @@ async function submit() {
     await props.onCreate?.(type.value, relatedTaskId.value)
     relatedTaskId.value = ''
   } catch {
-    /* handled by React */
+    /* ignore */
   }
 }
 </script>

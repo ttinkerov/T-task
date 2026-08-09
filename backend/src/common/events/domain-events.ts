@@ -1,7 +1,10 @@
 export const DomainEvents = {
   TASK_MOVED: 'task.moved',
   TASK_ASSIGNED: 'task.assigned',
+  TASK_CHANGED: 'task.changed',
+  TASK_SOFT_DELETED: 'task.soft_deleted',
   COMMENT_CREATED: 'comment.created',
+  COMMENT_DELETED: 'comment.deleted',
   INVITATION_CREATED: 'invitation.created',
   MENTION_CREATED: 'mention.created',
   DUE_REMINDER: 'due.reminder',
@@ -37,12 +40,27 @@ export type TaskAssignedPayload = {
   actorId: string;
 };
 
+export type TaskChangedPayload = {
+  workspaceId: string;
+  taskId: string;
+};
+
+export type TaskSoftDeletedPayload = {
+  workspaceId: string;
+  taskId: string;
+};
+
 export type CommentCreatedPayload = {
   workspaceId: string;
   boardId: string;
   taskId: string;
   commentId: string;
   actorId: string;
+};
+
+export type CommentDeletedPayload = {
+  workspaceId: string;
+  commentId: string;
 };
 
 export type InvitationCreatedPayload = {

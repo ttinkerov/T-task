@@ -47,7 +47,7 @@ async function onSubmit() {
     await props.onInvite({ email: trimmed, role: role.value })
     email.value = ''
   } catch {
-    /* errorMessage from React */
+    /* ignore */
   }
 }
 </script>
