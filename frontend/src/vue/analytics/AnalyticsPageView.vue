@@ -3,10 +3,7 @@
     <header class="analytics-page__header">
       <div>
         <h1 class="analytics-page__title">Аналитика</h1>
-        <p class="analytics-page__subtitle">
-          Контролируйте прогресс каждого участника: выберите период и сотрудника, чтобы увидеть
-          план, факт и список задач.
-        </p>
+        <p class="analytics-page__subtitle">План, факт и прогресс команды за выбранный период.</p>
       </div>
     </header>
 

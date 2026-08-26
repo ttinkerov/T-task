@@ -10,6 +10,52 @@
   font-size: 0.75rem;
 }
 
+.board-planning {
+  margin: 0 0 0.75rem;
+  border: 1px solid var(--tt-border-subtle);
+  border-radius: $radius-md;
+  background: var(--tt-surface);
+  flex-shrink: 0;
+
+  &[open] {
+    padding-bottom: 0.25rem;
+  }
+}
+
+.board-planning__summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: var(--tt-text);
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &::before {
+    content: '▸';
+    display: inline-block;
+    margin-right: 0.45rem;
+    color: var(--tt-text-muted);
+    transition: transform var(--tt-duration-fast);
+  }
+
+  .board-planning[open] &::before {
+    transform: rotate(90deg);
+  }
+}
+
+.board-planning .board-workload,
+.board-planning .board-sprint-panel {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--tt-border-subtle);
+  border-radius: 0;
+  box-shadow: none;
+}
+
 [data-theme='dark'] .kanban-board__error {
   color: #fc8181;
 }

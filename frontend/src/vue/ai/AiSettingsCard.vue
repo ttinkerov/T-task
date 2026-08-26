@@ -11,51 +11,44 @@
 
   <div v-else-if="settings" class="settings-card" data-testid="ai-settings-card">
     <h2 class="settings-card__title">ИИ</h2>
-    <p class="settings-card__text">
-      Чат может быть любым OpenAI-совместимым API (в т.ч. DeepSeek). Для RAG нужен провайдер с
-      /embeddings — отдельно ниже или тот же ключ OpenAI/OpenRouter.
-    </p>
+    <p class="settings-card__text">Подключите ключ API — команда сможет спрашивать ИИ в задачах.</p>
 
     <p v-if="settings.configured" class="settings-card__hint">
       Чат · {{ settings.provider }} · {{ settings.model }} · токен …{{ settings.tokenLast4 }}
     </p>
-    <p v-else class="settings-card__hint">Токен чата ещё не задан.</p>
+    <p v-else class="settings-card__hint">Токен ещё не задан.</p>
 
-    <div class="ai-rag-status" data-testid="ai-rag-status">
-      <p v-if="ragLoading" class="settings-card__hint">Загрузка статуса RAG…</p>
-      <p v-else-if="ragError" class="settings-card__hint" role="alert">
-        {{ ragError }}
-        <button type="button" class="btn-ghost" @click="onRetryRag?.()">Повторить</button>
-      </p>
-      <template v-else-if="ragStatus">
-        <p class="settings-card__hint">
-          RAG:
-          {{
-            ragStatus.ragAvailable
-              ? 'доступен (' +
-                (ragStatus.embeddingProvider || '') +
-                ' · ' +
-                ragStatus.embeddingModel +
-                ')'
-              : 'недоступен — нужен OpenAI/OpenRouter для чата или отдельный embedding-ключ'
-          }}
-          · чанков: {{ ragStatus.indexedChunks }}
-          <template v-if="ragStatus.lastIndexedAt">
-            · {{ formatDate(ragStatus.lastIndexedAt) }}
-          </template>
+    <details class="ai-advanced">
+      <summary>Поиск по задачам (расширенное)</summary>
+      <div class="ai-rag-status" data-testid="ai-rag-status">
+        <p v-if="ragLoading" class="settings-card__hint">Загрузка статуса…</p>
+        <p v-else-if="ragError" class="settings-card__hint" role="alert">
+          {{ ragError }}
+          <button type="button" class="btn-ghost" @click="onRetryRag?.()">Повторить</button>
         </p>
-        <button
-          v-if="canManage && settings.configured && ragStatus.ragAvailable"
-          type="button"
-          class="btn-ghost"
-          data-testid="ai-rag-reindex"
-          :disabled="reindexPending"
-          @click="reindex"
-        >
-          {{ reindexPending ? 'Индексация…' : 'Переиндексировать RAG' }}
-        </button>
-      </template>
-    </div>
+        <template v-else-if="ragStatus">
+          <p class="settings-card__hint">
+            {{
+              ragStatus.ragAvailable
+                ? 'Доступен · чанков: ' +
+                  ragStatus.indexedChunks +
+                  (ragStatus.lastIndexedAt ? ' · ' + formatDate(ragStatus.lastIndexedAt) : '')
+                : 'Нужен OpenAI или OpenRouter для поиска по задачам'
+            }}
+          </p>
+          <button
+            v-if="canManage && settings.configured && ragStatus.ragAvailable"
+            type="button"
+            class="btn-ghost"
+            data-testid="ai-rag-reindex"
+            :disabled="reindexPending"
+            @click="reindex"
+          >
+            {{ reindexPending ? 'Индексация…' : 'Обновить индекс' }}
+          </button>
+        </template>
+      </div>
+    </details>
 
     <p v-if="!canManage" class="settings-card__hint">
       Изменить токен могут только администраторы команды.
@@ -102,66 +95,68 @@
         />
       </label>
 
-      <h3 class="ai-settings-form__section">RAG embeddings (опционально)</h3>
-      <p class="settings-card__hint">
-        Если чат — DeepSeek/Groq/CUSTOM без embeddings, укажите здесь OpenAI или OpenRouter.
-      </p>
+      <details class="ai-advanced">
+        <summary>Отдельный ключ для поиска по задачам</summary>
+        <p class="settings-card__hint">
+          Нужен, если чат без поддержки embeddings (например DeepSeek или Groq).
+        </p>
 
-      <label class="task-drawer__field">
-        <span>Embedding-провайдер</span>
-        <select v-model="embeddingProvider" class="glass-input">
-          <option value="">Не задан (наследовать от чата, если возможно)</option>
-          <option
-            v-for="option in embeddingProviderOptions"
-            :key="option.value"
-            :value="option.value"
-          >
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
+        <label class="task-drawer__field">
+          <span>Провайдер поиска</span>
+          <select v-model="embeddingProvider" class="glass-input">
+            <option value="">Как у чата</option>
+            <option
+              v-for="option in embeddingProviderOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
 
-      <label class="task-drawer__field">
-        <span>Embedding-модель</span>
-        <input
-          v-model="embeddingModel"
-          class="glass-input"
-          placeholder="text-embedding-3-small"
-          maxlength="120"
-        />
-      </label>
+        <label class="task-drawer__field">
+          <span>Модель</span>
+          <input
+            v-model="embeddingModel"
+            class="glass-input"
+            placeholder="text-embedding-3-small"
+            maxlength="120"
+          />
+        </label>
 
-      <label v-if="embeddingProvider === 'CUSTOM'" class="task-drawer__field">
-        <span>Адрес embedding API</span>
-        <input
-          v-model="embeddingBaseUrl"
-          class="glass-input"
-          placeholder="https://api.openai.com/v1"
-          maxlength="512"
-        />
-      </label>
+        <label v-if="embeddingProvider === 'CUSTOM'" class="task-drawer__field">
+          <span>Адрес API</span>
+          <input
+            v-model="embeddingBaseUrl"
+            class="glass-input"
+            placeholder="https://api.openai.com/v1"
+            maxlength="512"
+          />
+        </label>
 
-      <label class="task-drawer__field">
-        <span>Embedding API-токен</span>
-        <input
-          v-model="embeddingApiToken"
-          class="glass-input"
-          type="password"
-          autocomplete="off"
-          :placeholder="
-            settings.embeddingConfigured ? '•••• новый embedding-токен' : 'оставьте пустым или sk-…'
-          "
-          minlength="8"
-          maxlength="512"
-        />
-      </label>
+        <label class="task-drawer__field">
+          <span>API-токен</span>
+          <input
+            v-model="embeddingApiToken"
+            class="glass-input"
+            type="password"
+            autocomplete="off"
+            :placeholder="
+              settings.embeddingConfigured ? '•••• новый токен' : 'оставьте пустым или sk-…'
+            "
+            minlength="8"
+            maxlength="512"
+          />
+        </label>
 
-      <label v-if="settings.embeddingConfigured" class="task-drawer__field">
-        <span>
-          <input v-model="clearEmbedding" type="checkbox" />
-          Удалить отдельный embedding-ключ
-        </span>
-      </label>
+        <label v-if="settings.embeddingConfigured" class="task-drawer__field">
+          <span>
+            <input v-model="clearEmbedding" type="checkbox" />
+            Удалить отдельный ключ поиска
+          </span>
+        </label>
+      </details>
 
       <div class="ai-settings-form__actions">
         <button type="submit" class="btn-primary" :disabled="upsertPending">

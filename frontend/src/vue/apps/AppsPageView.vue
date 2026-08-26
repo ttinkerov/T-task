@@ -2,14 +2,8 @@
   <section class="apps-page">
     <header class="apps-page__header">
       <div>
-        <span class="apps-page__eyebrow">Рабочее пространство</span>
         <h1>Приложения</h1>
-        <p>Google Документы и Таблицы, Figma, Miro и Airtable — рядом с задачами команды.</p>
-      </div>
-      <div class="apps-page__providers" aria-label="Поддерживаемые сервисы">
-        <span v-for="provider in providers" :key="provider.label" :title="provider.label">
-          {{ provider.icon }}
-        </span>
+        <p>Документы, макеты и таблицы рядом с задачами.</p>
       </div>
     </header>
 
@@ -142,7 +136,6 @@ import { computed } from 'vue';
 import AppsList from './AppsList.vue';
 
 const props = defineProps({
-  providers: { type: Array, default: () => [] },
   canAdd: { type: Boolean, default: false },
   title: { type: String, default: '' },
   url: { type: String, default: '' },

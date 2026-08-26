@@ -2,7 +2,6 @@
   <div class="board-sprint-panel__inner">
     <div class="board-sprint-panel__head">
       <div>
-        <p class="board-sprint-panel__eyebrow">Спринт</p>
         <strong>{{
           loadError ? 'Ошибка загрузки' : active ? active.name : 'Нет активного спринта'
         }}</strong>

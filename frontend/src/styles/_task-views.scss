@@ -159,18 +159,17 @@
   display: grid;
   width: 100%;
   gap: 0.1rem;
-  border: 1px solid $color-border-subtle;
-  border-left: 3px solid var(--tt-brand);
+  border: 1px solid color-mix(in srgb, var(--tt-brand) 40%, transparent);
   border-radius: 0.4rem;
-  background: var(--tt-surface);
+  background: var(--tt-brand-muted);
   padding: 0.4rem 0.45rem;
   color: $color-white;
   cursor: pointer;
   text-align: left;
 
   &:hover {
-    border-color: var(--tt-brand);
-    background: var(--tt-hover);
+    border-color: color-mix(in srgb, var(--tt-brand) 55%, transparent);
+    background: color-mix(in srgb, var(--tt-brand) 16%, transparent);
   }
 
   &:focus-visible {
@@ -195,19 +194,23 @@
   }
 
   &--low {
-    border-left-color: #6b9dff;
+    border-color: color-mix(in srgb, #6b9dff 40%, transparent);
+    background: color-mix(in srgb, #6b9dff 14%, transparent);
   }
 
   &--medium {
-    border-left-color: #e0ae2f;
+    border-color: color-mix(in srgb, #e0ae2f 40%, transparent);
+    background: color-mix(in srgb, #e0ae2f 14%, transparent);
   }
 
   &--high {
-    border-left-color: #e27a3f;
+    border-color: color-mix(in srgb, #e27a3f 40%, transparent);
+    background: color-mix(in srgb, #e27a3f 14%, transparent);
   }
 
   &--urgent {
-    border-left-color: #d94f5c;
+    border-color: color-mix(in srgb, #d94f5c 40%, transparent);
+    background: color-mix(in srgb, #d94f5c 14%, transparent);
   }
 }
 

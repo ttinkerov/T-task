@@ -120,6 +120,50 @@
   margin-top: 0.75rem;
 }
 
+.ai-advanced {
+  margin-top: 0.85rem;
+  border: 1px solid var(--tt-border-subtle);
+  border-radius: $radius-md;
+  background: var(--tt-surface-muted);
+  padding: 0.65rem 0.85rem;
+
+  summary {
+    list-style: none;
+    cursor: pointer;
+    font-size: 0.8125rem;
+    font-weight: 650;
+    color: var(--tt-text);
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::before {
+      content: '▸';
+      display: inline-block;
+      margin-right: 0.4rem;
+      color: var(--tt-text-muted);
+      transition: transform var(--tt-duration-fast);
+    }
+  }
+
+  &[open] summary {
+    margin-bottom: 0.65rem;
+
+    &::before {
+      transform: rotate(90deg);
+    }
+  }
+
+  .ai-rag-status {
+    margin-top: 0;
+  }
+
+  .task-drawer__field {
+    margin-top: 0.65rem;
+  }
+}
+
 .ai-settings-form {
   display: flex;
   flex-direction: column;

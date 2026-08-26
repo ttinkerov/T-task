@@ -45,20 +45,30 @@ export function TaskDrawerSections({
         <TaskSubtasksSection workspaceId={workspaceId} taskId={task.id} boardId={boardId} />
         <TaskChecklistSection workspaceId={workspaceId} taskId={task.id} boardId={boardId} />
         <TaskAttachmentsSection workspaceId={workspaceId} taskId={task.id} />
-        <TaskCustomFieldsSection
-          workspaceId={workspaceId}
-          taskId={task.id}
-          values={task.customFields ?? EMPTY_CUSTOM_FIELDS}
-        />
-        <TaskRollupSection workspaceId={workspaceId} taskId={task.id} />
-        <TaskRelationsSection
-          workspaceId={workspaceId}
-          taskId={task.id}
-          candidates={relationCandidates}
-          onOpenTask={onOpenTask}
-        />
-        <TaskBacklinksSection workspaceId={workspaceId} taskId={task.id} onOpenTask={onOpenTask} />
-        <TaskDealsSection workspaceId={workspaceId} taskId={task.id} />
+
+        <details className="task-drawer__more">
+          <summary>Дополнительно</summary>
+          <div className="task-drawer__more-body">
+            <TaskCustomFieldsSection
+              workspaceId={workspaceId}
+              taskId={task.id}
+              values={task.customFields ?? EMPTY_CUSTOM_FIELDS}
+            />
+            <TaskRollupSection workspaceId={workspaceId} taskId={task.id} />
+            <TaskRelationsSection
+              workspaceId={workspaceId}
+              taskId={task.id}
+              candidates={relationCandidates}
+              onOpenTask={onOpenTask}
+            />
+            <TaskBacklinksSection
+              workspaceId={workspaceId}
+              taskId={task.id}
+              onOpenTask={onOpenTask}
+            />
+            <TaskDealsSection workspaceId={workspaceId} taskId={task.id} />
+          </div>
+        </details>
       </LazyMount>
     </>
   );

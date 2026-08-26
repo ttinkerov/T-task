@@ -4,7 +4,6 @@ export type LandingCopy = {
   nav: {
     features: string;
     ai: string;
-    howto: string;
     audiences: string;
     login: string;
   };
@@ -28,11 +27,6 @@ export type LandingCopy = {
     text: string;
     cta: string;
     items: Array<{ title: string; text: string }>;
-  };
-  howto: {
-    eyebrow: string;
-    title: string;
-    steps: Array<{ num: string; title: string; text: string }>;
   };
   audiences: {
     eyebrow: string;
@@ -65,7 +59,6 @@ const ru: LandingCopy = {
   nav: {
     features: 'Возможности',
     ai: 'ИИ',
-    howto: 'Как начать',
     audiences: 'Для кого',
     login: 'Войти',
   },
@@ -144,27 +137,6 @@ const ru: LandingCopy = {
       },
     ],
   },
-  howto: {
-    eyebrow: 'Старт',
-    title: 'Три шага до первой доски',
-    steps: [
-      {
-        num: '01',
-        title: 'Создайте аккаунт',
-        text: '',
-      },
-      {
-        num: '02',
-        title: 'Соберите команду',
-        text: '',
-      },
-      {
-        num: '03',
-        title: 'Запустите доску',
-        text: '',
-      },
-    ],
-  },
   audiences: {
     eyebrow: 'Аудитория',
     title: 'Для кого подходит',
@@ -209,7 +181,6 @@ const en: LandingCopy = {
   nav: {
     features: 'Features',
     ai: 'AI',
-    howto: 'Get started',
     audiences: 'Who it’s for',
     login: 'Sign in',
   },
@@ -285,27 +256,6 @@ const en: LandingCopy = {
       {
         title: 'Your token, your provider',
         text: 'OpenAI / OpenRouter / Groq / custom. Set once - the whole team uses it.',
-      },
-    ],
-  },
-  howto: {
-    eyebrow: 'Start',
-    title: 'Three steps to your first board',
-    steps: [
-      {
-        num: '01',
-        title: 'Create an account',
-        text: '',
-      },
-      {
-        num: '02',
-        title: 'Bring the team',
-        text: '',
-      },
-      {
-        num: '03',
-        title: 'Launch the board',
-        text: '',
       },
     ],
   },

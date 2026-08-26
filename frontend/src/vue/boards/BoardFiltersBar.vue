@@ -12,18 +12,6 @@
   />
 
   <select
-    :value="filters.priority"
-    class="board-filters__select"
-    aria-label="Фильтр по приоритету"
-    @change="onSelectChange('priority', $event)"
-  >
-    <option value="">Все приоритеты</option>
-    <option v-for="option in priorityOptions" :key="option.value" :value="option.value">
-      {{ option.label }}
-    </option>
-  </select>
-
-  <select
     :value="filters.assigneeId"
     class="board-filters__select"
     aria-label="Фильтр по исполнителю"
@@ -36,44 +24,13 @@
   </select>
 
   <select
-    :value="filters.tagId"
+    :value="filters.priority"
     class="board-filters__select"
-    aria-label="Фильтр по тегу"
-    @change="onSelectChange('tagId', $event)"
+    aria-label="Фильтр по приоритету"
+    @change="onSelectChange('priority', $event)"
   >
-    <option value="">Все теги</option>
-    <option v-for="tag in tags" :key="tag.id" :value="tag.id">{{ tag.name }}</option>
-  </select>
-
-  <select
-    :value="filters.sprintId"
-    class="board-filters__select"
-    aria-label="Фильтр по спринту"
-    @change="onSelectChange('sprintId', $event)"
-  >
-    <option value="">Все спринты</option>
-    <option v-for="sprint in sprints" :key="sprint.id" :value="sprint.id">
-      {{ sprint.name }}{{ sprint.active ? ' · активный' : '' }}
-    </option>
-  </select>
-
-  <select
-    :value="filters.epicId"
-    class="board-filters__select"
-    aria-label="Фильтр по эпику"
-    @change="onSelectChange('epicId', $event)"
-  >
-    <option value="">Все эпики</option>
-    <option v-for="epic in epics" :key="epic.id" :value="epic.id">{{ epic.title }}</option>
-  </select>
-
-  <select
-    :value="filters.overdueStatus"
-    class="board-filters__select"
-    aria-label="Фильтр по просрочке"
-    @change="onSelectChange('overdueStatus', $event)"
-  >
-    <option v-for="option in overdueOptions" :key="option.label" :value="option.value">
+    <option value="">Все приоритеты</option>
+    <option v-for="option in priorityOptions" :key="option.value" :value="option.value">
       {{ option.label }}
     </option>
   </select>
@@ -84,22 +41,63 @@
     :class="{ 'board-filters__chip--active': filters.myTasksOnly }"
     @click="patch({ myTasksOnly: !filters.myTasksOnly })"
   >
-    Мои задачи
+    Мои
   </button>
 
-  <button
-    v-if="activeSprint"
-    type="button"
-    class="board-filters__chip"
-    :class="{ 'board-filters__chip--active': filters.sprintId === activeSprint.id }"
-    @click="
-      patch({
-        sprintId: filters.sprintId === activeSprint.id ? '' : activeSprint.id,
-      })
-    "
+  <details
+    class="board-filters__more"
+    :open="detailsOpen || undefined"
+    @toggle="onToggleDetails"
   >
-    Этот спринт
-  </button>
+    <summary>
+      Ещё фильтры
+      <span v-if="advancedCount" class="board-filters__more-count">{{ advancedCount }}</span>
+    </summary>
+    <div class="board-filters__more-body">
+      <select
+        :value="filters.tagId"
+        class="board-filters__select"
+        aria-label="Фильтр по тегу"
+        @change="onSelectChange('tagId', $event)"
+      >
+        <option value="">Все теги</option>
+        <option v-for="tag in tags" :key="tag.id" :value="tag.id">{{ tag.name }}</option>
+      </select>
+
+      <select
+        :value="filters.sprintId"
+        class="board-filters__select"
+        aria-label="Фильтр по спринту"
+        @change="onSelectChange('sprintId', $event)"
+      >
+        <option value="">Все спринты</option>
+        <option v-for="sprint in sprints" :key="sprint.id" :value="sprint.id">
+          {{ sprint.name }}{{ sprint.active ? ' · активный' : '' }}
+        </option>
+      </select>
+
+      <select
+        :value="filters.epicId"
+        class="board-filters__select"
+        aria-label="Фильтр по эпику"
+        @change="onSelectChange('epicId', $event)"
+      >
+        <option value="">Все эпики</option>
+        <option v-for="epic in epics" :key="epic.id" :value="epic.id">{{ epic.title }}</option>
+      </select>
+
+      <select
+        :value="filters.overdueStatus"
+        class="board-filters__select"
+        aria-label="Фильтр по просрочке"
+        @change="onSelectChange('overdueStatus', $event)"
+      >
+        <option v-for="option in overdueOptions" :key="option.label" :value="option.value">
+          {{ option.label }}
+        </option>
+      </select>
+    </div>
+  </details>
 
   <button v-if="hasActiveFilters" type="button" class="board-filters__reset" @click="onReset?.()">
     Сбросить
@@ -107,6 +105,8 @@
 </template>
 
 <script setup>
+import { computed, ref, watch } from 'vue'
+
 const props = defineProps({
   filters: { type: Object, required: true },
   members: { type: Array, default: () => [] },
@@ -122,6 +122,29 @@ const props = defineProps({
   onReset: { type: Function, default: null },
   onRetry: { type: Function, default: null },
 })
+
+const advancedCount = computed(() => {
+  let count = 0
+  if (props.filters.tagId) count += 1
+  if (props.filters.sprintId) count += 1
+  if (props.filters.epicId) count += 1
+  if (props.filters.overdueStatus) count += 1
+  return count
+})
+
+const detailsOpen = ref(false)
+
+watch(
+  advancedCount,
+  (count) => {
+    if (count > 0) detailsOpen.value = true
+  },
+  { immediate: true },
+)
+
+function onToggleDetails(event) {
+  detailsOpen.value = Boolean(event.target?.open)
+}
 
 function eventValue(event) {
   const target = event?.target

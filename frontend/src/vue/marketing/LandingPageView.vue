@@ -137,20 +137,6 @@
         </div>
       </section>
 
-      <section id="howto" class="tt-section tt-section--panel">
-        <div class="tt-section__head">
-          <h2 class="tt-section__title">{{ copy.howto.title }}</h2>
-        </div>
-
-        <div class="tt-steps">
-          <article v-for="step in copy.howto.steps" :key="step.num" class="tt-step-card">
-            <span class="tt-step-card__num">{{ step.num }}</span>
-            <h3>{{ step.title }}</h3>
-            <p v-if="step.text">{{ step.text }}</p>
-          </article>
-        </div>
-      </section>
-
       <section id="audiences" class="tt-section">
         <div class="tt-section__head">
           <h2 class="tt-section__title">{{ copy.audiences.title }}</h2>
@@ -248,7 +234,6 @@ const isLight = computed(() => props.theme === 'light');
 const navLinks = computed(() => [
   { label: props.copy.nav.features, href: '#features' },
   { label: props.copy.nav.ai, href: '#ai' },
-  { label: props.copy.nav.howto, href: '#howto' },
   { label: props.copy.nav.audiences, href: '#audiences' },
 ]);
 </script>

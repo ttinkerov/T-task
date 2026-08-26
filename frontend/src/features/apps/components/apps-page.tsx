@@ -124,7 +124,6 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
 
   const viewProps = useMemo(
     () => ({
-      providers: Object.values(APP_PROVIDER_META),
       canAdd,
       title,
       url,

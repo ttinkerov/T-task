@@ -285,10 +285,13 @@ export function KanbanBoard({
         </p>
       ) : null}
       {viewMode === 'BOARD' ? (
-        <LazyMount eagerMs={150}>
-          <BoardWorkloadPanel board={board} />
-          <BoardSprintPanel workspaceId={workspaceId} />
-        </LazyMount>
+        <details className="board-planning">
+          <summary className="board-planning__summary">Планирование</summary>
+          <LazyMount eagerMs={150}>
+            <BoardWorkloadPanel board={board} />
+            <BoardSprintPanel workspaceId={workspaceId} />
+          </LazyMount>
+        </details>
       ) : null}
       {viewMode === 'BOARD' ? (
         <BulkActionsToolbar
