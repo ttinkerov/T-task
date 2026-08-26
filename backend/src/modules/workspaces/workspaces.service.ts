@@ -126,7 +126,7 @@ export class WorkspacesService {
   }
 
   async update(workspaceId: string, userId: string, dto: UpdateWorkspaceDto) {
-    await this.getMembership(workspaceId, userId);
+    await this.assertCanMutateWorkspace(workspaceId, userId);
 
     const workspace = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.workspace.update({
@@ -164,7 +164,7 @@ export class WorkspacesService {
   }
 
   async archive(workspaceId: string, userId: string) {
-    await this.getMembership(workspaceId, userId);
+    await this.assertCanMutateWorkspace(workspaceId, userId);
 
     await this.prisma.$transaction(async (tx) => {
       const workspace = await tx.workspace.update({
@@ -194,7 +194,7 @@ export class WorkspacesService {
   }
 
   async unarchive(workspaceId: string, userId: string) {
-    await this.getMembership(workspaceId, userId);
+    await this.assertCanMutateWorkspace(workspaceId, userId);
 
     await this.prisma.$transaction(async (tx) => {
       const workspace = await tx.workspace.update({
@@ -807,6 +807,14 @@ export class WorkspacesService {
     }
 
     return invitation;
+  }
+
+  private async assertCanMutateWorkspace(workspaceId: string, userId: string) {
+    const membership = await this.getMembership(workspaceId, userId);
+    if (membership.role !== WorkspaceRole.OWNER && membership.role !== WorkspaceRole.ADMIN) {
+      throw new ForbiddenException('Недостаточно прав для изменения рабочего пространства');
+    }
+    return membership;
   }
 
   private async assertCanManageInvitations(workspaceId: string, userId: string) {

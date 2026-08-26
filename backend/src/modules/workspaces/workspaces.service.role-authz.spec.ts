@@ -152,6 +152,162 @@ describe('WorkspacesService.createInvitation authz', () => {
   });
 });
 
+// ─── update / archive / unarchive authz ──────────────────────────────────────
+
+function makeServiceForMutation(role: WorkspaceRole, userId = 'actor') {
+  const prisma = makePrisma();
+  const service = new WorkspacesService(
+    prisma as never,
+    { record: vi.fn() } as never,
+    { emit: vi.fn() } as never,
+    { getClient: () => ({ get: vi.fn(), setex: vi.fn(), del: vi.fn() }) } as never,
+    { enabled: false } as never,
+  );
+
+  stubMembership(service, async () => ({
+    role,
+    userId,
+    workspace: {
+      id: 'ws-1',
+      name: 'Test WS',
+      slug: 'test-ws',
+      deletedAt: null,
+      archivedAt: null,
+      teamSize: null,
+      useCases: [],
+      autoRollOverdue: false,
+    },
+  }));
+
+  return { prisma, service };
+}
+
+describe('WorkspacesService.update authz', () => {
+  it('forbids MEMBER from updating workspace', async () => {
+    const { service, prisma } = makeServiceForMutation(WorkspaceRole.MEMBER);
+
+    await expect(service.update('ws-1', 'actor', { name: 'Hacked' })).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('allows ADMIN to update workspace', async () => {
+    const { service, prisma } = makeServiceForMutation(WorkspaceRole.ADMIN);
+
+    prisma.$transaction.mockImplementation(async (fn) =>
+      fn({
+        workspace: {
+          update: vi.fn().mockResolvedValue({
+            id: 'ws-1',
+            name: 'New Name',
+            slug: 'test-ws',
+            autoRollOverdue: false,
+          }),
+        },
+      }),
+    );
+
+    const result = await service.update('ws-1', 'actor', { name: 'New Name' });
+    expect(result.name).toBe('New Name');
+  });
+
+  it('allows OWNER to update workspace', async () => {
+    const { service, prisma } = makeServiceForMutation(WorkspaceRole.OWNER);
+
+    prisma.$transaction.mockImplementation(async (fn) =>
+      fn({
+        workspace: {
+          update: vi.fn().mockResolvedValue({
+            id: 'ws-1',
+            name: 'Owner Update',
+            slug: 'test-ws',
+            autoRollOverdue: true,
+          }),
+        },
+      }),
+    );
+
+    const result = await service.update('ws-1', 'actor', { name: 'Owner Update' });
+    expect(result.name).toBe('Owner Update');
+  });
+});
+
+describe('WorkspacesService.archive authz', () => {
+  it('forbids MEMBER from archiving workspace', async () => {
+    const { service, prisma } = makeServiceForMutation(WorkspaceRole.MEMBER);
+
+    await expect(service.archive('ws-1', 'actor')).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('allows ADMIN to archive workspace', async () => {
+    const { service, prisma } = makeServiceForMutation(WorkspaceRole.ADMIN);
+
+    prisma.$transaction.mockImplementation(async (fn) =>
+      fn({
+        workspace: { update: vi.fn().mockResolvedValue({ id: 'ws-1', name: 'WS' }) },
+        form: { updateMany: vi.fn() },
+        invitation: { updateMany: vi.fn() },
+      }),
+    );
+
+    const result = await service.archive('ws-1', 'actor');
+    expect(result).toEqual({ success: true });
+  });
+
+  it('allows OWNER to archive workspace', async () => {
+    const { service, prisma } = makeServiceForMutation(WorkspaceRole.OWNER);
+
+    prisma.$transaction.mockImplementation(async (fn) =>
+      fn({
+        workspace: { update: vi.fn().mockResolvedValue({ id: 'ws-1', name: 'WS' }) },
+        form: { updateMany: vi.fn() },
+        invitation: { updateMany: vi.fn() },
+      }),
+    );
+
+    const result = await service.archive('ws-1', 'actor');
+    expect(result).toEqual({ success: true });
+  });
+});
+
+describe('WorkspacesService.unarchive authz', () => {
+  it('forbids MEMBER from unarchiving workspace', async () => {
+    const { service, prisma } = makeServiceForMutation(WorkspaceRole.MEMBER);
+
+    await expect(service.unarchive('ws-1', 'actor')).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('allows ADMIN to unarchive workspace', async () => {
+    const { service, prisma } = makeServiceForMutation(WorkspaceRole.ADMIN);
+
+    prisma.$transaction.mockImplementation(async (fn) =>
+      fn({
+        workspace: { update: vi.fn().mockResolvedValue({ id: 'ws-1', name: 'WS' }) },
+      }),
+    );
+
+    const result = await service.unarchive('ws-1', 'actor');
+    expect(result).toEqual({ success: true });
+  });
+
+  it('allows OWNER to unarchive workspace', async () => {
+    const { service, prisma } = makeServiceForMutation(WorkspaceRole.OWNER);
+
+    prisma.$transaction.mockImplementation(async (fn) =>
+      fn({
+        workspace: { update: vi.fn().mockResolvedValue({ id: 'ws-1', name: 'WS' }) },
+      }),
+    );
+
+    const result = await service.unarchive('ws-1', 'actor');
+    expect(result).toEqual({ success: true });
+  });
+});
+
 describe('WorkspacesService invitation lifecycle', () => {
   it('rejects accept when workspace is deleted or archived', async () => {
     const { NotFoundException } = await import('@nestjs/common');
