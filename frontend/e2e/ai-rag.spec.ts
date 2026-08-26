@@ -20,8 +20,13 @@ test.describe('AI RAG status UI', () => {
     await page.goto(`/dashboard/workspaces/${workspaceId}/settings`);
 
     await expect(page.getByTestId('ai-settings-card')).toBeVisible({ timeout: 30_000 });
+
+    const advanced = page.locator('.ai-advanced');
+    await advanced.locator('summary').click();
     await expect(page.getByTestId('ai-rag-status')).toBeVisible();
-    await expect(page.getByTestId('ai-rag-status')).toContainText(/RAG/i);
+    await expect(page.getByTestId('ai-rag-status')).toContainText(
+      /чанков|поиска по задачам|Загрузка статуса/i,
+    );
 
     const statusResponse = await page.request.get(
       `/api/v1/workspaces/${workspaceId}/ai/rag/status`,
