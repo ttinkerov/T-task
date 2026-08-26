@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useId, useMemo } from 'react';
+import { useCallback, useId, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { VueIsland } from '@/components/vue/VueIsland';
 import { useCustomFieldsQuery } from '@/features/custom-fields/hooks';
@@ -26,6 +26,7 @@ export function ColumnAutomationDialog({
   const members = membersQuery.data ?? [];
   const fields = fieldsQuery.data ?? [];
   const updateMutation = useUpdateColumnAutomationsMutation(workspaceId, boardId);
+  const [saveError, setSaveError] = useState('');
   const assignAutomation = column.automations.find((item) => item.action === 'ASSIGN_USER');
   const notifyAutomation = column.automations.find((item) => item.action === 'NOTIFY_WATCHERS');
   const fieldAutomation = column.automations.find((item) => item.action === 'SET_CUSTOM_FIELD');
@@ -70,6 +71,7 @@ export function ColumnAutomationDialog({
       customFieldValue: string;
       webhookUrl: string;
     }) => {
+      setSaveError('');
       try {
         await updateMutation.mutateAsync({
           columnId: column.id,
@@ -85,8 +87,8 @@ export function ColumnAutomationDialog({
           },
         });
         onClose();
-      } catch {
-        /* ignore */
+      } catch (err) {
+        setSaveError(err instanceof Error ? err.message : 'Не удалось сохранить автоматизации');
       }
     },
     [column.id, onClose, updateMutation],
@@ -107,7 +109,7 @@ export function ColumnAutomationDialog({
       initialCustomFieldValue: fieldConfig?.value == null ? '' : String(fieldConfig.value),
       initialWebhookUrl: webhookConfig?.url ?? '',
       pending: updateMutation.isPending,
-      error: updateMutation.error?.message ?? '',
+      error: saveError,
       membersLoadError,
       onSave,
       onClose,
@@ -126,7 +128,7 @@ export function ColumnAutomationDialog({
       fieldConfig?.value,
       webhookConfig?.url,
       updateMutation.isPending,
-      updateMutation.error?.message,
+      saveError,
       membersLoadError,
       onSave,
       onClose,

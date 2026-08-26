@@ -118,8 +118,8 @@ function TaskTemplatesPanel({
       setPendingId(templateId);
       try {
         await deleteMutation.mutateAsync(templateId);
-      } catch {
-        /* ignore */
+      } catch (err) {
+        void err;
       } finally {
         setPendingId(null);
       }
@@ -233,8 +233,8 @@ function DealTemplatesPanel({
       setPendingId(templateId);
       try {
         await deleteMutation.mutateAsync(templateId);
-      } catch {
-        /* ignore */
+      } catch (err) {
+        void err;
       } finally {
         setPendingId(null);
       }

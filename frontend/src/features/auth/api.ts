@@ -15,6 +15,20 @@ export async function login(payload: LoginPayload) {
   });
 }
 
+export async function forgotPassword(payload: { email: string }) {
+  return apiFetch<{ accepted: boolean }>('/api/v1/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function resetPassword(payload: { token: string; password: string }) {
+  return apiFetch<{ reset: boolean }>('/api/v1/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function refreshSession() {
   return apiFetch<AuthSession>('/api/v1/auth/refresh', {
     method: 'POST',

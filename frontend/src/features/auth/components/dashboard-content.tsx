@@ -33,6 +33,27 @@ const QUICK_LINKS = [
   { href: '/dashboard/analytics', label: 'Аналитика' },
 ] as const;
 
+function buildNextSteps(workspaceId: string | null) {
+  const inviteHref = workspaceId ? `/dashboard/workspaces/${workspaceId}/settings` : '/dashboard';
+  return [
+    {
+      href: '/dashboard/crm',
+      label: 'CRM',
+      hint: 'Воронка сделок рядом с задачами',
+    },
+    {
+      href: '/dashboard/forms',
+      label: 'Формы',
+      hint: 'Сбор заявок без отдельного сервиса',
+    },
+    {
+      href: inviteHref,
+      label: 'Пригласить',
+      hint: 'Добавить коллег в команду',
+    },
+  ];
+}
+
 export function DashboardContent() {
   const { data: session } = useMeQuery();
   const { data: workspaces = [] } = useWorkspacesQuery();
@@ -152,6 +173,7 @@ export function DashboardContent() {
           emptyLabel: 'Пока нет недавних задач.',
         },
       ],
+      nextSteps: buildNextSteps(currentWorkspaceId),
       quickLinks: [...QUICK_LINKS],
       workspaces: workspaces.map((workspace) => ({
         id: workspace.id,

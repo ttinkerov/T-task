@@ -13,7 +13,12 @@
     </div>
 
     <div class="space-y-1.5">
-      <label for="password" class="tt-auth__label">Пароль</label>
+      <div class="flex items-center justify-between gap-2">
+        <label for="password" class="tt-auth__label">Пароль</label>
+        <a href="/forgot-password" class="text-xs text-muted-foreground hover:text-foreground">
+          Забыли пароль?
+        </a>
+      </div>
       <input
         id="password"
         v-model="password"

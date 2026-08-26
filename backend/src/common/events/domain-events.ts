@@ -8,6 +8,7 @@ export const DomainEvents = {
   DEAL_CREATED: 'deal.created',
   DEAL_MOVED: 'deal.moved',
   INVITATION_CREATED: 'invitation.created',
+  PASSWORD_RESET_REQUESTED: 'password.reset.requested',
   MENTION_CREATED: 'mention.created',
   DUE_REMINDER: 'due.reminder',
   USER_ACCESS_REVOKED: 'user.access.revoked',
@@ -91,6 +92,12 @@ export type InvitationCreatedPayload = {
   token: string;
   inviterName: string;
   sendEmail: boolean;
+};
+
+export type PasswordResetRequestedPayload = {
+  email: string;
+  name: string;
+  token: string;
 };
 
 export type MentionCreatedPayload = {

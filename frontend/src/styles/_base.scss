@@ -29,6 +29,41 @@ body {
   color: var(--tt-text);
 }
 
+.island-error {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+  padding: 0.85rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--tt-danger) 28%, transparent);
+  border-radius: $radius-md;
+  background: color-mix(in srgb, var(--tt-danger) 8%, transparent);
+
+  &--page {
+    max-width: 28rem;
+    margin: 4rem auto;
+    background: var(--tt-surface);
+  }
+
+  &__heading {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+
+  &__title {
+    margin: 0;
+    color: var(--tt-danger);
+    font-size: 0.875rem;
+    font-weight: 650;
+  }
+
+  &__text {
+    margin: 0;
+    color: var(--tt-text-muted);
+    font-size: 0.8125rem;
+  }
+}
+
 :focus-visible {
   outline: 2px solid var(--tt-ring);
   outline-offset: 2px;

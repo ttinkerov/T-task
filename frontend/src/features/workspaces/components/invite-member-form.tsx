@@ -19,26 +19,33 @@ const ROLE_OPTIONS: Array<{ value: WorkspaceRole; label: string }> = [
 export function InviteMemberForm({ workspaceId }: InviteMemberFormProps) {
   const [inviteLink, setInviteLink] = useState('');
   const [emailHint, setEmailHint] = useState('');
+  const [actionError, setActionError] = useState('');
   const inviteMutation = useCreateInvitationMutation(workspaceId);
 
   const onInvite = useCallback(
     async (payload: { email: string; role: string; sendEmail: boolean }) => {
       setInviteLink('');
       setEmailHint('');
-      const result = await inviteMutation.mutateAsync({
-        email: payload.email,
-        role: payload.role as WorkspaceRole,
-        sendEmail: payload.sendEmail,
-      });
-      if (result?.token) {
-        setInviteLink(`${window.location.origin}/invite/${result.token}`);
-      }
-      if (payload.sendEmail && result && !result.emailSent) {
-        setEmailHint('Письмо не отправлено: SMTP не настроен. Используйте ссылку.');
-      } else if (payload.sendEmail && result?.emailSent) {
-        setEmailHint('Письмо отправлено.');
-      } else {
-        setEmailHint('Письмо не отправлялось — поделитесь ссылкой.');
+      setActionError('');
+      try {
+        const result = await inviteMutation.mutateAsync({
+          email: payload.email,
+          role: payload.role as WorkspaceRole,
+          sendEmail: payload.sendEmail,
+        });
+        if (result?.token) {
+          setInviteLink(`${window.location.origin}/invite/${result.token}`);
+        }
+        if (payload.sendEmail && result && !result.emailSent) {
+          setEmailHint('Письмо не отправлено: SMTP не настроен. Используйте ссылку.');
+        } else if (payload.sendEmail && result?.emailSent) {
+          setEmailHint('Письмо отправлено.');
+        } else {
+          setEmailHint('Письмо не отправлялось — поделитесь ссылкой.');
+        }
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Не удалось создать приглашение');
+        throw err;
       }
     },
     [inviteMutation],
@@ -48,12 +55,12 @@ export function InviteMemberForm({ workspaceId }: InviteMemberFormProps) {
     () => ({
       roleOptions: ROLE_OPTIONS,
       isPending: inviteMutation.isPending,
-      errorMessage: inviteMutation.error?.message ?? '',
+      errorMessage: actionError,
       inviteLink,
       emailHint,
       onInvite,
     }),
-    [inviteMutation.isPending, inviteMutation.error, inviteLink, emailHint, onInvite],
+    [inviteMutation.isPending, actionError, inviteLink, emailHint, onInvite],
   );
 
   return <VueIsland component={InviteMemberFormView} componentProps={formProps} />;

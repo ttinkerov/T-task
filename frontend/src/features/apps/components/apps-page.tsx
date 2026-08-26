@@ -26,6 +26,8 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
   const [iframeState, setIframeState] = useState<'loading' | 'ready' | 'blocked'>('loading');
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
+  const [createError, setCreateError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
 
   const workspaceRole = workspaces.find((workspace) => workspace.id === workspaceId)?.role;
   const canAdd = workspaceRole !== 'VIEWER';
@@ -59,6 +61,7 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
   const onCreate = useCallback(async () => {
     if (!title.trim() || !url.trim()) return;
 
+    setCreateError('');
     try {
       const created = await createMutation.mutateAsync({
         title: title.trim(),
@@ -67,8 +70,8 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
       setTitle('');
       setUrl('');
       if (created) setSelectedAppId(created.id);
-    } catch {
-      /* ignore */
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : 'Не удалось добавить приложение');
     }
   }, [createMutation, title, url]);
 
@@ -77,6 +80,7 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
   }, []);
 
   const onRequestDelete = useCallback((appId: string) => {
+    setDeleteError('');
     setPendingDeleteId(appId);
   }, []);
 
@@ -86,14 +90,15 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
 
   const onConfirmDelete = useCallback(
     async (appId: string) => {
+      setDeleteError('');
       try {
         await deleteMutation.mutateAsync(appId);
         setPendingDeleteId(null);
         if (selectedAppId === appId) {
           setSelectedAppId(null);
         }
-      } catch {
-        /* ignore */
+      } catch (err) {
+        setDeleteError(err instanceof Error ? err.message : 'Не удалось удалить приложение');
       }
     },
     [deleteMutation, selectedAppId],
@@ -128,14 +133,14 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
       title,
       url,
       createPending: createMutation.isPending,
-      createError: createMutation.error?.message ?? '',
+      createError,
       pageError: error?.message ?? '',
       onRetry,
       items: listItems,
       selectedId: displayedAppId,
       pendingDeleteId,
       isDeleting: deleteMutation.isPending,
-      deleteError: deleteMutation.error?.message ?? '',
+      deleteError,
       viewer: selectedApp
         ? {
             id: selectedApp.id,
@@ -161,14 +166,14 @@ export function AppsPage({ workspaceId }: { workspaceId: string }) {
       title,
       url,
       createMutation.isPending,
-      createMutation.error,
+      createError,
       error,
       onRetry,
       listItems,
       displayedAppId,
       pendingDeleteId,
       deleteMutation.isPending,
-      deleteMutation.error,
+      deleteError,
       selectedApp,
       safeSourceUrl,
       safeEmbedUrl,

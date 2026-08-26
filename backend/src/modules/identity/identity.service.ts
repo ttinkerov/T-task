@@ -24,10 +24,13 @@ import {
 } from '../../common/security/cookie-options.util';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 export const REFRESH_TOKEN_COOKIE = 'refresh_token';
+export const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
 export interface AuthTokens {
   accessToken: string;
@@ -118,6 +121,80 @@ export class IdentityService {
       user: this.toUserView(user),
       workspaces,
     };
+  }
+
+  async requestPasswordReset(dto: ForgotPasswordDto) {
+    const email = dto.email.toLowerCase().trim();
+    const user = await this.prisma.user.findFirst({
+      where: { email, deletedAt: null },
+    });
+
+    // Always succeed — do not leak whether the email exists.
+    if (!user) {
+      return { accepted: true as const };
+    }
+
+    await this.prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+    const rawToken = generateRefreshToken();
+    const expiresAt = new Date(Date.now() + PASSWORD_RESET_TTL_MS);
+
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: hashToken(rawToken),
+        expiresAt,
+      },
+    });
+
+    this.eventEmitter.emit(DomainEvents.PASSWORD_RESET_REQUESTED, {
+      email: user.email,
+      name: user.name,
+      token: rawToken,
+    });
+
+    return { accepted: true as const };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const tokenHash = hashToken(dto.token);
+    const record = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    });
+
+    if (!record || record.usedAt || record.expiresAt < new Date() || record.user.deletedAt) {
+      throw new UnauthorizedException('Ссылка сброса недействительна или истекла');
+    }
+
+    const passwordHash = await argon2.hash(dto.password);
+
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await tx.user.update({
+        where: { id: record.userId },
+        data: { passwordHash },
+      });
+      await tx.passwordResetToken.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      });
+      await tx.passwordResetToken.updateMany({
+        where: { userId: record.userId, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+      await tx.refreshSession.updateMany({
+        where: { userId: record.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+    });
+
+    this.eventEmitter.emit(DomainEvents.USER_ACCESS_REVOKED, { userId: record.userId });
+    await this.authUserCache.invalidate(record.userId);
+
+    return { reset: true as const };
   }
 
   async refresh(request: Request, response: Response) {

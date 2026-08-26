@@ -9,6 +9,7 @@ export function mountVueApp(
   host: HTMLElement,
   root: Component,
   initialProps: Record<string, unknown> = {},
+  onError?: (error: unknown) => void,
 ): MountedVueApp {
   const propsRef = shallowRef({ ...initialProps });
 
@@ -18,6 +19,11 @@ export function mountVueApp(
       return () => h(root, propsRef.value);
     },
   });
+
+  app.config.errorHandler = (error, _instance, info) => {
+    console.error('[VueIsland] runtime error', error, info);
+    onError?.(error);
+  };
 
   app.mount(host);
 

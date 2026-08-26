@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { Component } from 'vue';
+import { IslandErrorBoundary } from '@/components/vue/IslandErrorBoundary';
 import { mountVueApp, type MountedVueApp } from '@/vue/mountVueApp';
 
 type Props = {
@@ -10,7 +11,7 @@ type Props = {
   displayContents?: boolean;
 };
 
-export function VueIsland({ component, componentProps, displayContents = false }: Props) {
+function VueIslandInner({ component, componentProps, displayContents = false }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const appRef = useRef<MountedVueApp | null>(null);
   const propsRef = useRef(componentProps);
@@ -24,7 +25,9 @@ export function VueIsland({ component, componentProps, displayContents = false }
     if (!host) return;
 
     try {
-      const mounted = mountVueApp(host, component, propsRef.current);
+      const mounted = mountVueApp(host, component, propsRef.current, () => {
+        setMountState((current) => ({ ...current, error: true }));
+      });
       appRef.current = mounted;
       return () => {
         mounted.unmount();
@@ -44,8 +47,8 @@ export function VueIsland({ component, componentProps, displayContents = false }
 
   if (mountState.error) {
     return (
-      <div className="text-sm" role="alert">
-        <p className="text-red-400">Не удалось отобразить блок интерфейса.</p>
+      <div className="island-error" role="alert">
+        <p className="island-error__title">Не удалось отобразить блок интерфейса.</p>
         <button
           type="button"
           className="board-filters__chip"
@@ -63,5 +66,13 @@ export function VueIsland({ component, componentProps, displayContents = false }
       ref={hostRef}
       style={displayContents ? { display: 'contents' } : undefined}
     />
+  );
+}
+
+export function VueIsland(props: Props) {
+  return (
+    <IslandErrorBoundary>
+      <VueIslandInner {...props} />
+    </IslandErrorBoundary>
   );
 }

@@ -6,8 +6,10 @@ import {
   DueReminderPayload,
   InvitationCreatedPayload,
   MentionCreatedPayload,
+  PasswordResetRequestedPayload,
 } from '../../common/events/domain-events';
 import { escapeHtml, MailService } from '../../infrastructure/mail/mail.service';
+import { buildMailTaskLink } from './mail-task-link';
 
 @Injectable()
 export class MailNotificationsListener {
@@ -29,10 +31,22 @@ export class MailNotificationsListener {
     });
   }
 
+  @OnEvent(DomainEvents.PASSWORD_RESET_REQUESTED)
+  async onPasswordReset(payload: PasswordResetRequestedPayload) {
+    const appUrl = this.configService.get<string>('APP_URL') ?? 'http://localhost:3000';
+    const link = `${appUrl.replace(/\/$/, '')}/reset-password/${payload.token}`;
+    await this.mail.send({
+      to: payload.email,
+      subject: 'Сброс пароля T-task',
+      text: `Здравствуйте, ${payload.name}! Сбросить пароль: ${link}\nСсылка действует 1 час.`,
+      html: `<p>Здравствуйте, ${escapeHtml(payload.name)}!</p><p>Чтобы задать новый пароль, откройте ссылку (действует 1 час):</p><p><a href="${escapeHtml(link)}">Сбросить пароль</a></p>`,
+    });
+  }
+
   @OnEvent(DomainEvents.MENTION_CREATED)
   async onMention(payload: MentionCreatedPayload) {
     const appUrl = this.configService.get<string>('APP_URL') ?? 'http://localhost:3000';
-    const link = `${appUrl.replace(/\/$/, '')}/dashboard/boards?task=${payload.taskId}`;
+    const link = buildMailTaskLink(appUrl, payload.taskId);
     await this.mail.send({
       to: payload.recipientEmail,
       subject: `${payload.actorName} упомянул(а) вас`,
@@ -44,7 +58,7 @@ export class MailNotificationsListener {
   @OnEvent(DomainEvents.DUE_REMINDER)
   async onDueReminder(payload: DueReminderPayload) {
     const appUrl = this.configService.get<string>('APP_URL') ?? 'http://localhost:3000';
-    const link = `${appUrl.replace(/\/$/, '')}/dashboard/boards?task=${payload.taskId}`;
+    const link = buildMailTaskLink(appUrl, payload.taskId);
     await this.mail.send({
       to: payload.recipientEmail,
       subject: `Дедлайн: ${payload.taskTitle}`,

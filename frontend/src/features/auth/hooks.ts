@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getMe, login, logout, register } from './api';
+import { forgotPassword, getMe, login, logout, register, resetPassword } from './api';
 import type { LoginPayload, RegisterPayload } from './types';
 
 export const authKeys = {
@@ -48,6 +48,24 @@ export function useRegisterMutation() {
           workspaces: [],
         });
       }
+    },
+  });
+}
+
+export function useForgotPasswordMutation() {
+  return useMutation({
+    mutationFn: async (payload: { email: string }) => {
+      const response = await forgotPassword(payload);
+      return response.data;
+    },
+  });
+}
+
+export function useResetPasswordMutation() {
+  return useMutation({
+    mutationFn: async (payload: { token: string; password: string }) => {
+      const response = await resetPassword(payload);
+      return response.data;
     },
   });
 }

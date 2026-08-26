@@ -80,10 +80,37 @@
           </div>
         </div>
 
-        <div id="demo" class="tt-hero__stage">
-          <div class="tt-hero__stage-chrome"><span /><span /><span /></div>
-          <div class="tt-hero__stage-body">
-            <KanbanDemoBoard />
+        <div id="demo" class="tt-hero__stage" aria-label="Демо T-task в браузере">
+          <div class="tt-browser" role="presentation">
+            <div class="tt-browser__titlebar">
+              <div class="tt-browser__traffic" aria-hidden="true">
+                <span /><span /><span />
+              </div>
+              <div class="tt-browser__tabs">
+                <div class="tt-browser__tab tt-browser__tab--active">
+                  <BrandLogo href="" mark-only class-name="tt-brand-logo--tab" />
+                  <span class="tt-browser__tab-label">T-task</span>
+                  <span class="tt-browser__tab-close" aria-hidden="true">×</span>
+                </div>
+                <div class="tt-browser__tab tt-browser__tab--ghost" aria-hidden="true">
+                  <span class="tt-browser__tab-label">{{ copy.hero.tabNew }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="tt-browser__toolbar">
+              <div class="tt-browser__nav" aria-hidden="true">
+                <span>‹</span>
+                <span>›</span>
+                <span>↻</span>
+              </div>
+              <div class="tt-browser__address">
+                <span class="tt-browser__lock" aria-hidden="true" />
+                <span class="tt-browser__url">{{ copy.hero.stageUrl }}</span>
+              </div>
+            </div>
+            <div class="tt-hero__stage-body">
+              <KanbanDemoBoard />
+            </div>
           </div>
         </div>
       </section>

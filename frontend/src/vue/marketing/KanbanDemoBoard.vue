@@ -1,12 +1,6 @@
 <template>
   <div class="tt-board">
     <div class="tt-board__card tt-board__card--interactive">
-      <div class="tt-board__header">
-        <div>
-          <p class="tt-board__name">Демо режим</p>
-        </div>
-      </div>
-
       <div ref="boardEl" class="tt-demo-board">
         <KanbanDemoColumn
           v-for="column in columns"

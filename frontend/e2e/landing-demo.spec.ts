@@ -4,7 +4,7 @@ test.describe('Landing demo @smoke', () => {
   test('loads interactive demo board and adds a task', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.getByText('Демо режим')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('#demo .tt-demo-board')).toBeVisible({ timeout: 20_000 });
 
     const column = page.locator('.tt-demo-column').first();
     await expect(column).toBeVisible();
@@ -20,7 +20,7 @@ test.describe('Landing demo @smoke', () => {
 
   test('can add an empty column from demo board', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText('Демо режим')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('#demo .tt-demo-board')).toBeVisible({ timeout: 20_000 });
 
     const name = `Col ${Date.now()}`;
     await page.locator('.tt-demo-board__input').fill(name);

@@ -5,13 +5,25 @@
         <h1 id="home-dashboard-title" class="tt-logo" style="font-size: 1.5rem">
           Добро пожаловать, {{ userName }}
         </h1>
-        <p>Что сделать дальше — просрочки, ближайшие дедлайны и недавние задачи.</p>
+        <p>Сводка по задачам и быстрые шаги — куда зайти дальше.</p>
       </div>
       <div class="home-dashboard__header-actions">
         <a href="/dashboard/my-tasks" class="btn-ghost text-sm">Все мои задачи</a>
         <a href="/dashboard/board" class="btn-primary text-sm">Открыть доску</a>
       </div>
     </header>
+
+    <nav v-if="nextSteps.length" class="home-dashboard__next" aria-label="Куда идти дальше">
+      <h2 class="home-dashboard__next-title">Дальше по продукту</h2>
+      <ul class="home-dashboard__next-list">
+        <li v-for="step in nextSteps" :key="step.href">
+          <a :href="step.href" class="home-dashboard__next-card">
+            <strong>{{ step.label }}</strong>
+            <span>{{ step.hint }}</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
 
     <p v-if="!hasWorkspace" class="home-dashboard__hint">
       Выберите или создайте команду, чтобы увидеть задачи.
@@ -127,6 +139,7 @@ defineProps({
     default: () => ({ overdue: 0, dueSoon: 0, assigned: 0, open: 0 }),
   },
   sections: { type: Array, default: () => [] },
+  nextSteps: { type: Array, default: () => [] },
   quickLinks: { type: Array, default: () => [] },
   workspaces: { type: Array, default: () => [] },
   switcherWorkspaces: { type: Array, default: () => [] },

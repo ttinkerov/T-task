@@ -11,8 +11,10 @@ import {
 } from '../../common/security/rate-limit.decorator';
 import { AuthenticatedUser } from '../../common/auth/interfaces/authenticated-user.interface';
 import { successResponse } from '../../common/interfaces/api-response.interface';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { IdentityService } from './identity.service';
 
 @ApiTags('auth')
@@ -43,6 +45,24 @@ export class IdentityController {
     @Res({ passthrough: true }) response: Response,
   ) {
     const data = await this.identityService.login(dto, request, response);
+    return successResponse(data);
+  }
+
+  @Public()
+  @UseGuards(AuthRateLimitGuard)
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Request password reset email' })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    const data = await this.identityService.requestPasswordReset(dto);
+    return successResponse(data);
+  }
+
+  @Public()
+  @UseGuards(AuthRateLimitGuard)
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Reset password with email token' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    const data = await this.identityService.resetPassword(dto);
     return successResponse(data);
   }
 

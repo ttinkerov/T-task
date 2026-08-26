@@ -163,7 +163,7 @@ const props = defineProps({
 
 const canSubmitCreate = computed(() => Boolean(props.title.trim() && props.url.trim()));
 
-function submitCreate() {
-  props.onCreate?.();
+async function submitCreate() {
+  await props.onCreate?.();
 }
 </script>

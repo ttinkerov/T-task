@@ -13,7 +13,8 @@ export type LandingCopy = {
     text: string;
     start: string;
     watch: string;
-    stage: string;
+    stageUrl: string;
+    tabNew: string;
   };
   features: {
     eyebrow: string;
@@ -68,7 +69,8 @@ const ru: LandingCopy = {
     text: 'Доска, сделки, ИИ и режим фокуса - всё в одном месте.',
     start: 'Начать',
     watch: 'Смотреть продукт',
-    stage: 'Доска · Live preview',
+    stageUrl: 't-task/dashboard/board',
+    tabNew: 'Новая вкладка',
   },
   features: {
     eyebrow: 'Возможности',
@@ -190,7 +192,8 @@ const en: LandingCopy = {
     text: 'Boards, deals, AI, and a focus mode - together in one place.',
     start: 'Get started',
     watch: 'See the product',
-    stage: 'Board · Live preview',
+    stageUrl: 't-task/dashboard/board',
+    tabNew: 'New Tab',
   },
   features: {
     eyebrow: 'Features',
