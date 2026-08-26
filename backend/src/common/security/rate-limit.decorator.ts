@@ -20,6 +20,18 @@ export const DEFAULT_AUTH_RATE_LIMIT: RateLimitConfig = {
   maxAttempts: 5,
 };
 
+export const AUTH_FORGOT_PASSWORD_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'auth:forgot-password',
+  windowSeconds: 600,
+  maxAttempts: 5,
+};
+
+export const AUTH_RESET_PASSWORD_RATE_LIMIT: RateLimitConfig = {
+  keyPrefix: 'auth:reset-password',
+  windowSeconds: 600,
+  maxAttempts: 10,
+};
+
 export const AUTH_SESSION_RATE_LIMIT: RateLimitConfig = {
   keyPrefix: 'auth:session',
   windowSeconds: 60,

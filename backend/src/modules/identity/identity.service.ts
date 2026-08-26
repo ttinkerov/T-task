@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
@@ -53,6 +53,8 @@ export interface WorkspaceView {
 
 @Injectable()
 export class IdentityService {
+  private readonly logger = new Logger(IdentityService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -150,11 +152,22 @@ export class IdentityService {
       },
     });
 
-    this.eventEmitter.emit(DomainEvents.PASSWORD_RESET_REQUESTED, {
-      email: user.email,
-      name: user.name,
-      token: rawToken,
-    });
+    try {
+      await this.eventEmitter.emitAsync(DomainEvents.PASSWORD_RESET_REQUESTED, {
+        email: user.email,
+        name: user.name,
+        token: rawToken,
+      });
+    } catch (err) {
+      // Mail delivery failed — invalidate the token so it cannot be used without delivery.
+      this.logger.error(
+        `Password reset mail failed for user ${user.id}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      await this.prisma.passwordResetToken.updateMany({
+        where: { userId: user.id, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+    }
 
     return { accepted: true as const };
   }
@@ -173,13 +186,19 @@ export class IdentityService {
     const passwordHash = await argon2.hash(dto.password);
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // Atomically claim the token; count === 0 means a concurrent request beat us (TOCTOU fix).
+      const claimed = await tx.passwordResetToken.updateMany({
+        where: { id: record.id, usedAt: null },
+        data: { usedAt: new Date() },
+      });
+
+      if (claimed.count === 0) {
+        throw new UnauthorizedException('Ссылка сброса недействительна или истекла');
+      }
+
       await tx.user.update({
         where: { id: record.userId },
         data: { passwordHash },
-      });
-      await tx.passwordResetToken.update({
-        where: { id: record.id },
-        data: { usedAt: new Date() },
       });
       await tx.passwordResetToken.updateMany({
         where: { userId: record.userId, usedAt: null },
@@ -389,8 +408,6 @@ export class IdentityService {
     const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
     response.clearCookie(ACCESS_TOKEN_COOKIE, buildAccessCookieClearOptions(isProduction));
     response.clearCookie(REFRESH_TOKEN_COOKIE, buildRefreshCookieClearOptions(isProduction));
-
-    response.clearCookie(REFRESH_TOKEN_COOKIE, buildAccessCookieClearOptions(isProduction));
   }
 
   private async revokeCurrentAccessToken(request: Request): Promise<void> {

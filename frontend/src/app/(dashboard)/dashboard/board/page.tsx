@@ -21,6 +21,7 @@ function BoardPageContent() {
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId);
   const setCurrentWorkspaceId = useWorkspaceStore((state) => state.setCurrentWorkspaceId);
   const { data: workspaces = [], isLoading, isError, refetch } = useWorkspacesQuery();
+  const requestedWorkspaceId = searchParams.get('workspace');
 
   useEffect(() => {
     if (!isLoading && !isError && workspaces.length === 0) {
@@ -28,11 +29,33 @@ function BoardPageContent() {
       return;
     }
 
+    if (workspaces.length === 0) {
+      return;
+    }
+
+    if (
+      requestedWorkspaceId &&
+      workspaces.some((workspace) => workspace.id === requestedWorkspaceId)
+    ) {
+      if (workspaceId !== requestedWorkspaceId) {
+        setCurrentWorkspaceId(requestedWorkspaceId);
+      }
+      return;
+    }
+
     const exists = workspaces.some((workspace) => workspace.id === workspaceId);
-    if (workspaces.length > 0 && (!workspaceId || !exists)) {
+    if (!workspaceId || !exists) {
       setCurrentWorkspaceId(workspaces[0].id);
     }
-  }, [isLoading, isError, router, setCurrentWorkspaceId, workspaceId, workspaces]);
+  }, [
+    isLoading,
+    isError,
+    router,
+    setCurrentWorkspaceId,
+    workspaceId,
+    workspaces,
+    requestedWorkspaceId,
+  ]);
 
   return workspaceId ? (
     <KanbanBoard

@@ -5,7 +5,9 @@ import { CurrentUser } from '../../common/auth/decorators/current-user.decorator
 import { Public } from '../../common/auth/decorators/public.decorator';
 import { AuthRateLimitGuard } from '../../common/security/auth-rate-limit.guard';
 import {
+  AUTH_FORGOT_PASSWORD_RATE_LIMIT,
   AUTH_ME_RATE_LIMIT,
+  AUTH_RESET_PASSWORD_RATE_LIMIT,
   AUTH_SESSION_RATE_LIMIT,
   RateLimit,
 } from '../../common/security/rate-limit.decorator';
@@ -50,6 +52,7 @@ export class IdentityController {
 
   @Public()
   @UseGuards(AuthRateLimitGuard)
+  @RateLimit(AUTH_FORGOT_PASSWORD_RATE_LIMIT)
   @Post('forgot-password')
   @ApiOperation({ summary: 'Request password reset email' })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
@@ -59,6 +62,7 @@ export class IdentityController {
 
   @Public()
   @UseGuards(AuthRateLimitGuard)
+  @RateLimit(AUTH_RESET_PASSWORD_RATE_LIMIT)
   @Post('reset-password')
   @ApiOperation({ summary: 'Reset password with email token' })
   async resetPassword(@Body() dto: ResetPasswordDto) {

@@ -89,6 +89,7 @@ function TaskTemplatesPanel({
   const deleteMutation = useDeleteTaskTemplateMutation(workspaceId);
   const seedMutation = useSeedTaskTemplatesMutation(workspaceId);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
 
   const templates = templatesQuery.data ?? [];
 
@@ -116,10 +117,11 @@ function TaskTemplatesPanel({
   const onDelete = useCallback(
     async (templateId: string) => {
       setPendingId(templateId);
+      setDeleteError('');
       try {
         await deleteMutation.mutateAsync(templateId);
       } catch (err) {
-        void err;
+        setDeleteError(err instanceof Error ? err.message : 'Не удалось удалить шаблон');
       } finally {
         setPendingId(null);
       }
@@ -142,7 +144,7 @@ function TaskTemplatesPanel({
       canManage,
       pendingId,
       isDeleting: deleteMutation.isPending,
-      deleteError: deleteMutation.error?.message ?? '',
+      deleteError,
       priorityLabels: Object.fromEntries(
         PRIORITY_OPTIONS.filter((o) => o.value).map((o) => [o.value, o.label]),
       ),
@@ -160,7 +162,7 @@ function TaskTemplatesPanel({
       canManage,
       pendingId,
       deleteMutation.isPending,
-      deleteMutation.error,
+      deleteError,
       onDelete,
     ],
   );
@@ -214,6 +216,7 @@ function DealTemplatesPanel({
   const deleteMutation = useDeleteDealTemplateMutation(workspaceId);
   const seedMutation = useSeedDealTemplatesMutation(workspaceId);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
 
   const templates = templatesQuery.data ?? [];
 
@@ -231,10 +234,11 @@ function DealTemplatesPanel({
   const onDelete = useCallback(
     async (templateId: string) => {
       setPendingId(templateId);
+      setDeleteError('');
       try {
         await deleteMutation.mutateAsync(templateId);
       } catch (err) {
-        void err;
+        setDeleteError(err instanceof Error ? err.message : 'Не удалось удалить шаблон');
       } finally {
         setPendingId(null);
       }
@@ -256,7 +260,7 @@ function DealTemplatesPanel({
       canManage,
       pendingId,
       isDeleting: deleteMutation.isPending,
-      deleteError: deleteMutation.error?.message ?? '',
+      deleteError,
       onDelete,
       onRetry: () => {
         void templatesQuery.refetch();
@@ -270,7 +274,7 @@ function DealTemplatesPanel({
       canManage,
       pendingId,
       deleteMutation.isPending,
-      deleteMutation.error,
+      deleteError,
       onDelete,
     ],
   );

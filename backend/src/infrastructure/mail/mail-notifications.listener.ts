@@ -35,18 +35,21 @@ export class MailNotificationsListener {
   async onPasswordReset(payload: PasswordResetRequestedPayload) {
     const appUrl = this.configService.get<string>('APP_URL') ?? 'http://localhost:3000';
     const link = `${appUrl.replace(/\/$/, '')}/reset-password/${payload.token}`;
-    await this.mail.send({
+    const sent = await this.mail.send({
       to: payload.email,
       subject: 'Сброс пароля T-task',
       text: `Здравствуйте, ${payload.name}! Сбросить пароль: ${link}\nСсылка действует 1 час.`,
       html: `<p>Здравствуйте, ${escapeHtml(payload.name)}!</p><p>Чтобы задать новый пароль, откройте ссылку (действует 1 час):</p><p><a href="${escapeHtml(link)}">Сбросить пароль</a></p>`,
     });
+    if (!sent) {
+      throw new Error(`Failed to deliver password reset email to ${payload.email}`);
+    }
   }
 
   @OnEvent(DomainEvents.MENTION_CREATED)
   async onMention(payload: MentionCreatedPayload) {
     const appUrl = this.configService.get<string>('APP_URL') ?? 'http://localhost:3000';
-    const link = buildMailTaskLink(appUrl, payload.taskId);
+    const link = buildMailTaskLink(appUrl, payload.taskId, payload.workspaceId);
     await this.mail.send({
       to: payload.recipientEmail,
       subject: `${payload.actorName} упомянул(а) вас`,
@@ -58,7 +61,7 @@ export class MailNotificationsListener {
   @OnEvent(DomainEvents.DUE_REMINDER)
   async onDueReminder(payload: DueReminderPayload) {
     const appUrl = this.configService.get<string>('APP_URL') ?? 'http://localhost:3000';
-    const link = buildMailTaskLink(appUrl, payload.taskId);
+    const link = buildMailTaskLink(appUrl, payload.taskId, payload.workspaceId);
     await this.mail.send({
       to: payload.recipientEmail,
       subject: `Дедлайн: ${payload.taskTitle}`,

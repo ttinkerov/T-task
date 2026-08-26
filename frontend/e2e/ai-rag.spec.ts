@@ -21,8 +21,11 @@ test.describe('AI RAG status UI', () => {
 
     await expect(page.getByTestId('ai-settings-card')).toBeVisible({ timeout: 30_000 });
 
-    const advanced = page.locator('.ai-advanced');
-    await advanced.locator('summary').click();
+    await page
+      .locator('.ai-advanced')
+      .filter({ has: page.getByText('Поиск по задачам (расширенное)', { exact: true }) })
+      .locator('summary')
+      .click();
     await expect(page.getByTestId('ai-rag-status')).toBeVisible();
     await expect(page.getByTestId('ai-rag-status')).toContainText(
       /чанков|поиска по задачам|Загрузка статуса/i,
