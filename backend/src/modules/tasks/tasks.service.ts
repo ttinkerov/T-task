@@ -30,6 +30,7 @@ import {
   normalizeDescriptionDocInput,
   descriptionDocFromPlain,
 } from './utils/description-doc.util';
+import { buildTaskReorderSql } from '../../common/sql/reorder-case.util';
 
 const taskWithAssignee = {
   assignee: {
@@ -607,27 +608,28 @@ export class TasksService {
   async move(workspaceId: string, taskId: string, userId: string, dto: MoveTaskDto) {
     const task = await this.assertTaskInWorkspace(workspaceId, taskId, userId);
 
-    const targetColumn = await this.prisma.boardColumn.findFirst({
-      where: {
-        id: dto.columnId,
-        board: { workspaceId },
-      },
-      include: {
-        automations: {
-          orderBy: { position: 'asc' },
-          select: { action: true, assigneeId: true, config: true },
+    const [targetColumn, sourceColumn] = await Promise.all([
+      this.prisma.boardColumn.findFirst({
+        where: {
+          id: dto.columnId,
+          board: { workspaceId },
         },
-      },
-    });
+        include: {
+          automations: {
+            orderBy: { position: 'asc' },
+            select: { action: true, assigneeId: true, config: true },
+          },
+        },
+      }),
+      this.prisma.boardColumn.findFirst({
+        where: { id: task.columnId, board: { workspaceId } },
+        select: { id: true, boardId: true },
+      }),
+    ]);
 
     if (!targetColumn) {
       throw new NotFoundException('Колонка не найдена');
     }
-
-    const sourceColumn = await this.prisma.boardColumn.findFirst({
-      where: { id: task.columnId, board: { workspaceId } },
-      select: { id: true, boardId: true },
-    });
 
     if (!sourceColumn) {
       throw new NotFoundException('Колонка не найдена');
@@ -698,18 +700,19 @@ export class TasksService {
       include: taskWithAssignee,
     });
 
-    if (
-      doneColumn &&
-      isDoneColumn(doneColumn, board.columns) &&
-      movedTask.recurrenceRule !== TaskRecurrenceRule.NONE
-    ) {
+    let resultTask = movedTask;
+    const landedInDone = Boolean(doneColumn && isDoneColumn(doneColumn, board.columns));
+    if (landedInDone && movedTask.recurrenceRule !== TaskRecurrenceRule.NONE) {
       await this.handleRecurrenceCompletion(workspaceId, movedTask, board.columns);
+      // DUPLICATE creates a sibling task and leaves the original unchanged; skip reload.
+      // Any other action (MOVE_TASK) mutates the row, so we must reload.
+      if (movedTask.recurrenceAction !== TaskRecurrenceAction.DUPLICATE) {
+        resultTask = await this.prisma.task.findUniqueOrThrow({
+          where: { id: taskId },
+          include: taskWithAssignee,
+        });
+      }
     }
-
-    const updated = await this.prisma.task.findUniqueOrThrow({
-      where: { id: taskId },
-      include: taskWithAssignee,
-    });
 
     this.eventEmitter.emit(DomainEvents.TASK_MOVED, {
       workspaceId,
@@ -742,7 +745,7 @@ export class TasksService {
       });
     }
 
-    return this.toTask(updated);
+    return this.toTask(resultTask);
   }
 
   private buildRecurrenceUpdate(
@@ -1229,6 +1232,7 @@ export class TasksService {
     const tasks = await tx.task.findMany({
       where: { columnId, deletedAt: null },
       orderBy: { position: 'asc' },
+      select: { id: true, position: true },
     });
 
     const moving = tasks.find((item) => item.id === taskId);
@@ -1237,14 +1241,12 @@ export class TasksService {
     const without = tasks.filter((item) => item.id !== taskId);
     without.splice(newPosition, 0, moving);
 
-    await Promise.all(
-      without.map((item, index) =>
-        tx.task.update({
-          where: { id: item.id },
-          data: { position: index },
-        }),
-      ),
-    );
+    const changed = without
+      .map((item, index) => ({ id: item.id, position: index }))
+      .filter((u) => tasks.find((t) => t.id === u.id)?.position !== u.position);
+
+    if (changed.length === 0) return;
+    await tx.$executeRaw(buildTaskReorderSql(changed));
   }
 
   private async closeGap(tx: Prisma.TransactionClient, columnId: string, removedPosition: number) {

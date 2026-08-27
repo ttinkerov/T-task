@@ -144,7 +144,7 @@ export function KanbanBoard({
     );
   }, [board]);
 
-  if (boardsLoading) {
+  if (boardsLoading && !boardId) {
     return (
       <>
         <BoardSwitcher
@@ -158,7 +158,7 @@ export function KanbanBoard({
     );
   }
 
-  if (boardsError) {
+  if (boardsError && !boardId) {
     return (
       <div className="empty-state empty-state--board" role="alert">
         <p className="text-sm text-red-600">
@@ -173,7 +173,7 @@ export function KanbanBoard({
     );
   }
 
-  if (boards.length === 0) {
+  if (!boardsLoading && boards.length === 0) {
     return (
       <>
         <BoardSwitcher

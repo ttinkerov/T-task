@@ -14,6 +14,7 @@ import { UpdateStageDto } from './dto/update-stage.dto';
 import { createDefaultFunnel } from './utils/create-default-funnel.util';
 import { ActivityService } from '../activity/activity.service';
 import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
+import { buildFunnelStageReorderSql } from '../../common/sql/reorder-case.util';
 
 const FUNNEL_STAGE_DEAL_LIMIT = 200;
 
@@ -422,6 +423,7 @@ export class FunnelsService {
     const stages = await tx.funnelStage.findMany({
       where: { funnelId },
       orderBy: { position: 'asc' },
+      select: { id: true, position: true },
     });
 
     const moving = stages.find((item) => item.id === stageId);
@@ -430,13 +432,11 @@ export class FunnelsService {
     const without = stages.filter((item) => item.id !== stageId);
     without.splice(newPosition, 0, moving);
 
-    await Promise.all(
-      without.map((item, index) =>
-        tx.funnelStage.update({
-          where: { id: item.id },
-          data: { position: index },
-        }),
-      ),
-    );
+    const changed = without
+      .map((item, index) => ({ id: item.id, position: index }))
+      .filter((u) => stages.find((s) => s.id === u.id)?.position !== u.position);
+
+    if (changed.length === 0) return;
+    await tx.$executeRaw(buildFunnelStageReorderSql(changed));
   }
 }

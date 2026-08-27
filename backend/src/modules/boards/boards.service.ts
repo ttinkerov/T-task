@@ -17,6 +17,7 @@ import { createDefaultBoard } from './utils/create-default-board.util';
 import { ActivityService } from '../activity/activity.service';
 import { ActivityAction, ActivityEntityType } from '../activity/activity.types';
 import { resolveDescriptionDocForApi } from '../tasks/utils/description-doc.util';
+import { buildReorderSql } from '../../common/sql/reorder-case.util';
 
 const BOARD_COLUMN_TASK_LIMIT = 50;
 
@@ -272,6 +273,7 @@ export class BoardsService {
       ...(includeCardFields
         ? {
             customFieldValues: {
+              where: { field: { showOnCard: true } },
               select: { fieldId: true, value: true },
             },
           }
@@ -774,10 +776,5 @@ export class BoardsService {
 }
 
 export function buildColumnReorderSql(entries: { id: string; position: number }[]): Prisma.Sql {
-  const cases = Prisma.join(
-    entries.map((e) => Prisma.sql`WHEN id = ${e.id} THEN ${e.position}`),
-    ' ',
-  );
-  const ids = Prisma.join(entries.map((e) => e.id));
-  return Prisma.sql`UPDATE board_columns SET position = CASE ${cases} END WHERE id IN (${ids})`;
+  return buildReorderSql('board_columns', entries);
 }
