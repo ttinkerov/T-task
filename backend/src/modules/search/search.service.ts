@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { likeContainsPattern } from '../../common/sql/like-pattern.util';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
 
@@ -72,7 +73,7 @@ export class SearchService {
       return { tasks: [], deals: [], comments: [] };
     }
 
-    const like = `%${term}%`;
+    const like = likeContainsPattern(term);
     const [tasks, deals, comments] = await Promise.all([
       this.prisma.$queryRaw<TaskSearchRow[]>(Prisma.sql`
         SELECT
@@ -97,8 +98,8 @@ export class SearchService {
         WHERE b.workspace_id = ${workspaceId}
           AND t.deleted_at IS NULL
           AND (
-            t.title ILIKE ${like}
-            OR coalesce(t.description, '') ILIKE ${like}
+            t.title ILIKE ${like} ESCAPE '\\'
+            OR coalesce(t.description, '') ILIKE ${like} ESCAPE '\\'
             OR to_tsvector('russian', coalesce(t.title, '') || ' ' || coalesce(t.description, ''))
                 @@ plainto_tsquery('russian', ${term})
             OR similarity(t.title, ${term}) > 0.2
@@ -126,7 +127,7 @@ export class SearchService {
         WHERE f.workspace_id = ${workspaceId}
           AND d.deleted_at IS NULL
           AND (
-            d.title ILIKE ${like}
+            d.title ILIKE ${like} ESCAPE '\\'
             OR to_tsvector('russian', coalesce(d.title, '')) @@ plainto_tsquery('russian', ${term})
             OR similarity(d.title, ${term}) > 0.2
           )
@@ -155,7 +156,7 @@ export class SearchService {
         WHERE b.workspace_id = ${workspaceId}
           AND t.deleted_at IS NULL
           AND (
-            cm.body ILIKE ${like}
+            cm.body ILIKE ${like} ESCAPE '\\'
             OR to_tsvector('russian', coalesce(cm.body, '')) @@ plainto_tsquery('russian', ${term})
             OR similarity(cm.body, ${term}) > 0.2
           )

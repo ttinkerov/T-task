@@ -68,6 +68,7 @@ export class FormsService {
         entityType: ActivityEntityType.FORM,
         entityId: created.id,
         entityName: created.title,
+        tx,
       });
       return created;
     });
@@ -112,6 +113,7 @@ export class FormsService {
           accessChanged: dto.isPublic !== undefined,
           taskCreationChanged: dto.createTaskOnSubmit !== undefined,
         },
+        tx,
       });
     });
 
@@ -130,6 +132,7 @@ export class FormsService {
         entityType: ActivityEntityType.FORM,
         entityId: form.id,
         entityName: form.title,
+        tx,
       });
     });
     return { success: true };

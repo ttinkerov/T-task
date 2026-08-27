@@ -58,6 +58,35 @@ describe('ActivityService', () => {
     });
   });
 
+  it('uses the provided transaction client instead of this.prisma', async () => {
+    const tx = {
+      user: { findUnique: vi.fn() },
+      activityLog: { create: vi.fn().mockResolvedValue({ id: 'log-tx' }) },
+    };
+
+    await service.record({
+      workspaceId: 'workspace-1',
+      actorId: 'user-1',
+      actorName: 'Иван',
+      action: ActivityAction.COLUMN_CREATED,
+      entityType: ActivityEntityType.COLUMN,
+      entityId: 'col-1',
+      entityName: 'Бэклог',
+      tx: tx as never,
+    });
+
+    expect(tx.activityLog.create).toHaveBeenCalledOnce();
+    expect(prisma.activityLog.create).not.toHaveBeenCalled();
+    expect(tx.user.findUnique).not.toHaveBeenCalled();
+    expect(tx.activityLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        workspaceId: 'workspace-1',
+        actorName: 'Иван',
+        action: ActivityAction.COLUMN_CREATED,
+      }),
+    });
+  });
+
   it('swallows recording failures so business operations can continue', async () => {
     prisma.activityLog.create.mockRejectedValue(new Error('db down'));
 

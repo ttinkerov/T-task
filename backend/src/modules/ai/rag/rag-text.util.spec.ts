@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   expandRetrievalQuery,
+  formatVectorLiteral,
   maxMarginalRelevance,
+  RAG_EMBEDDING_DIMENSIONS,
   reciprocalRankFusion,
   sha256Hex,
 } from './rag.constants';
@@ -66,6 +68,15 @@ describe('rag.constants helpers', () => {
   it('hashes content stably', () => {
     expect(sha256Hex('a')).toBe(sha256Hex('a'));
     expect(sha256Hex('a')).not.toBe(sha256Hex('b'));
+  });
+
+  it('formats only finite numeric embeddings as pg float8[] literals', () => {
+    const embedding = Array.from({ length: RAG_EMBEDDING_DIMENSIONS }, (_, i) => i * 0.001);
+    expect(formatVectorLiteral(embedding)).toMatch(/^\{[\d.,-]+\}$/);
+    expect(() => formatVectorLiteral([1, 2, 3])).toThrow(/dimension mismatch/i);
+    expect(() =>
+      formatVectorLiteral(Array.from({ length: RAG_EMBEDDING_DIMENSIONS }, () => Number.NaN)),
+    ).toThrow(/non-finite/i);
   });
 
   it('fuses ranks with RRF', () => {

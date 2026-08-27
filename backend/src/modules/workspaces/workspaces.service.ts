@@ -147,6 +147,7 @@ export class WorkspacesService {
           nameChanged: dto.name !== undefined,
           overdueSettingChanged: dto.autoRollOverdue !== undefined,
         },
+        tx,
       });
       return updated;
     });
@@ -187,6 +188,7 @@ export class WorkspacesService {
         entityType: ActivityEntityType.WORKSPACE,
         entityId: workspaceId,
         entityName: workspace.name,
+        tx,
       });
     });
 
@@ -208,6 +210,7 @@ export class WorkspacesService {
         entityType: ActivityEntityType.WORKSPACE,
         entityId: workspaceId,
         entityName: workspace.name,
+        tx,
       });
     });
 
@@ -241,6 +244,7 @@ export class WorkspacesService {
         entityType: ActivityEntityType.WORKSPACE,
         entityId: workspaceId,
         entityName: workspace.name,
+        tx,
       });
     });
 
@@ -508,6 +512,7 @@ export class WorkspacesService {
         entityId: targetMember.userId,
         entityName: targetMember.user.name,
         metadata: { previousRole: targetMember.role },
+        tx,
       });
     });
 
@@ -614,6 +619,7 @@ export class WorkspacesService {
         entityId: created.id,
         entityName: email,
         metadata: { role },
+        tx,
       });
       return created;
     });
@@ -672,6 +678,7 @@ export class WorkspacesService {
         entityId: invitation.id,
         entityName: invitation.email,
         metadata: { role: invitation.role },
+        tx,
       });
     });
 
@@ -763,6 +770,7 @@ export class WorkspacesService {
         entityId: userId,
         entityName: user.name,
         metadata: { role: invitation.role },
+        tx,
       });
 
       return { membership, workspace };

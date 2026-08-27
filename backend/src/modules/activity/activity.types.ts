@@ -1,3 +1,5 @@
+import { Prisma } from '@prisma/client';
+
 export const ActivityAction = {
   WORKSPACE_CREATED: 'WORKSPACE_CREATED',
   WORKSPACE_UPDATED: 'WORKSPACE_UPDATED',
@@ -72,4 +74,5 @@ export interface RecordActivityInput {
   entityId?: string | null;
   entityName?: string | null;
   metadata?: Record<string, ActivityMetadataValue>;
+  tx?: Prisma.TransactionClient;
 }

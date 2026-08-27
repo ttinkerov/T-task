@@ -21,26 +21,76 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<ApiResponse<T>> {
-  const baseUrl = getApiBaseUrl();
-  const { headers: initHeaders, ...restInit } = init ?? {};
+/** Default client timeout so hung backends cannot freeze the UI forever. */
+export const API_FETCH_TIMEOUT_MS = 30_000;
 
-  const response = await fetch(`${baseUrl}${path}`, {
-    credentials: 'include',
-    ...restInit,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(initHeaders ?? {}),
-    },
-  });
+function withTimeoutSignal(
+  timeoutMs: number,
+  external?: AbortSignal | null,
+): { signal: AbortSignal; cancel: () => void } {
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
 
-  const body = (await response.json()) as ApiResponse<T>;
+  const onExternalAbort = () => {
+    controller.abort();
+  };
 
-  if (!response.ok || !body.success) {
-    throw new ApiError(body.error ?? 'Не удалось выполнить запрос', response.status);
+  if (external) {
+    if (external.aborted) {
+      controller.abort();
+    } else {
+      external.addEventListener('abort', onExternalAbort, { once: true });
+    }
   }
 
-  return body;
+  return {
+    signal: controller.signal,
+    cancel: () => {
+      clearTimeout(timer);
+      external?.removeEventListener('abort', onExternalAbort);
+    },
+  };
+}
+
+export async function apiFetch<T>(path: string, init?: RequestInit): Promise<ApiResponse<T>> {
+  const baseUrl = getApiBaseUrl();
+  const { headers: initHeaders, signal, ...restInit } = init ?? {};
+  const timed = withTimeoutSignal(API_FETCH_TIMEOUT_MS, signal);
+
+  try {
+    const response = await fetch(`${baseUrl}${path}`, {
+      credentials: 'include',
+      ...restInit,
+      signal: timed.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(initHeaders ?? {}),
+      },
+    });
+
+    const body = (await response.json()) as ApiResponse<T>;
+
+    if (!response.ok || !body.success) {
+      throw new ApiError(body.error ?? 'Не удалось выполнить запрос', response.status);
+    }
+
+    return body;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      if (signal?.aborted) {
+        throw error;
+      }
+      throw new ApiError('Превышено время ожидания ответа сервера', 408);
+    }
+    throw error;
+  } finally {
+    timed.cancel();
+  }
 }
 
 export async function apiUpload<T>(
@@ -49,24 +99,40 @@ export async function apiUpload<T>(
   init?: Omit<RequestInit, 'body' | 'method'>,
 ): Promise<ApiResponse<T>> {
   const baseUrl = getApiBaseUrl();
-  const { headers: initHeaders, ...restInit } = init ?? {};
-
+  const { headers: initHeaders, signal, ...restInit } = init ?? {};
+  const timed = withTimeoutSignal(API_FETCH_TIMEOUT_MS, signal);
   const headers = new Headers(initHeaders);
   headers.delete('Content-Type');
 
-  const response = await fetch(`${baseUrl}${path}`, {
-    credentials: 'include',
-    method: 'POST',
-    ...restInit,
-    headers,
-    body: formData,
-  });
+  try {
+    const response = await fetch(`${baseUrl}${path}`, {
+      credentials: 'include',
+      method: 'POST',
+      ...restInit,
+      signal: timed.signal,
+      headers,
+      body: formData,
+    });
 
-  const body = (await response.json()) as ApiResponse<T>;
+    const body = (await response.json()) as ApiResponse<T>;
 
-  if (!response.ok || !body.success) {
-    throw new ApiError(body.error ?? 'Не удалось выполнить запрос', response.status);
+    if (!response.ok || !body.success) {
+      throw new ApiError(body.error ?? 'Не удалось выполнить запрос', response.status);
+    }
+
+    return body;
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      if (signal?.aborted) {
+        throw error;
+      }
+      throw new ApiError('Превышено время ожидания ответа сервера', 408);
+    }
+    throw error;
+  } finally {
+    timed.cancel();
   }
-
-  return body;
 }

@@ -54,6 +54,7 @@ export class FunnelsService {
         entityType: ActivityEntityType.FUNNEL,
         entityId: created.id,
         entityName: created.name,
+        tx,
       });
       return created;
     });
@@ -219,6 +220,7 @@ export class FunnelsService {
         entityType: ActivityEntityType.STAGE,
         entityId: created.id,
         entityName: created.name,
+        tx,
       });
       return created;
     });
@@ -262,6 +264,7 @@ export class FunnelsService {
         entityId: renamed.id,
         entityName: renamed.name,
         metadata: { previousName: stage.name },
+        tx,
       });
       return renamed;
     });
@@ -323,6 +326,7 @@ export class FunnelsService {
         entityType: ActivityEntityType.STAGE,
         entityId: stage.id,
         entityName: stage.name,
+        tx,
       });
     });
 

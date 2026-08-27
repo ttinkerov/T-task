@@ -83,6 +83,7 @@ export class AppsService {
           entityId: created.id,
           entityName: created.title,
           metadata: { provider: created.provider },
+          tx,
         });
         return created;
       });
@@ -128,6 +129,7 @@ export class AppsService {
         entityId: app.id,
         entityName: app.title,
         metadata: { provider: app.provider },
+        tx,
       });
     });
     return { success: true };

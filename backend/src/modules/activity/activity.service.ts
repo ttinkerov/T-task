@@ -13,11 +13,12 @@ export class ActivityService {
 
   async record(input: RecordActivityInput): Promise<void> {
     try {
+      const db = input.tx ?? this.prisma;
       const actorName =
         input.actorName?.trim() ||
         (input.actorId
           ? (
-              await this.prisma.user.findUnique({
+              await db.user.findUnique({
                 where: { id: input.actorId },
                 select: { name: true },
               })
@@ -25,7 +26,7 @@ export class ActivityService {
           : null) ||
         'Удалённый пользователь';
 
-      await this.prisma.activityLog.create({
+      await db.activityLog.create({
         data: {
           workspaceId: input.workspaceId,
           actorId: input.actorId ?? null,

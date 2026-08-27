@@ -96,11 +96,6 @@ export class BoardsService {
     const take = Math.min(Math.max(limit, 1), BOARD_COLUMN_TASK_LIMIT);
     const skip = Math.max(offset, 0);
 
-    const cardFieldCount = await this.prisma.customFieldDefinition.count({
-      where: { workspaceId, showOnCard: true },
-    });
-    const includeCardFields = cardFieldCount > 0;
-
     const [total, tasks] = await Promise.all([
       this.prisma.task.count({
         where: { columnId, deletedAt: null },
@@ -110,7 +105,7 @@ export class BoardsService {
         orderBy: { position: 'asc' },
         skip,
         take,
-        select: this.boardCardTaskSelect(includeCardFields),
+        select: this.boardCardTaskSelect(true),
       }),
     ]);
 
@@ -208,11 +203,6 @@ export class BoardsService {
   }
 
   private async fetchBoard(workspaceId: string, boardId?: string) {
-    const cardFieldCount = await this.prisma.customFieldDefinition.count({
-      where: { workspaceId, showOnCard: true },
-    });
-    const includeCardFields = cardFieldCount > 0;
-
     const board = await this.prisma.board.findFirst({
       where: boardId ? { id: boardId, workspaceId } : { workspaceId },
       orderBy: { createdAt: 'asc' },
@@ -233,7 +223,7 @@ export class BoardsService {
               where: { deletedAt: null },
               orderBy: { position: 'asc' },
               take: BOARD_COLUMN_TASK_LIMIT,
-              select: this.boardCardTaskSelect(includeCardFields),
+              select: this.boardCardTaskSelect(true),
             },
             _count: {
               select: {
@@ -356,6 +346,7 @@ export class BoardsService {
         entityType: ActivityEntityType.COLUMN,
         entityId: created.id,
         entityName: created.name,
+        tx,
       });
       return created;
     });
@@ -395,6 +386,7 @@ export class BoardsService {
           entityId: renamed.id,
           entityName: renamed.name,
           metadata: { previousName: column.name },
+          tx,
         });
       }
       return renamed;
@@ -538,6 +530,7 @@ export class BoardsService {
         entityId: columnId,
         entityName: column.name,
         metadata: { automationCount: automations.length },
+        tx,
       });
     });
 
@@ -607,14 +600,12 @@ export class BoardsService {
         orderBy: { position: 'asc' },
       });
 
-      await Promise.all(
-        remaining.map((item, index) =>
-          tx.boardColumn.update({
-            where: { id: item.id },
-            data: { position: index },
-          }),
-        ),
-      );
+      const updates = remaining.map((item, index) => ({ id: item.id, position: index }));
+      const changed = updates.filter((u, index) => remaining[index]?.position !== u.position);
+      if (changed.length > 0) {
+        await tx.$executeRaw(buildColumnReorderSql(changed));
+      }
+
       await this.activityService.record({
         workspaceId,
         actorId: userId,
@@ -622,6 +613,7 @@ export class BoardsService {
         entityType: ActivityEntityType.COLUMN,
         entityId: column.id,
         entityName: column.name,
+        tx,
       });
     });
 
@@ -770,13 +762,22 @@ export class BoardsService {
     const without = columns.filter((item) => item.id !== columnId);
     without.splice(newPosition, 0, moving);
 
-    await Promise.all(
-      without.map((item, index) =>
-        tx.boardColumn.update({
-          where: { id: item.id },
-          data: { position: index },
-        }),
-      ),
-    );
+    const updates = without.map((item, index) => ({ id: item.id, position: index }));
+    const changed = updates.filter((u) => {
+      const original = columns.find((c) => c.id === u.id);
+      return original?.position !== u.position;
+    });
+    if (changed.length === 0) return;
+
+    await tx.$executeRaw(buildColumnReorderSql(changed));
   }
+}
+
+export function buildColumnReorderSql(entries: { id: string; position: number }[]): Prisma.Sql {
+  const cases = Prisma.join(
+    entries.map((e) => Prisma.sql`WHEN id = ${e.id} THEN ${e.position}`),
+    ' ',
+  );
+  const ids = Prisma.join(entries.map((e) => e.id));
+  return Prisma.sql`UPDATE board_columns SET position = CASE ${cases} END WHERE id IN (${ids})`;
 }

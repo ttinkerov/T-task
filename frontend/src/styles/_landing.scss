@@ -285,6 +285,8 @@ $l-brand-muted: var(--tt-brand-muted);
 
   &__copy {
     max-width: 40rem;
+    margin-inline: auto;
+    text-align: center;
   }
 
   &__eyebrow {
@@ -319,7 +321,7 @@ $l-brand-muted: var(--tt-brand-muted);
 
   &__text {
     max-width: 32rem;
-    margin: 1rem 0 0;
+    margin: 1rem auto 0;
     font-size: 1rem;
     line-height: 1.55;
     color: $l-text-dim;
@@ -329,6 +331,7 @@ $l-brand-muted: var(--tt-brand-muted);
   &__actions {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 0.65rem;
     margin-top: 1.6rem;
   }
@@ -336,6 +339,7 @@ $l-brand-muted: var(--tt-brand-muted);
   &__meta {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 0.75rem 1.15rem;
     margin: 1.35rem 0 0;
     padding: 0;

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma, RagSourceType } from '@prisma/client';
+import { likeContainsPattern } from '../../../common/sql/like-pattern.util';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import type { RagChunkMetadata } from './rag-chunk.types';
 import { formatVectorLiteral } from './rag.constants';
@@ -76,7 +77,6 @@ export class RagChunkStore {
     metadata: RagChunkMetadata;
   }) {
     const vector = formatVectorLiteral(input.embedding);
-    const vectorSql = Prisma.raw(`'${vector}'::float8[]`);
     const metadataJson = JSON.stringify(input.metadata);
     try {
       await this.prisma.$executeRaw`
@@ -91,7 +91,7 @@ export class RagChunkStore {
           ${input.chunkIndex},
           ${input.content},
           ${input.contentHash},
-          ${vectorSql},
+          ${vector}::float8[],
           ${metadataJson}::jsonb,
           NOW(),
           NOW()
@@ -121,7 +121,6 @@ export class RagChunkStore {
     minScore = 0,
   ): Promise<RagChunkRow[]> {
     const vector = formatVectorLiteral(queryEmbedding);
-    const vectorSql = Prisma.raw(`'${vector}'::float8[]`);
     const rows = await this.prisma.$queryRaw<
       Array<{
         id: string;
@@ -156,7 +155,7 @@ export class RagChunkStore {
                 SQRT(COALESCE(SUM(e * e), 0))::float8 AS norm_a,
                 SQRT(COALESCE(SUM(q * q), 0))::float8 AS norm_b
               FROM unnest(rag_chunks.embedding) WITH ORDINALITY AS t(e, i)
-              JOIN unnest(${vectorSql}) WITH ORDINALITY AS u(q, j) ON i = j
+              JOIN unnest(${vector}::float8[]) WITH ORDINALITY AS u(q, j) ON i = j
             ) AS norms
           ) AS score
         FROM rag_chunks
@@ -177,8 +176,7 @@ export class RagChunkStore {
   ): Promise<RagChunkRow[]> {
     const term = query.trim().slice(0, 500);
     if (!term) return [];
-    const escaped = term.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
-    const likePattern = `%${escaped}%`;
+    const likePattern = likeContainsPattern(term);
 
     const rows = await this.prisma.$queryRaw<
       Array<{

@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { BoardsService } from './boards.service';
+import { BoardsService, buildColumnReorderSql } from './boards.service';
 import { DEFAULT_BOARD_COLUMNS } from './utils/create-default-board.util';
 
 function makePrisma() {
@@ -40,6 +40,7 @@ function makePrisma() {
       count: vi.fn().mockResolvedValue(0),
     },
     $transaction: vi.fn(),
+    $executeRaw: vi.fn().mockResolvedValue(0),
   };
 }
 
@@ -145,11 +146,11 @@ describe('BoardsService — multiple boards', () => {
     };
 
     it('fetches the first board when boardId is omitted', async () => {
-      prisma.workspace.findUniqueOrThrow.mockResolvedValue({ autoRollOverdue: false });
       prisma.board.findFirst.mockResolvedValue(boardPayload);
 
       const result = await service.getBoard('ws-1', 'user-1');
 
+      expect(prisma.customFieldDefinition.count).not.toHaveBeenCalled();
       expect(prisma.board.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { workspaceId: 'ws-1' },
@@ -165,7 +166,6 @@ describe('BoardsService — multiple boards', () => {
     });
 
     it('fetches a specific board by id', async () => {
-      prisma.workspace.findUniqueOrThrow.mockResolvedValue({ autoRollOverdue: false });
       prisma.board.findFirst.mockResolvedValue(boardPayload);
 
       const result = await service.getBoard('ws-1', 'user-1', 'board-2');
@@ -179,7 +179,6 @@ describe('BoardsService — multiple boards', () => {
     });
 
     it('throws when board is missing', async () => {
-      prisma.workspace.findUniqueOrThrow.mockResolvedValue({ autoRollOverdue: false });
       prisma.board.findFirst.mockResolvedValue(null);
 
       await expect(service.getBoard('ws-1', 'user-1', 'missing')).rejects.toBeInstanceOf(
@@ -191,7 +190,6 @@ describe('BoardsService — multiple boards', () => {
   describe('listColumnTasks', () => {
     it('returns a page of column tasks after offset', async () => {
       prisma.boardColumn.findFirst.mockResolvedValue({ id: 'col-1' });
-      prisma.customFieldDefinition.count.mockResolvedValue(0);
       prisma.task.count.mockResolvedValue(250);
       prisma.task.findMany.mockResolvedValue([
         {
@@ -217,6 +215,7 @@ describe('BoardsService — multiple boards', () => {
           isEpic: false,
           epicId: null,
           assignee: null,
+          customFieldValues: [],
           taskTags: [],
           _count: { subtasks: 0 },
           subtasks: [],
@@ -225,6 +224,7 @@ describe('BoardsService — multiple boards', () => {
 
       const result = await service.listColumnTasks('ws-1', 'board-1', 'col-1', 'user-1', 200, 50);
 
+      expect(prisma.customFieldDefinition.count).not.toHaveBeenCalled();
       expect(prisma.task.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { columnId: 'col-1', deletedAt: null },
@@ -414,5 +414,49 @@ describe('BoardsService — multiple boards', () => {
         service.updateColumn('ws-1', 'foreign-col', 'user-1', { name: 'X' }),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
+  });
+});
+
+describe('buildColumnReorderSql', () => {
+  it('generates a CASE UPDATE targeting board_columns', () => {
+    const sql = buildColumnReorderSql([
+      { id: 'col-a', position: 0 },
+      { id: 'col-b', position: 1 },
+      { id: 'col-c', position: 2 },
+    ]);
+
+    expect(sql.sql).toContain('UPDATE board_columns');
+    expect(sql.sql).toContain('CASE');
+    expect(sql.sql).toContain('END');
+    expect(sql.sql).toContain('WHERE id IN');
+  });
+
+  it('parameterises ids and positions without inline literals', () => {
+    const sql = buildColumnReorderSql([
+      { id: 'col-x', position: 3 },
+      { id: 'col-y', position: 7 },
+    ]);
+
+    expect(sql.values).toEqual(expect.arrayContaining(['col-x', 3, 'col-y', 7]));
+    expect(sql.sql).not.toContain('col-x');
+    expect(sql.sql).not.toContain('col-y');
+  });
+
+  it('handles a single entry', () => {
+    const sql = buildColumnReorderSql([{ id: 'solo', position: 0 }]);
+
+    expect(sql.values).toEqual(expect.arrayContaining(['solo', 0]));
+    expect(sql.sql).toContain('UPDATE board_columns');
+  });
+
+  it('produces the same number of values as 2× the entry count (id + position per row)', () => {
+    const entries = [
+      { id: 'a', position: 0 },
+      { id: 'b', position: 1 },
+      { id: 'c', position: 2 },
+    ];
+    const sql = buildColumnReorderSql(entries);
+    // CASE clause: id + position per entry; IN clause: id per entry → 3 × id + 3 × position
+    expect(sql.values).toHaveLength(entries.length * 2 + entries.length);
   });
 });
